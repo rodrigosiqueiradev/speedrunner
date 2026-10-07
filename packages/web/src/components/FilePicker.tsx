@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { localPlace } from "../platform";
 import { UploadIcon } from "./Icons";
 
 interface Props {
@@ -71,7 +72,7 @@ export const FilePicker = forwardRef<FilePickerHandle, Props>(function FilePicke
     >
       <p className="dropzone-title">Drop your LiveSplit splits here</p>
       <p className="dropzone-hint">
-        In LiveSplit, right-click and choose Save Splits As to get an .lss file. It's read in your browser and never
+        In LiveSplit, right-click and choose Save Splits As to get an .lss file. It's read {localPlace} and never
         uploaded.
       </p>
       <div className="dropzone-actions">

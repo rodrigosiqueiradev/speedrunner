@@ -1,6 +1,7 @@
 import type { RunAnalysis } from "@speedrunner/core";
 import { ChevronIcon } from "./Icons";
 import { ADVICE_RULES, CLEAN_TIME, METRICS, type MetricDoc } from "../explain";
+import { localPlace } from "../platform";
 
 const SUMMARY = ["personalBest", "realisticTarget", "sumOfBest", "attempts"];
 const SEGMENT = ["pbTime", "gold", "median", "timeSaveVsGold", "realisticTimeSave", "variability", "resetRate"];
@@ -10,7 +11,7 @@ export function HowItWorks({ analysis }: { analysis: RunAnalysis }) {
     <section id="how-it-works" className="how" aria-labelledby="how-title">
       <h2 id="how-title">How it's calculated</h2>
       <p className="section-note">
-        Everything is worked out from your split file in your browser. Examples use the run you loaded.
+        Everything is worked out from your split file {localPlace}. Examples use the run you loaded.
       </p>
 
       <h3>Run totals</h3>

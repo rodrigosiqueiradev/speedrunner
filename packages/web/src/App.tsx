@@ -9,6 +9,7 @@ import { RouteStrip } from "./components/RouteStrip";
 import { SavingsChart } from "./components/SavingsChart";
 import { SegmentTable } from "./components/SegmentTable";
 import { Summary } from "./components/Summary";
+import { isDesktop } from "./platform";
 
 interface Loaded {
   fileName: string;
@@ -157,7 +158,7 @@ export function App() {
           </main>
         )}
 
-        <footer className="footer">Your splits never leave your browser.</footer>
+        <footer className="footer">Your splits never leave {isDesktop ? "your computer" : "your browser"}.</footer>
       </div>
     </>
   );

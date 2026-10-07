@@ -6,15 +6,36 @@ and (later) how their runs score against other runners across games and categori
 ## Packages
 
 - `packages/core`: parses LiveSplit `.lss` split files and analyses them. Shared by the web app
-  and any future desktop app. Runs in Node and the browser.
+  and the desktop app. Runs in Node and the browser.
 - `packages/web`: React web app. Upload an `.lss` file (or try the sample) to see your PB, realistic
   target, where time is lost, and what to practise. Files are analysed in the browser and never uploaded.
+- `packages/desktop`: the web app packaged as a desktop app for Windows, macOS and Linux.
 
 ## Running the web app
 
 ```sh
 npm install
 npm run dev --workspace @speedrunner/web
+```
+
+## Desktop app
+
+`packages/desktop` packages the web app as a desktop app with [Tauri](https://tauri.app). It is the
+same page in a native window, with no backend: split files are still read and analysed locally, and
+the app makes no network requests.
+
+Every push to `main` and every pull request builds installers for Linux (`.deb`, `.AppImage`),
+Windows (`.msi`, `.exe`) and macOS (`.dmg`). Download them from the run's artifacts on the
+**Desktop app** workflow in GitHub Actions. The builds aren't code-signed yet, so Windows SmartScreen
+and macOS Gatekeeper will warn on first launch (on macOS, right-click the app and choose Open).
+
+To build or run it yourself you need [Rust](https://rustup.rs) and the
+[Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS:
+
+```sh
+npm install
+npm run dev -w packages/desktop   # desktop window with live reload
+npm run app                       # installers in packages/desktop/src-tauri/target/release/bundle
 ```
 
 The sample run (`packages/web/public/sample.lss`) comes from the MIT-licensed
