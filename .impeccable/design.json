@@ -1,0 +1,608 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-07T23:11:17.773Z",
+  "title": "Design System: Speedrunner",
+  "extensions": {
+    "colorMeta": {
+      "split-blue": {
+        "role": "primary",
+        "displayName": "Split Blue",
+        "canonical": "#2a78d6",
+        "dark": "#3987e5",
+        "tonalRamp": [
+          "oklch(15% 0.160 255.5)",
+          "oklch(27% 0.160 255.5)",
+          "oklch(39% 0.160 255.5)",
+          "oklch(51% 0.160 255.5)",
+          "oklch(63% 0.160 255.5)",
+          "oklch(75% 0.160 255.5)",
+          "oklch(86% 0.160 255.5)",
+          "oklch(95% 0.160 255.5)"
+        ]
+      },
+      "split-blue-ink": {
+        "role": "primary",
+        "displayName": "Split Blue Ink",
+        "canonical": "#1c5cab",
+        "dark": "#86b6ef",
+        "tonalRamp": [
+          "oklch(15% 0.142 256.1)",
+          "oklch(27% 0.142 256.1)",
+          "oklch(39% 0.142 256.1)",
+          "oklch(51% 0.142 256.1)",
+          "oklch(63% 0.142 256.1)",
+          "oklch(75% 0.142 256.1)",
+          "oklch(86% 0.142 256.1)",
+          "oklch(95% 0.142 256.1)"
+        ]
+      },
+      "split-blue-wash": {
+        "role": "primary",
+        "displayName": "Split Blue Wash",
+        "canonical": "#e8f1fc",
+        "dark": "#14233a",
+        "tonalRamp": [
+          "oklch(15% 0.018 253.3)",
+          "oklch(27% 0.018 253.3)",
+          "oklch(39% 0.018 253.3)",
+          "oklch(51% 0.018 253.3)",
+          "oklch(63% 0.018 253.3)",
+          "oklch(75% 0.018 253.3)",
+          "oklch(86% 0.018 253.3)",
+          "oklch(95% 0.018 253.3)"
+        ]
+      },
+      "on-split-blue": {
+        "role": "primary",
+        "displayName": "On Split Blue",
+        "canonical": "#ffffff",
+        "dark": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(27% 0.000 89.9)",
+          "oklch(39% 0.000 89.9)",
+          "oklch(51% 0.000 89.9)",
+          "oklch(63% 0.000 89.9)",
+          "oklch(75% 0.000 89.9)",
+          "oklch(86% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "gold-split": {
+        "role": "secondary",
+        "displayName": "Gold Split",
+        "canonical": "#b8860b",
+        "dark": "#c98500",
+        "tonalRamp": [
+          "oklch(15% 0.132 81.6)",
+          "oklch(27% 0.132 81.6)",
+          "oklch(39% 0.132 81.6)",
+          "oklch(51% 0.132 81.6)",
+          "oklch(63% 0.132 81.6)",
+          "oklch(75% 0.132 81.6)",
+          "oklch(86% 0.132 81.6)",
+          "oklch(95% 0.132 81.6)"
+        ]
+      },
+      "gold-split-ink": {
+        "role": "secondary",
+        "displayName": "Gold Split Ink",
+        "canonical": "#7a5600",
+        "dark": "#f0c25a",
+        "tonalRamp": [
+          "oklch(15% 0.099 80.4)",
+          "oklch(27% 0.099 80.4)",
+          "oklch(39% 0.099 80.4)",
+          "oklch(51% 0.099 80.4)",
+          "oklch(63% 0.099 80.4)",
+          "oklch(75% 0.099 80.4)",
+          "oklch(86% 0.099 80.4)",
+          "oklch(95% 0.099 80.4)"
+        ]
+      },
+      "gold-split-wash": {
+        "role": "secondary",
+        "displayName": "Gold Split Wash",
+        "canonical": "#fbf3dd",
+        "dark": "#2a2210",
+        "tonalRamp": [
+          "oklch(15% 0.030 90.3)",
+          "oklch(27% 0.030 90.3)",
+          "oklch(39% 0.030 90.3)",
+          "oklch(51% 0.030 90.3)",
+          "oklch(63% 0.030 90.3)",
+          "oklch(75% 0.030 90.3)",
+          "oklch(86% 0.030 90.3)",
+          "oklch(95% 0.030 90.3)"
+        ]
+      },
+      "night-shell": {
+        "role": "tertiary",
+        "displayName": "Night Shell",
+        "canonical": "#0e1726",
+        "dark": "#080c12",
+        "tonalRamp": [
+          "oklch(15% 0.033 260.3)",
+          "oklch(27% 0.033 260.3)",
+          "oklch(39% 0.033 260.3)",
+          "oklch(51% 0.033 260.3)",
+          "oklch(63% 0.033 260.3)",
+          "oklch(75% 0.033 260.3)",
+          "oklch(86% 0.033 260.3)",
+          "oklch(95% 0.033 260.3)"
+        ]
+      },
+      "night-shell-ink": {
+        "role": "tertiary",
+        "displayName": "Night Shell Ink",
+        "canonical": "#e8edf5",
+        "dark": "#e8edf5",
+        "tonalRamp": [
+          "oklch(15% 0.012 259.8)",
+          "oklch(27% 0.012 259.8)",
+          "oklch(39% 0.012 259.8)",
+          "oklch(51% 0.012 259.8)",
+          "oklch(63% 0.012 259.8)",
+          "oklch(75% 0.012 259.8)",
+          "oklch(86% 0.012 259.8)",
+          "oklch(95% 0.012 259.8)"
+        ]
+      },
+      "night-shell-ink-muted": {
+        "role": "tertiary",
+        "displayName": "Night Shell Ink Muted",
+        "canonical": "#a3b0c2",
+        "dark": "#8b97a8",
+        "tonalRamp": [
+          "oklch(15% 0.030 256.5)",
+          "oklch(27% 0.030 256.5)",
+          "oklch(39% 0.030 256.5)",
+          "oklch(51% 0.030 256.5)",
+          "oklch(63% 0.030 256.5)",
+          "oklch(75% 0.030 256.5)",
+          "oklch(86% 0.030 256.5)",
+          "oklch(95% 0.030 256.5)"
+        ]
+      },
+      "page-ground": {
+        "role": "neutral",
+        "displayName": "Page Ground",
+        "canonical": "#f1f3f6",
+        "dark": "#0d1117",
+        "tonalRamp": [
+          "oklch(15% 0.005 258.3)",
+          "oklch(27% 0.005 258.3)",
+          "oklch(39% 0.005 258.3)",
+          "oklch(51% 0.005 258.3)",
+          "oklch(63% 0.005 258.3)",
+          "oklch(75% 0.005 258.3)",
+          "oklch(86% 0.005 258.3)",
+          "oklch(95% 0.005 258.3)"
+        ]
+      },
+      "page-surface": {
+        "role": "neutral",
+        "displayName": "Page Surface",
+        "canonical": "#ffffff",
+        "dark": "#151a22",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(27% 0.000 89.9)",
+          "oklch(39% 0.000 89.9)",
+          "oklch(51% 0.000 89.9)",
+          "oklch(63% 0.000 89.9)",
+          "oklch(75% 0.000 89.9)",
+          "oklch(86% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "page-sunk": {
+        "role": "neutral",
+        "displayName": "Page Sunk",
+        "canonical": "#f6f7f9",
+        "dark": "#11161d",
+        "tonalRamp": [
+          "oklch(15% 0.003 264.5)",
+          "oklch(27% 0.003 264.5)",
+          "oklch(39% 0.003 264.5)",
+          "oklch(51% 0.003 264.5)",
+          "oklch(63% 0.003 264.5)",
+          "oklch(75% 0.003 264.5)",
+          "oklch(86% 0.003 264.5)",
+          "oklch(95% 0.003 264.5)"
+        ]
+      },
+      "hover-tint": {
+        "role": "neutral",
+        "displayName": "Hover Tint",
+        "canonical": "#eef1f5",
+        "dark": "#1c2330",
+        "tonalRamp": [
+          "oklch(15% 0.006 255.5)",
+          "oklch(27% 0.006 255.5)",
+          "oklch(39% 0.006 255.5)",
+          "oklch(51% 0.006 255.5)",
+          "oklch(63% 0.006 255.5)",
+          "oklch(75% 0.006 255.5)",
+          "oklch(86% 0.006 255.5)",
+          "oklch(95% 0.006 255.5)"
+        ]
+      },
+      "rule-line": {
+        "role": "neutral",
+        "displayName": "Rule Line",
+        "canonical": "#e1e5eb",
+        "dark": "#252d39",
+        "tonalRamp": [
+          "oklch(15% 0.009 258.3)",
+          "oklch(27% 0.009 258.3)",
+          "oklch(39% 0.009 258.3)",
+          "oklch(51% 0.009 258.3)",
+          "oklch(63% 0.009 258.3)",
+          "oklch(75% 0.009 258.3)",
+          "oklch(86% 0.009 258.3)",
+          "oklch(95% 0.009 258.3)"
+        ]
+      },
+      "rule-line-strong": {
+        "role": "neutral",
+        "displayName": "Rule Line Strong",
+        "canonical": "#c9cfd8",
+        "dark": "#343e4d",
+        "tonalRamp": [
+          "oklch(15% 0.014 258.3)",
+          "oklch(27% 0.014 258.3)",
+          "oklch(39% 0.014 258.3)",
+          "oklch(51% 0.014 258.3)",
+          "oklch(63% 0.014 258.3)",
+          "oklch(75% 0.014 258.3)",
+          "oklch(86% 0.014 258.3)",
+          "oklch(95% 0.014 258.3)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#0d1420",
+        "dark": "#f2f5f9",
+        "tonalRamp": [
+          "oklch(15% 0.027 260.9)",
+          "oklch(27% 0.027 260.9)",
+          "oklch(39% 0.027 260.9)",
+          "oklch(51% 0.027 260.9)",
+          "oklch(63% 0.027 260.9)",
+          "oklch(75% 0.027 260.9)",
+          "oklch(86% 0.027 260.9)",
+          "oklch(95% 0.027 260.9)"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "#47505e",
+        "dark": "#b9c2cf",
+        "tonalRamp": [
+          "oklch(15% 0.026 259.2)",
+          "oklch(27% 0.026 259.2)",
+          "oklch(39% 0.026 259.2)",
+          "oklch(51% 0.026 259.2)",
+          "oklch(63% 0.026 259.2)",
+          "oklch(75% 0.026 259.2)",
+          "oklch(86% 0.026 259.2)",
+          "oklch(95% 0.026 259.2)"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#6b7482",
+        "dark": "#8b95a4",
+        "tonalRamp": [
+          "oklch(15% 0.024 259.2)",
+          "oklch(27% 0.024 259.2)",
+          "oklch(39% 0.024 259.2)",
+          "oklch(51% 0.024 259.2)",
+          "oklch(63% 0.024 259.2)",
+          "oklch(75% 0.024 259.2)",
+          "oklch(86% 0.024 259.2)",
+          "oklch(95% 0.024 259.2)"
+        ]
+      },
+      "error-red": {
+        "role": "error",
+        "displayName": "Error Red",
+        "canonical": "#b42323",
+        "dark": "#ff8a8a",
+        "tonalRamp": [
+          "oklch(15% 0.160 26.8)",
+          "oklch(27% 0.160 26.8)",
+          "oklch(39% 0.160 26.8)",
+          "oklch(51% 0.160 26.8)",
+          "oklch(63% 0.160 26.8)",
+          "oklch(75% 0.160 26.8)",
+          "oklch(86% 0.160 26.8)",
+          "oklch(95% 0.160 26.8)"
+        ]
+      },
+      "error-wash": {
+        "role": "error",
+        "displayName": "Error Wash",
+        "canonical": "#fdecec",
+        "dark": "#2d1515",
+        "tonalRamp": [
+          "oklch(15% 0.018 17.5)",
+          "oklch(27% 0.018 17.5)",
+          "oklch(39% 0.018 17.5)",
+          "oklch(51% 0.018 17.5)",
+          "oklch(63% 0.018 17.5)",
+          "oklch(75% 0.018 17.5)",
+          "oklch(86% 0.018 17.5)",
+          "oklch(95% 0.018 17.5)"
+        ]
+      },
+      "route-0": {
+        "role": "data",
+        "displayName": "Route 0",
+        "canonical": "#e7ebf0",
+        "dark": "#1f2733",
+        "tonalRamp": [
+          "#e7ebf0",
+          "#cde2fb",
+          "#9ec5f4",
+          "#5598e7",
+          "#1c5cab"
+        ]
+      },
+      "route-1": {
+        "role": "data",
+        "displayName": "Route 1",
+        "canonical": "#cde2fb",
+        "dark": "#184f95",
+        "tonalRamp": [
+          "#e7ebf0",
+          "#cde2fb",
+          "#9ec5f4",
+          "#5598e7",
+          "#1c5cab"
+        ]
+      },
+      "route-2": {
+        "role": "data",
+        "displayName": "Route 2",
+        "canonical": "#9ec5f4",
+        "dark": "#256abf",
+        "tonalRamp": [
+          "#e7ebf0",
+          "#cde2fb",
+          "#9ec5f4",
+          "#5598e7",
+          "#1c5cab"
+        ]
+      },
+      "route-3": {
+        "role": "data",
+        "displayName": "Route 3",
+        "canonical": "#5598e7",
+        "dark": "#3987e5",
+        "tonalRamp": [
+          "#e7ebf0",
+          "#cde2fb",
+          "#9ec5f4",
+          "#5598e7",
+          "#1c5cab"
+        ]
+      },
+      "route-4": {
+        "role": "data",
+        "displayName": "Route 4",
+        "canonical": "#1c5cab",
+        "dark": "#86b6ef",
+        "tonalRamp": [
+          "#e7ebf0",
+          "#cde2fb",
+          "#9ec5f4",
+          "#5598e7",
+          "#1c5cab"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Landing headline only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Run title: game, with the category in Ink Muted."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base text."
+      },
+      "note": {
+        "displayName": "Note",
+        "purpose": "Section notes, advice reasons and explanation bodies in Ink Secondary, 70–78ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Table headers, captions and legends. Sentence case."
+      },
+      "time-lead": {
+        "displayName": "Time Lead",
+        "purpose": "The lead (Realistic target) comparison time."
+      },
+      "time": {
+        "displayName": "Time",
+        "purpose": "Other comparison times."
+      },
+      "time-cell": {
+        "displayName": "Time Cell",
+        "purpose": "Table cells, bar values and save amounts."
+      }
+    },
+    "shadows": [
+      {
+        "name": "pop",
+        "value": "0 6px 24px rgb(13 20 32 / 0.14), 0 1px 3px rgb(13 20 32 / 0.08)",
+        "dark": "0 8px 28px rgb(0 0 0 / 0.5)",
+        "purpose": "Floating content only: info tip panels and the chart tooltip."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "All state transitions."
+      },
+      {
+        "name": "duration-state",
+        "value": "140ms",
+        "purpose": "Button, border and route-segment transitions."
+      },
+      {
+        "name": "duration-pop",
+        "value": "160ms",
+        "purpose": "Popover entrance (fade and 4px drop) and the disclosure chevron."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile",
+        "value": "640px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Plain labelled control on Page Surface.",
+      "html": "<button class=\"ds-btn\">Try a sample run</button>",
+      "css": ".ds-btn{font:inherit;font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif);font-size:.9375rem;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--line-strong,#c9cfd8);background:var(--surface,#fff);color:var(--ink,#0d1420);cursor:pointer;transition:background 140ms cubic-bezier(.16,1,.3,1),border-color 140ms}.ds-btn:hover{background:var(--hover,#eef1f5)}.ds-btn:active{transform:translateY(1px)}.ds-btn:focus-visible{outline:2px solid var(--accent,#2a78d6);outline-offset:2px}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action per view.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 10.5V2.5M4.75 5.75 8 2.5l3.25 3.25M2.5 10v2.25c0 .7.55 1.25 1.25 1.25h8.5c.7 0 1.25-.55 1.25-1.25V10\"/></svg>Choose .lss file</button>",
+      "css": ".ds-btn-primary{font:inherit;font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif);font-size:.9375rem;font-weight:500;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--accent,#2a78d6);background:var(--accent,#2a78d6);color:var(--on-accent,#fff);cursor:pointer;transition:background 140ms cubic-bezier(.16,1,.3,1),border-color 140ms}.ds-btn-primary:hover{background:var(--accent-ink,#1c5cab);border-color:var(--accent-ink,#1c5cab)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--accent,#2a78d6);outline-offset:2px}"
+    },
+    {
+      "name": "Timing Toggle",
+      "kind": "button",
+      "refersTo": "toggle-pressed",
+      "description": "Joined segmented buttons; pressed segment takes the primary fill.",
+      "html": "<div class=\"ds-toggle\" role=\"group\"><button aria-pressed=\"true\">Real time</button><button aria-pressed=\"false\">Game time</button></div>",
+      "css": ".ds-toggle{display:inline-flex}.ds-toggle button{font:inherit;font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif);font-size:.9375rem;min-height:36px;padding:0 16px;border:1px solid var(--line-strong,#c9cfd8);background:var(--surface,#fff);color:var(--ink,#0d1420);cursor:pointer;transition:background 140ms cubic-bezier(.16,1,.3,1)}.ds-toggle button:first-child{border-radius:8px 0 0 8px}.ds-toggle button:last-child{border-radius:0 8px 8px 0;margin-left:-1px}.ds-toggle button:hover{background:var(--hover,#eef1f5)}.ds-toggle button[aria-pressed=true]{background:var(--accent,#2a78d6);border-color:var(--accent,#2a78d6);color:var(--on-accent,#fff);position:relative}.ds-toggle button:focus-visible{outline:2px solid var(--accent,#2a78d6);outline-offset:2px}"
+    },
+    {
+      "name": "Shell Navigation",
+      "kind": "nav",
+      "refersTo": "shell-button",
+      "description": "Sticky Night Shell bar with wordmark, muted link and shell button.",
+      "html": "<header class=\"ds-shell\"><span class=\"ds-brand\">Speedrunner</span><nav><a href=\"#\">How it&#39;s calculated</a><button>Open file</button></nav></header>",
+      "css": ".ds-shell{display:flex;align-items:center;justify-content:space-between;gap:16px;height:56px;padding:0 16px;background:var(--shell,#0e1726);color:var(--shell-ink,#e8edf5);font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif)}.ds-brand{font-weight:600;letter-spacing:-.01em;font-size:1.05rem}.ds-shell nav{display:flex;align-items:center;gap:16px}.ds-shell a{color:var(--shell-ink-2,#a3b0c2);text-decoration:none;font-size:.9375rem}.ds-shell a:hover{color:var(--shell-ink,#e8edf5)}.ds-shell button{font:inherit;font-size:.9375rem;min-height:32px;padding:0 16px;border-radius:8px;background:transparent;color:var(--shell-ink,#e8edf5);border:1px solid color-mix(in srgb,var(--shell-ink,#e8edf5) 30%,transparent);cursor:pointer}.ds-shell button:hover{background:color-mix(in srgb,var(--shell-ink,#e8edf5) 10%,transparent)}.ds-shell :focus-visible{outline:2px solid var(--accent,#2a78d6);outline-offset:2px}"
+    },
+    {
+      "name": "Comparisons Panel",
+      "kind": "custom",
+      "refersTo": "comparison-lead",
+      "description": "Signature splits-panel layout: label and note left, delta, then tabular time right; lead row washed in Split Blue.",
+      "html": "<div class=\"ds-cmp\"><div class=\"ds-cmp-row\"><div><b>Personal best</b><small>Where you are now</small></div><span></span><time>40:01.52</time></div><div class=\"ds-cmp-row lead\"><div><b>Realistic target</b><small>Every segment at your good-day pace</small></div><span>−10.85s</span><time>39:50.66</time></div><div class=\"ds-cmp-row\"><div><b>Sum of best</b><small>Every segment at its gold</small></div><span>−1:02.40</span><time>38:59.12</time></div></div>",
+      "css": ".ds-cmp{background:var(--surface,#fff);border:1px solid var(--line,#e1e5eb);border-radius:10px;overflow:hidden;font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif);color:var(--ink,#0d1420)}.ds-cmp-row{display:grid;grid-template-columns:1fr auto minmax(9ch,auto);align-items:center;gap:16px;padding:12px 24px}.ds-cmp-row+.ds-cmp-row{border-top:1px solid var(--line,#e1e5eb)}.ds-cmp-row div{display:flex;flex-direction:column}.ds-cmp-row b{font-weight:500}.ds-cmp-row small{color:var(--ink-3,#6b7482);font-size:.875rem}.ds-cmp-row span,.ds-cmp-row time{font-family:var(--mono,\"IBM Plex Mono\",ui-monospace,monospace);font-variant-numeric:tabular-nums;text-align:right}.ds-cmp-row span{font-size:.9375rem;color:var(--accent-ink,#1c5cab)}.ds-cmp-row time{font-size:1.375rem;font-weight:500}.ds-cmp-row.lead{background:var(--accent-wash,#e8f1fc)}.ds-cmp-row.lead time{font-size:2rem;font-weight:600;letter-spacing:-.02em}.ds-cmp-row.lead span{font-weight:600}"
+    },
+    {
+      "name": "Route Strip",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Signature: the PB as its route, segment widths proportional to time, shaded by good-day save.",
+      "html": "<div class=\"ds-route\"><button style=\"flex-grow:18\" class=\"l1\"><span>Intro</span></button><button style=\"flex-grow:6\"></button><button style=\"flex-grow:22\" class=\"l4\"><span>Coldridge</span></button><button style=\"flex-grow:14\" class=\"l2\"><span>Flooded</span></button><button style=\"flex-grow:20\" class=\"l3\"><span>Kaldwin</span></button><button style=\"flex-grow:12\"><span>Ending</span></button></div>",
+      "css": ".ds-route{display:flex;gap:2px;height:44px;font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif)}.ds-route button{flex-basis:0;min-width:3px;height:100%;padding:0 8px;border:none;border-radius:3px;display:flex;align-items:center;overflow:hidden;font-size:.75rem;font-weight:500;background:var(--r0,#e7ebf0);color:var(--ink-2,#47505e);cursor:pointer;transition:filter 140ms,transform 140ms cubic-bezier(.16,1,.3,1)}.ds-route button:first-child{border-radius:6px 3px 3px 6px}.ds-route button:last-child{border-radius:3px 6px 6px 3px}.ds-route span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-route button:hover{filter:brightness(.94);transform:translateY(-2px)}.ds-route button:focus-visible{outline:2px solid var(--accent,#2a78d6);outline-offset:2px}.ds-route .l1{background:var(--r1,#cde2fb);color:var(--ink,#0d1420)}.ds-route .l2{background:var(--r2,#9ec5f4);color:var(--ink,#0d1420)}.ds-route .l3{background:var(--r3,#5598e7);color:#fff}.ds-route .l4{background:var(--r4,#1c5cab);color:#fff}"
+    },
+    {
+      "name": "Advice Tag",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Pill naming an advice kind.",
+      "html": "<span class=\"ds-tag\">Inconsistent</span> <span class=\"ds-tag\">Runs die here</span>",
+      "css": ".ds-tag{display:inline-block;font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif);font-size:.75rem;font-weight:500;padding:1px 8px;border-radius:999px;background:var(--surface-sunk,#f6f7f9);border:1px solid var(--line,#e1e5eb);color:var(--ink-2,#47505e)}"
+    },
+    {
+      "name": "Info Tip",
+      "kind": "custom",
+      "refersTo": "infotip-panel",
+      "description": "Info icon that opens a short explanation popover with a link to the full method.",
+      "html": "<span class=\"ds-tip\"><button aria-expanded=\"true\" aria-label=\"How is Realistic target calculated?\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"8\" cy=\"8\" r=\"6.25\"/><path d=\"M8 7.25v4M8 4.75v.01\"/></svg></button><span class=\"ds-tip-panel\">Your PB with each segment at your good-day pace, where that is faster.<a href=\"#\">How it&#39;s calculated</a></span></span>",
+      "css": ".ds-tip{position:relative;display:inline-flex;font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif)}.ds-tip button{width:20px;height:20px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:50%;background:transparent;color:var(--ink-3,#6b7482);cursor:pointer}.ds-tip button:hover,.ds-tip button[aria-expanded=true]{color:var(--accent-ink,#1c5cab);background:var(--accent-wash,#e8f1fc)}.ds-tip button:focus-visible{outline:2px solid var(--accent,#2a78d6);outline-offset:2px}.ds-tip-panel{position:absolute;top:calc(100% + 6px);left:-10px;width:max-content;max-width:300px;display:flex;flex-direction:column;gap:8px;padding:12px 16px;border-radius:8px;background:var(--surface,#fff);border:1px solid var(--line-strong,#c9cfd8);box-shadow:var(--shadow-pop,0 6px 24px rgb(13 20 32 / .14),0 1px 3px rgb(13 20 32 / .08));color:var(--ink,#0d1420);font-size:.875rem;line-height:1.45}.ds-tip-panel a{color:var(--accent-ink,#1c5cab);font-size:.8125rem;font-weight:500;text-underline-offset:3px}"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat bordered surface on the grey ground; no shadow.",
+      "html": "<div class=\"ds-panel\"><h3>Where the time is</h3><p>How much each segment could give back against your PB.</p></div>",
+      "css": ".ds-panel{padding:16px 24px 24px;background:var(--surface,#fff);border:1px solid var(--line,#e1e5eb);border-radius:10px;font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif);color:var(--ink,#0d1420)}.ds-panel h3{margin:0;font-size:1.2rem;font-weight:600;letter-spacing:-.01em}.ds-panel p{margin:4px 0 0;color:var(--ink-2,#47505e);font-size:.9375rem}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Practice Logbook",
+    "overview": "Speedrunner reads like the notebook a runner keeps between sessions: a calm, well-ruled page where the numbers sit next to the reasons behind them. The page doesn't hype the run. It lays the run out, says what the figures mean, and ends with what to practise next. Explanations are part of the layout, not hidden away. Info tips, section notes, the \"How it's calculated\" entries and worked examples taken from the runner's own file all count as primary content.\n\nThe logbook is written in the runner's own handwriting, which here is LiveSplit's. Times are set in tabular mono and right-aligned, the way a splits panel shows them, and gold always means gold. Pages are light by default and quiet. Cool grey paper, white panels and hairline rules carry the structure. Colour appears only where it encodes a meaning: blue for time a good attempt would save, gold for best segments. A dark \"Night Shell\" header frames the logbook like a timer window. Dark mode is a separately tuned palette, not an inversion.\n\nThe density is moderate. Comfortable reading measures (56–78ch) sit alongside compact data views (tables, the route strip, the bar chart) that stay readable without zooming.",
+    "keyCharacteristics": [
+      "Explanation sits next to every number. Notes, tips and worked examples are first-class content.",
+      "Times are tabular mono and right-aligned. Labels are sans and left-aligned.",
+      "Colour carries meaning: blue is reachable saves, gold is golds. Everything else is neutral.",
+      "Flat, ruled surfaces. A shadow appears only on content that floats.",
+      "One sticky dark header and one narrow column (1080px max).",
+      "Light and dark themes are each tuned on their own."
+    ],
+    "rules": [
+      {
+        "name": "The Meaning-Only Colour Rule",
+        "body": "Blue means time a good attempt would save. Gold means a gold segment. No other hues appear, and neither is ever used decoratively.",
+        "section": "colors"
+      },
+      {
+        "name": "The Separate Night Rule",
+        "body": "Dark mode is its own tuned set of steps (see the sidecar), never `filter: invert` or computed opposites. Every new token needs a light value and a dark value.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Time Rule",
+        "body": "Every time, delta, save and percentage is set in Plex Mono with tabular numerals and right-aligned in its column. Prose never sets numbers in mono, except inside a worked example.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence-Case Rule",
+        "body": "Headings, labels and buttons use sentence case and plain words (\"Open file\", \"How it's calculated\"). No all-caps eyebrows or letter-spaced labels.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ruled Page Rule",
+        "body": "Separate content with space and hairline rules, not nested cards or shadows. If something casts a shadow, it must be floating above the page.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do put an explanation next to every number: an info tip, a note, or a link into \"How it's calculated\".",
+      "Do set every time, delta and save in Plex Mono with tabular numerals, right-aligned.",
+      "Do keep Split Blue for good-day saves and actions, and Gold Split for golds only.",
+      "Do separate sections with 48px of space and hairline rules, inside the single 1080px column.",
+      "Do define every new colour token for light and dark under the existing `:root` / `[data-theme]` structure.",
+      "Do keep motion short (140–160ms, `cubic-bezier(0.16, 1, 0.3, 1)`) and honour `prefers-reduced-motion`.",
+      "Do reuse the 16px, 1.5px-stroke icon family."
+    ],
+    "donts": [
+      "Don't nest cards inside cards or add shadows to content that sits on the page.",
+      "Don't add hues beyond blue, gold and the error red, or use blue and gold decoratively.",
+      "Don't use all-caps labels, letter-spaced eyebrows or display type outside the landing headline.",
+      "Don't set times in proportional type or centre numeric columns.",
+      "Don't invert the light palette to get dark mode."
+    ]
+  }
+}

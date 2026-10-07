@@ -1,0 +1,59 @@
+# Product
+
+<!-- impeccable:product-schema 1 -->
+
+## Platform
+
+web
+
+## Users
+
+Active grinders: speedrunners already deep in one game and category, with hundreds of attempts in their LiveSplit history, chasing PB improvements. They open Speedrunner between sessions to decide what to practise next and how fast they could realistically be. They know their route, their splits and LiveSplit's vocabulary (PB, gold, sum of best, resets) and want the numbers explained, not themselves.
+
+## Product Purpose
+
+Shows runners where they lose time and how fast they could realistically be, from the split file they already have. Load a LiveSplit `.lss` file and get: PB, a realistic target (the PB if every segment went like a typical good attempt), sum of best, where time is lost per segment, and ranked practice advice. Success means a runner leaves knowing which segments to grind first and why, and trusts the numbers because every one can be traced to how it was worked out.
+
+Planned: compare and score a run against other runners across games and categories.
+
+## Positioning
+
+Completely passive. Speedrunner never uploads anything. Split files are analysed in the browser, and the planned comparison features only read public data from speedrun.com and therun.gg. There is no account, no sync and no opt-in sharing step, because nothing leaves the user's machine.
+
+It's an honest analysis rather than a hype dashboard. The realistic target comes from the runner's own recent form (25th percentile of clean times), not from the theoretical sum of best, and every number has a plain-language explanation of how it was calculated.
+
+## Operating Context
+
+- The input is a LiveSplit `.lss` file (LiveSplit 1.0 through current). The app also ships a sample run.
+- Used between practice sessions, often next to LiveSplit and a game.
+- Supports both real time and game time (there's a toggle when the file has game time).
+- Planned external sources, read-only: speedrun.com and therun.gg.
+
+## Capabilities and Constraints
+
+- `packages/core`: parser and analyzer that run in Node and the browser, plus a command-line tool. It's shared with the web app and a possible future desktop app.
+- `packages/web`: React and Vite app. It shows a summary, a route strip, ranked advice, a savings chart, a per-segment table and a "How it's calculated" section.
+- How the data is cleaned (skipped splits, mis-splits under 60% of the median, imported history) and all the thresholds are documented in `docs/how-it-works.md`. The UI has to stay consistent with that document.
+- Terms the UI uses: personal best, realistic target, sum of best, gold, typical, good-day time, save to gold, good-day save, variability, reset rate, clean segment times. The advice labels are Slow in PB, Inconsistent, Gold is rare and Runs die here.
+- Must never upload user data or add tracking that sends split contents anywhere.
+- Open decision: how cross-runner comparison and scoring will work and be presented.
+
+## Brand Commitments
+
+- Name: Speedrunner.
+- Promise, used in the UI: "Your splits never leave your browser."
+- Voice: plain, direct and specific. Numbers come with their explanations and examples taken from the user's own run. British spelling ("practise", "analyse").
+
+## Evidence on Hand
+
+- A sample run in `packages/web/public/sample.lss` (Dishonored, from the MIT-licensed livesplit-core test suite), plus test fixtures in `packages/core/test/fixtures`.
+- The method documentation in `docs/how-it-works.md`.
+- Free, early project, with no users, testimonials, community or usage metrics yet. Future work must not invent any of these.
+
+## Product Principles
+
+1. **Every number is explainable.** If a figure can't be traced to a plain-language method, it doesn't ship.
+2. **Realistic over theoretical.** Lead with what the runner can actually achieve on a good day. Sum of best is context, not the goal.
+3. **Tell them what to do next.** The analysis has to end in ranked, actionable practice priorities.
+4. **Passive and private by construction.** The app only reads: local files and public APIs. It never writes anywhere, never needs an account, and asks for no trust it doesn't need.
+5. **Respect the runner's expertise.** Use LiveSplit's vocabulary, don't explain the obvious, and keep data-dense views readable.
