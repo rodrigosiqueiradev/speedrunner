@@ -1,17 +1,34 @@
+import type { SegmentStats } from "@speedrunner/core";
 import { describe, expect, it } from "vitest";
-import { saveLevel } from "../src/components/RouteStrip";
+import { displayName, routeSections } from "../src/components/RouteStrip";
 
-describe("saveLevel", () => {
-  it("uses step 0 only when there is nothing to save", () => {
-    expect(saveLevel(0, 8000)).toBe(0);
-    expect(saveLevel(500, 0)).toBe(0);
+const seg = (index: number, name: string, pbTime: number) => ({ index, name, pbTime }) as SegmentStats;
+
+describe("displayName", () => {
+  it("drops LiveSplit's subsplit markers", () => {
+    expect(displayName("-Forest gate")).toBe("Forest gate");
+    expect(displayName("{Forest} Boss")).toBe("Boss");
+    expect(displayName("Troubled Waters")).toBe("Troubled Waters");
+  });
+});
+
+describe("routeSections", () => {
+  it("returns nothing for runs without subsplits", () => {
+    expect(routeSections([seg(0, "A", 10), seg(1, "B", 20)])).toBeNull();
   });
 
-  it("splits saves into quarters of the biggest one", () => {
-    expect(saveLevel(200, 8000)).toBe(1);
-    expect(saveLevel(2200, 8000)).toBe(2);
-    expect(saveLevel(4500, 8000)).toBe(3);
-    expect(saveLevel(7000, 8000)).toBe(4);
-    expect(saveLevel(8000, 8000)).toBe(4);
+  it("groups subsplits into their sections, keeping plain splits on their own", () => {
+    const sections = routeSections([
+      seg(0, "Intro", 5),
+      seg(1, "-Gate", 10),
+      seg(2, "{Forest}Boss", 20),
+      seg(3, "-Hall", 7),
+      seg(4, "{Castle}King", 8),
+    ]);
+    expect(sections).toEqual([
+      { name: "Intro", start: 0, time: 5 },
+      { name: "Forest", start: 1, time: 30 },
+      { name: "Castle", start: 3, time: 15 },
+    ]);
   });
 });

@@ -340,70 +340,11 @@
           "oklch(95% 0.018 17.5)"
         ]
       },
-      "route-0": {
+      "route-track": {
         "role": "data",
-        "displayName": "Route 0",
+        "displayName": "Route Track",
         "canonical": "#e7ebf0",
-        "dark": "#1f2733",
-        "tonalRamp": [
-          "#e7ebf0",
-          "#cde2fb",
-          "#9ec5f4",
-          "#5598e7",
-          "#1c5cab"
-        ]
-      },
-      "route-1": {
-        "role": "data",
-        "displayName": "Route 1",
-        "canonical": "#cde2fb",
-        "dark": "#184f95",
-        "tonalRamp": [
-          "#e7ebf0",
-          "#cde2fb",
-          "#9ec5f4",
-          "#5598e7",
-          "#1c5cab"
-        ]
-      },
-      "route-2": {
-        "role": "data",
-        "displayName": "Route 2",
-        "canonical": "#9ec5f4",
-        "dark": "#256abf",
-        "tonalRamp": [
-          "#e7ebf0",
-          "#cde2fb",
-          "#9ec5f4",
-          "#5598e7",
-          "#1c5cab"
-        ]
-      },
-      "route-3": {
-        "role": "data",
-        "displayName": "Route 3",
-        "canonical": "#5598e7",
-        "dark": "#3987e5",
-        "tonalRamp": [
-          "#e7ebf0",
-          "#cde2fb",
-          "#9ec5f4",
-          "#5598e7",
-          "#1c5cab"
-        ]
-      },
-      "route-4": {
-        "role": "data",
-        "displayName": "Route 4",
-        "canonical": "#1c5cab",
-        "dark": "#86b6ef",
-        "tonalRamp": [
-          "#e7ebf0",
-          "#cde2fb",
-          "#9ec5f4",
-          "#5598e7",
-          "#1c5cab"
-        ]
+        "dark": "#1f2733"
       }
     },
     "typographyMeta": {
@@ -521,9 +462,9 @@
       "name": "Route Strip",
       "kind": "custom",
       "refersTo": null,
-      "description": "Signature: the PB as its route, segment widths proportional to time, shaded by good-day save.",
-      "html": "<div class=\"ds-route\"><button style=\"flex-grow:18\" class=\"l1\"><span>Intro</span></button><button style=\"flex-grow:6\"></button><button style=\"flex-grow:22\" class=\"l4\"><span>Coldridge</span></button><button style=\"flex-grow:14\" class=\"l2\"><span>Flooded</span></button><button style=\"flex-grow:20\" class=\"l3\"><span>Kaldwin</span></button><button style=\"flex-grow:12\"><span>Ending</span></button></div>",
-      "css": ".ds-route{display:flex;gap:2px;height:44px;font-family:var(--sans,\"IBM Plex Sans\",system-ui,sans-serif)}.ds-route button{flex-basis:0;min-width:3px;height:100%;padding:0 8px;border:none;border-radius:3px;display:flex;align-items:center;overflow:hidden;font-size:.75rem;font-weight:500;background:var(--r0,#e7ebf0);color:var(--ink-2,#47505e);cursor:pointer;transition:filter 140ms,transform 140ms cubic-bezier(.16,1,.3,1)}.ds-route button:first-child{border-radius:6px 3px 3px 6px}.ds-route button:last-child{border-radius:3px 6px 6px 3px}.ds-route span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-route button:hover{filter:brightness(.94);transform:translateY(-2px)}.ds-route button:focus-visible{outline:2px solid var(--accent,#2a78d6);outline-offset:2px}.ds-route .l1{background:var(--r1,#cde2fb);color:var(--ink,#0d1420)}.ds-route .l2{background:var(--r2,#9ec5f4);color:var(--ink,#0d1420)}.ds-route .l3{background:var(--r3,#5598e7);color:#fff}.ds-route .l4{background:var(--r4,#1c5cab);color:#fff}"
+      "description": "Signature: the PB as a track with one column per segment, widths proportional to time; Split Blue bars rise where a good attempt would save time, the top three numbered.",
+      "html": "<div class=\"ds-route\"><button style=\"flex-grow:18\"></button><button style=\"flex-grow:6\"></button><button style=\"flex-grow:22\"><i style=\"height:max(2px,calc(1.0 * 44px))\"><b>1</b></i></button><button style=\"flex-grow:14\"><i style=\"height:max(2px,calc(0.3 * 44px))\"><b>3</b></i></button><button style=\"flex-grow:20\"><i style=\"height:max(2px,calc(0.55 * 44px))\"><b>2</b></i></button><button style=\"flex-grow:12\"></button><button style=\"flex-grow:9\"><i style=\"height:max(2px,calc(0.1 * 44px))\"></i></button></div>",
+      "css": ".ds-route{display:flex;height:74px}.ds-route button{position:relative;flex-basis:0;min-width:0;height:100%;padding:0;border:none;background:transparent;cursor:pointer}.ds-route button::after{content:\"\";position:absolute;inset:auto 0 0 1px;height:10px;background:var(--r0,#e7ebf0)}.ds-route button:first-child::after{left:0;border-radius:4px 0 0 4px}.ds-route button:last-child::after{border-radius:0 4px 4px 0}.ds-route i{position:absolute;left:1px;right:0;bottom:10px;border-radius:2px 2px 0 0;background:var(--accent,#2a78d6)}.ds-route b{position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);font:600 .75rem/1 var(--mono,\"IBM Plex Mono\",monospace);color:var(--accent-ink,#1c5cab)}.ds-route button:hover{background:var(--hover,#eef1f5)}.ds-route button:hover i{background:var(--accent-ink,#1c5cab)}.ds-route button:focus-visible{outline:2px solid var(--accent,#2a78d6)}"
     },
     {
       "name": "Advice Tag",

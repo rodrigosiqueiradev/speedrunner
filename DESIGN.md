@@ -25,11 +25,7 @@ colors:
   ink-muted: "#5d6573"
   error-red: "#b42323"
   error-wash: "#fdecec"
-  route-0: "#e7ebf0"
-  route-1: "#cde2fb"
-  route-2: "#9ec5f4"
-  route-3: "#5598e7"
-  route-4: "#1c5cab"
+  route-track: "#e7ebf0"
 typography:
   display:
     fontFamily: "IBM Plex Sans, system-ui, sans-serif"
@@ -192,7 +188,7 @@ The density is moderate. Comfortable reading measures (56–78ch) sit alongside 
 A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Gold Split.
 
 ### Primary
-- **Split Blue** (`split-blue`): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, the focus ring, text selection and the strongest steps of the route strip. **Split Blue Ink** (`split-blue-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Fill** (`split-blue-fill`, hover `split-blue-fill-hover`) is the slightly deeper step used behind white text on filled controls (the primary button and the pressed toggle), because white on Split Blue only reaches 4.4:1. **Split Blue Wash** (`split-blue-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts.
+- **Split Blue** (`split-blue`): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, the focus ring, text selection and the save bars on the route strip. **Split Blue Ink** (`split-blue-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Fill** (`split-blue-fill`, hover `split-blue-fill-hover`) is the slightly deeper step used behind white text on filled controls (the primary button and the pressed toggle), because white on Split Blue only reaches 4.4:1. **Split Blue Wash** (`split-blue-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts.
 
 ### Secondary
 - **Gold Split** (`gold-split`): LiveSplit's gold, used only for gold segments (the gold portion of savings bars and its legend swatch). **Gold Split Ink** and **Gold Split Wash** pair as the small flag that marks gold-related notes in the segment table.
@@ -209,8 +205,8 @@ A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Go
 - **Ink / Ink Secondary / Ink Muted**: primary text, then notes and explanations, then meta, captions, ranks and secondary values.
 - **Error Red / Error Wash**: file-read errors only.
 
-### Route ramp
-- **Route 0–4** (`route-0` … `route-4`): a five-step Split Blue ramp from near-surface to strong, used only by the route strip and its legend. Labels use ink on steps 0–3 and white on step 4 in light mode; in dark mode steps 0–2 use light ink and steps 3–4 use dark ink, so every label clears 4.5:1. In dark mode the ramp runs the other way in lightness (dark steps first, light strongest), so "more to gain" always reads as more contrast.
+### Route track
+- **Route Track** (`route-track`): the neutral band the route strip draws the PB on, one step darker than the page ground. Dark mode uses `#1f2733`.
 
 ### Named Rules
 **The Meaning-Only Colour Rule.** Blue means time a good attempt would save. Gold means a gold segment. No other hues appear, and neither is ever used decoratively.
@@ -231,8 +227,8 @@ A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Go
 - **Lede** (400, 1.0625rem): the landing introduction only.
 - **Body** (400, 16px, 1.55): base text.
 - **Note** (400, 0.9375rem): section notes, advice reasons and explanation bodies in Ink Secondary, capped at 70–78ch.
-- **Label** (500, 0.8125rem): table headers, captions and the route legend. Sentence case, never uppercase.
-- **Micro** (500, 0.75rem): tags, table flags and route strip labels.
+- **Label** (500, 0.8125rem): table headers, captions and the route strip's biggest-saves list. Sentence case, never uppercase.
+- **Micro** (500, 0.75rem): tags, table flags, route strip section names, its axis and its rank numbers.
 - **Time Lead / Time / Time Cell** (Plex Mono, tabular numerals): 2rem/600 for the lead comparison, 1.375rem/500 for the other comparisons, 0.875rem for table cells, bar values and save amounts.
 
 ### Named Rules
@@ -246,7 +242,7 @@ There's a single centred column of 1080px max with 16px side gutters, under a 56
 
 Spacing follows a 4px-based scale (4, 8, 12, 16, 24, 32, 48). The interior rhythm is 12–16px between rows, 24px for panel side padding and 48px between sections.
 
-The only breakpoint is 640px. Below it the shell hides its text links, comparison deltas drop under the time, route strip labels disappear and the strip shrinks to 32px, the chart's label column narrows to 92px, and info tip panels become a fixed sheet pinned across the bottom gutter. Tables scroll horizontally with the segment name column kept sticky.
+The only breakpoint is 640px. Below it the shell hides its text links, comparison deltas drop under the time, the route strip's bars shorten to 36px and section names too narrow to read are hidden, the chart's label column narrows to 92px, and info tip panels become a fixed sheet pinned across the bottom gutter. Tables scroll horizontally with the segment name column kept sticky.
 
 ## Elevation & Depth
 
@@ -260,7 +256,7 @@ The system is flat. Depth comes from tone (ground, then surface, then sunk) and 
 
 ## Shapes
 
-Corners are gently rounded and stay small. Panels use 10px, buttons, popovers and callouts 8px, the dropzone 14px, row and summary hovers 6px (`row`), flags and focus rings 4px, route segments 3px (6px at the outer ends of the strip) and legend swatches 2px (`xxs`). Tags are the only pill shape. Borders are 1px hairlines, except the dropzone's 1.5px dash. The lead comparison row and the selected table row are marked by a wash, and the selected row also gets a 3px Split Blue inset bar on its left.
+Corners are gently rounded and stay small. Panels use 10px, buttons, popovers and callouts 8px, the dropzone 14px, row and summary hovers 6px (`row`), flags and focus rings 4px, the route track's outer ends 4px and the tops of route save bars 2px (`xxs`). Tags are the only pill shape. Borders are 1px hairlines, except the dropzone's 1.5px dash. The lead comparison row and the selected table row are marked by a wash, and the selected row also gets a 3px Split Blue inset bar on its left.
 
 Icons are a single family of 16px stroke icons with a 1.5px stroke and round caps and joins, drawn in `currentColor`.
 
@@ -280,7 +276,7 @@ Quiet and plain. A button looks like a labelled control, not a call to action.
 The logbook's headline entry: Personal best, Realistic target and Sum of best laid out like a splits panel. Each row puts the label, an info tip and a short note on the left, then the delta against the PB, then the time on the right. The Realistic target row is the lead row, with a Split Blue Wash background and a larger time. Rows are separated by hairlines inside a bordered 10px panel.
 
 ### Route strip (signature)
-The PB drawn as its route. There's one block per segment, as wide as the segment took, separated by 2px gaps, 44px tall. Each block is filled from Route 0–4 according to how much a good attempt would save: step 0 means no save, and steps 1–4 split the range up to the run's biggest save into quarters. Blocks are buttons that scroll to that segment's row, and they lift 2px on hover. Labels show only on blocks wider than 7% of the strip. A mono axis under the strip runs from 0:00 to the PB time, so width reads as time. The caption explains the encoding and ends with a five-swatch legend running from "No save" to the biggest save.
+The PB drawn as its route, built to stay readable from 5 splits to 100. A 10px Route Track runs the full width, split into one column per segment as wide as the segment took, with 1px gaps. Where a good attempt would save time, a Split Blue bar rises from the track, as tall as the save relative to the run's biggest (44px at most, 2px at least), so the eye goes to the peaks however many splits there are. There are no labels inside columns. The three biggest saves carry a mono rank number above their bar, and the caption lists them by name and save; each list item is a button too. When the file uses LiveSplit subsplits ("-Name", closed by "{Section}Name"), section names run under the track in 1px-ruled bands, and narrow sections stay unlabelled. A mono axis gives 0:00 and the PB time. Every column is a full-height button that scrolls to its row; hover tints the column and darkens its bar, and the tooltip gives name, PB time and save.
 
 ### Advice list
 A ranked logbook entry, one row per segment. A mono rank number in Ink Muted comes first, then the segment name as a link button and its advice tags as pills, then the reasons in Note type, with the estimated worth right-aligned in Split Blue Ink mono. Rows are divided by hairlines with no card around them.

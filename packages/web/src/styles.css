@@ -24,14 +24,8 @@
   --gold-ink: #7a5600;
   --error: #b42323;
   --error-wash: #fdecec;
-  /* Route strip: five steps of the blue ramp, near-surface to strong. */
+  /* Route strip track. */
   --r0: #e7ebf0;
-  --r1: #cde2fb;
-  --r2: #9ec5f4;
-  --r3: #5598e7;
-  --r4: #1c5cab;
-  --r3-ink: #0d1420;
-  --r4-ink: #ffffff;
   --shadow-pop: 0 6px 24px rgb(13 20 32 / 0.14), 0 1px 3px rgb(13 20 32 / 0.08);
   --radius: 10px;
   --sans: "IBM Plex Sans", system-ui, sans-serif;
@@ -76,12 +70,6 @@
     --error: #ff8a8a;
     --error-wash: #2d1515;
     --r0: #1f2733;
-    --r1: #184f95;
-    --r2: #256abf;
-    --r3: #3987e5;
-    --r4: #86b6ef;
-    --r3-ink: #0d1117;
-    --r4-ink: #0d1117;
     --shadow-pop: 0 8px 28px rgb(0 0 0 / 0.5);
   }
 }
@@ -112,12 +100,6 @@
   --error: #ff8a8a;
   --error-wash: #2d1515;
   --r0: #1f2733;
-  --r1: #184f95;
-  --r2: #256abf;
-  --r3: #3987e5;
-  --r4: #86b6ef;
-  --r3-ink: #0d1117;
-  --r4-ink: #0d1117;
   --shadow-pop: 0 8px 28px rgb(0 0 0 / 0.5);
 }
 
@@ -235,47 +217,66 @@ button.primary:hover { background: var(--accent-fill-hover); border-color: var(-
 .comparison:first-child { border-radius: var(--radius) var(--radius) 0 0; }
 .comparison:last-child { border-radius: 0 0 var(--radius) var(--radius); }
 
-/* Route strip (signature) */
+/* Route strip (signature): the PB as a track, with save bars rising from it */
 .route { margin: var(--s5) 0 0; }
-.route-strip { display: flex; gap: 2px; height: 44px; }
+.route-plot { --bar-max: 44px; --track: 10px; display: flex; height: calc(var(--bar-max) + var(--track) + 20px); align-items: stretch; }
 .route-seg {
-  min-width: 3px;
+  position: relative;
+  flex-basis: 0;
+  min-width: 0;
   min-height: 0;
   height: 100%;
-  padding: 0 var(--s2);
+  padding: 0;
   border: none;
-  border-radius: 3px;
-  justify-content: flex-start;
-  overflow: hidden;
-  font-size: 0.75rem;
-  font-weight: 500;
-  background: var(--r0);
-  color: var(--ink-2);
-  transition: filter 140ms, transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 0;
+  background: transparent;
 }
-.route-seg:first-child { border-radius: 6px 3px 3px 6px; }
-.route-seg:last-child { border-radius: 3px 6px 6px 3px; }
-.route-seg span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.route-seg::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 1px;
+  height: var(--track);
+  background: var(--r0);
+  transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.route-seg:first-child::after { left: 0; border-radius: 4px 0 0 4px; }
+.route-seg:last-child::after { border-radius: 0 4px 4px 0; }
+.route-bar {
+  position: absolute;
+  left: 1px;
+  right: 0;
+  bottom: var(--track);
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.route-mark {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1;
+  color: var(--accent-ink);
+}
+.route-seg:hover { background: var(--hover); }
+.route-seg:hover::after { background: var(--line-strong); }
+.route-seg:hover .route-bar { background: var(--accent-ink); }
+.route-seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; z-index: 1; }
+.route-sections { display: flex; margin-top: var(--s1); font-size: 0.75rem; font-weight: 500; color: var(--ink-2); }
+.route-sections span { flex-basis: 0; min-width: 0; padding: 2px var(--s1) 0; border-left: 1px solid var(--line-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .route-axis { display: flex; justify-content: space-between; margin-top: var(--s1); font-family: var(--mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--ink-3); }
-.route-seg:hover { filter: brightness(0.94); transform: translateY(-2px); background-color: var(--r0); }
-.route-seg.l1 { background: var(--r1); color: var(--ink); }
-.route-seg.l2 { background: var(--r2); color: var(--ink); }
-.route-seg.l3 { background: var(--r3); color: var(--r3-ink); }
-.route-seg.l4 { background: var(--r4); color: var(--r4-ink); }
-.route-seg.l1:hover { background: var(--r1); }
-.route-seg.l2:hover { background: var(--r2); }
-.route-seg.l3:hover { background: var(--r3); }
-.route-seg.l4:hover { background: var(--r4); }
-.route-caption { display: flex; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; margin-top: var(--s2); font-size: 0.8125rem; color: var(--ink-3); }
-.route-scale { display: inline-flex; align-items: center; gap: 2px; }
-.route-scale i { width: 14px; height: 10px; border-radius: 2px; }
-.route-scale .l0 { background: var(--r0); }
-.route-scale .l1 { background: var(--r1); }
-.route-scale .l2 { background: var(--r2); }
-.route-scale .l3 { background: var(--r3); }
-.route-scale .l4 { background: var(--r4); }
-.route-scale > span:first-child { margin-right: var(--s1); }
-.route-scale > span:last-child { margin-left: var(--s1); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.route-caption { margin-top: var(--s2); font-size: 0.8125rem; color: var(--ink-3); }
+.route-caption p { margin: 0; }
+.route-top { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin: var(--s2) 0 0; padding: 0; list-style: none; }
+.route-top button { min-height: 0; padding: 2px var(--s1); margin-left: calc(-1 * var(--s1)); border: none; border-radius: 4px; background: none; gap: var(--s2); font-size: 0.8125rem; font-weight: 500; color: var(--ink); }
+.route-top button:hover { background: var(--hover); }
+.route-top b { font-family: var(--mono); color: var(--accent-ink); }
+.route-top-section { color: var(--ink-3); }
+.route-top-save { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--accent-ink); }
 
 /* Content blocks: separated by space and a rule, not nested cards */
 .block { margin-top: var(--s7); }
@@ -415,8 +416,8 @@ table.rules th { text-align: left; }
   .comparison { padding: var(--s3) var(--s4); grid-template-columns: 1fr auto; }
   .comparison-delta { grid-row: 2; grid-column: 2; margin-top: -6px; }
   .comparison.lead .comparison-time { font-size: 1.6rem; }
-  .route-strip { height: 32px; }
-  .route-seg span { display: none; }
+  .route-plot { --bar-max: 36px; --track: 8px; }
+  .route-sections [data-narrow] { color: transparent; }
   .advice-row { grid-template-columns: 20px 1fr auto; gap: var(--s3); }
   .infotip-panel, th .infotip-panel { position: fixed; top: auto; left: var(--s4); right: var(--s4); width: auto; max-width: none; margin-top: var(--s6); }
   .chart { padding: var(--s3) var(--s4) var(--s4); }

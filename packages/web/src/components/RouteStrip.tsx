@@ -1,64 +1,120 @@
 import { formatTime, type SegmentStats } from "@speedrunner/core";
 import { formatSave } from "../format";
 
+const MARKED = 3;
+
 /**
- * The PB drawn as its route: one block per segment, as wide as the segment took.
- * Blocks darken with how much a good attempt would save there, so the places to
- * practise stand out along the run itself.
+ * The PB drawn as its route: one column per segment, as wide as the segment took, on a
+ * track that runs from 0:00 to the PB. A bar rises from the track where a good attempt
+ * would save time, as tall as the save, so the places to practise stand out however many
+ * splits the run has. The biggest saves are numbered and listed under the strip.
  */
 export function RouteStrip({ segments, onSelect }: { segments: SegmentStats[]; onSelect: (index: number) => void }) {
   const total = segments.reduce((t, s) => t + (s.pbTime ?? 0), 0);
   if (total <= 0) return null;
   const maxSave = Math.max(0, ...segments.map((s) => s.realisticTimeSave ?? 0));
+  const top = segments
+    .filter((s) => (s.realisticTimeSave ?? 0) > 0)
+    .sort((x, y) => y.realisticTimeSave! - x.realisticTimeSave!)
+    .slice(0, MARKED);
+  const rank = new Map(top.map((s, i) => [s.index, i + 1]));
+  const sections = routeSections(segments);
+  const sectionOf = (i: number) => sections?.filter((sec) => sec.start <= i).at(-1)?.name;
 
   return (
     <figure className="route">
-      <div className="route-strip">
+      <div className="route-plot">
         {segments.map((s) => {
           const save = s.realisticTimeSave ?? 0;
-          const level = saveLevel(save, maxSave);
-          const width = ((s.pbTime ?? 0) / total) * 100;
+          const r = rank.get(s.index);
+          const name = displayName(s.name);
           return (
             <button
               key={s.index}
-              className={`route-seg l${level}`}
-              style={{ flexGrow: width, flexBasis: 0 }}
+              className="route-seg"
+              style={{ flexGrow: s.pbTime ?? 0 }}
               onClick={() => onSelect(s.index)}
-              aria-label={`${s.name}: ${formatTime(s.pbTime)} in PB, good-day save ${formatSave(save)}`}
-              title={`${s.name}\n${formatTime(s.pbTime)} in PB · good-day save ${formatSave(save)}`}
+              aria-label={`${name}: ${formatTime(s.pbTime)} in PB, good-day save ${formatSave(save)}`}
+              title={`${name}\n${formatTime(s.pbTime)} in PB · good-day save ${formatSave(save)}`}
             >
-              {width > 7 && <span>{s.name}</span>}
+              {save > 0 && (
+                <i className="route-bar" style={{ height: `max(2px, calc(${(save / maxSave).toFixed(4)} * var(--bar-max)))` }}>
+                  {r && <b className="route-mark">{r}</b>}
+                </i>
+              )}
             </button>
           );
         })}
       </div>
+      {sections && (
+        <div className="route-sections" aria-hidden>
+          {sections.map((sec) => (
+            <span key={sec.start} style={{ flexGrow: sec.time }} data-narrow={sec.time / total < 0.12 || undefined}>
+              {sec.time / total > 0.05 && sec.name}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="route-axis" aria-hidden>
         <span>0:00</span>
         <span>PB {formatTime(total)}</span>
       </div>
       <figcaption className="route-caption">
-        <span>
-          Your PB from start to finish. Each block is one segment, and its width is the time it took. Darker blue
-          means a good attempt would save more there.
-        </span>
-        {maxSave > 0 && (
-          <span className="route-scale" aria-hidden>
-            <span>No save</span>
-            <i className="l0" />
-            <i className="l1" />
-            <i className="l2" />
-            <i className="l3" />
-            <i className="l4" />
-            <span>{formatSave(maxSave)}</span>
-          </span>
+        <p>
+          Your PB from start to finish, each segment as wide as it took. Bars rise where a good attempt would save
+          time{maxSave > 0 ? `, the tallest ${formatSave(maxSave)}` : ""}.
+        </p>
+        {top.length > 0 && (
+          <ol className="route-top" aria-label="Biggest good-day saves">
+            {top.map((s, i) => (
+              <li key={s.index}>
+                <button onClick={() => onSelect(s.index)}>
+                  <b>{i + 1}</b>
+                  <span>
+                    {sectionOf(s.index) && sectionOf(s.index) !== displayName(s.name) && (
+                      <span className="route-top-section">{sectionOf(s.index)} · </span>
+                    )}
+                    {displayName(s.name)}
+                  </span>
+                  <span className="route-top-save">{formatSave(s.realisticTimeSave)}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
         )}
       </figcaption>
     </figure>
   );
 }
 
-/** Steps 1–4 split the range up to the biggest save into quarters; 0 is no save at all. */
-export function saveLevel(save: number, maxSave: number): number {
-  if (save <= 0 || maxSave <= 0) return 0;
-  return Math.min(4, 1 + Math.floor((save / maxSave) * 4));
+/** LiveSplit subsplits: "-Name" is a split inside a section and "{Section}Name" closes it. */
+export function displayName(name: string): string {
+  return name.replace(/^-/, "").replace(/^\{[^}]*\}\s*/, "") || name;
+}
+
+interface Section {
+  name: string;
+  start: number;
+  time: number;
+}
+
+/** Groups subsplits into their sections, or returns null when the run doesn't use subsplits. */
+export function routeSections(segments: SegmentStats[]): Section[] | null {
+  if (!segments.some((s) => /^\{[^}]*\}/.test(s.name))) return null;
+  const out: Section[] = [];
+  let open: Section | null = null;
+  for (const s of segments) {
+    const t = s.pbTime ?? 0;
+    const closes = s.name.match(/^\{([^}]*)\}/);
+    if (!open) open = { name: "", start: s.index, time: 0 };
+    open.time += t;
+    if (closes) open.name = closes[1].trim();
+    else if (!s.name.startsWith("-")) open.name = s.name;
+    if (closes || !s.name.startsWith("-")) {
+      out.push(open);
+      open = null;
+    }
+  }
+  if (open) out.push(open);
+  return out;
 }
