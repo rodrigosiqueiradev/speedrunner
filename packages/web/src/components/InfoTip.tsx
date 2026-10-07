@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { MetricDoc } from "../explain";
+import { InfoIcon } from "./Icons";
 
 /** A small "?" button that explains a metric and links to its full explanation. */
 export function InfoTip({ doc }: { doc: MetricDoc }) {
@@ -30,7 +31,7 @@ export function InfoTip({ doc }: { doc: MetricDoc }) {
         aria-controls={id}
         onClick={() => setOpen((o) => !o)}
       >
-        ?
+        <InfoIcon />
       </button>
       {open && (
         <span className="infotip-panel" id={id} role="note">

@@ -1,18 +1,25 @@
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { UploadIcon } from "./Icons";
 
 interface Props {
   onLoad: (fileName: string, xml: string) => void;
   onError: (message: string) => void;
-  fileName?: string;
+  /** Render only the hidden input; the header supplies the button. */
+  compact?: boolean;
 }
 
-export function FilePicker({ onLoad, onError, fileName }: Props) {
+export interface FilePickerHandle {
+  open: () => void;
+}
+
+export const FilePicker = forwardRef<FilePickerHandle, Props>(function FilePicker({ onLoad, onError, compact }, ref) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  useImperativeHandle(ref, () => ({ open: () => input.current?.click() }));
 
   const readFile = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".lss")) {
-      onError(`"${file.name}" isn't a LiveSplit split file (.lss).`);
+      onError(`"${file.name}" isn't a LiveSplit split file. Choose the .lss file you saved from LiveSplit.`);
       return;
     }
     onLoad(file.name, await file.text());
@@ -20,22 +27,8 @@ export function FilePicker({ onLoad, onError, fileName }: Props) {
 
   const loadSample = async () => {
     const res = await fetch(`${import.meta.env.BASE_URL}sample.lss`);
-    if (!res.ok) return onError("Couldn't load the sample file.");
-    onLoad("Sample: Dishonored Any%", await res.text());
-  };
-
-  const dropHandlers = {
-    onDragOver: (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragging(true);
-    },
-    onDragLeave: () => setDragging(false),
-    onDrop: (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragging(false);
-      const file = e.dataTransfer.files[0];
-      if (file) void readFile(file);
-    },
+    if (!res.ok) return onError("The sample run didn't load. Check your connection and try again.");
+    onLoad("Sample run: Dishonored Any%", await res.text());
   };
 
   const fileInput = (
@@ -53,31 +46,35 @@ export function FilePicker({ onLoad, onError, fileName }: Props) {
     />
   );
 
-  if (fileName) {
-    return (
-      <div className={`filebar${dragging ? " dragging" : ""}`} {...dropHandlers}>
-        <span className="filebar-name" title={fileName}>
-          {fileName}
-        </span>
-        <button onClick={() => input.current?.click()}>Open another file</button>
-        {fileInput}
-      </div>
-    );
-  }
+  if (compact) return fileInput;
 
   return (
-    <div className={`dropzone${dragging ? " dragging" : ""}`} {...dropHandlers}>
+    <div
+      className={`dropzone${dragging ? " dragging" : ""}`}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file) void readFile(file);
+      }}
+    >
       <p className="dropzone-title">Drop your LiveSplit splits here</p>
       <p className="dropzone-hint">
-        In LiveSplit, right-click → Save Splits As… gives you an .lss file. It's read in your browser and never uploaded.
+        In LiveSplit, right-click and choose Save Splits As to get an .lss file. It's read in your browser and never
+        uploaded.
       </p>
       <div className="dropzone-actions">
         <button className="primary" onClick={() => input.current?.click()}>
-          Choose .lss file
+          <UploadIcon /> Choose .lss file
         </button>
         <button onClick={loadSample}>Try a sample run</button>
       </div>
       {fileInput}
     </div>
   );
-}
+});

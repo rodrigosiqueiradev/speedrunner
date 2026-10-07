@@ -9,10 +9,14 @@ const LABELS: Record<AdviceKind, string> = {
   "run-killer": "Runs die here",
 };
 
-/** Groups advice by segment so each segment appears once, ranked by its best estimate. */
-export function AdviceList({ advice }: { advice: Advice[] }) {
+/** A ranked list: one row per segment, ordered by the most time any of its advice is worth. */
+export function AdviceList({ advice, onSelect }: { advice: Advice[]; onSelect: (index: number) => void }) {
   if (advice.length === 0) {
-    return <p className="muted">Nothing stands out yet. Do more attempts and check back.</p>;
+    return (
+      <p className="empty-note">
+        Nothing stands out yet. Advice appears once segments have at least a handful of attempts each.
+      </p>
+    );
   }
   const groups = new Map<number, Advice[]>();
   for (const a of advice) groups.set(a.segmentIndex, [...(groups.get(a.segmentIndex) ?? []), a]);
@@ -21,21 +25,37 @@ export function AdviceList({ advice }: { advice: Advice[] }) {
   return (
     <>
       <ol className="advice">
-        {ranked.map((items) => {
+        {ranked.map((items, rank) => {
           const top = Math.max(...items.map((i) => i.estimatedSave));
           return (
-            <li key={items[0].segmentIndex} className="advice-card">
-              <div className="advice-head">
-                <strong>{items[0].segmentName}</strong>
-                {top > 0 && <span className="advice-worth" title="Estimated time this advice is worth">worth ~{formatSave(top)}</span>}
+            <li key={items[0].segmentIndex} className="advice-row">
+              <span className="advice-rank" aria-hidden>
+                {rank + 1}
+              </span>
+              <div className="advice-main">
+                <div className="advice-head">
+                  <button className="link-button advice-name" onClick={() => onSelect(items[0].segmentIndex)}>
+                    {items[0].segmentName}
+                  </button>
+                  <span className="advice-tags">
+                    {items.map((a) => (
+                      <span key={a.kind} className={`tag ${a.kind}`}>
+                        {LABELS[a.kind]}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+                <ul className="advice-reasons">
+                  {items.map((a) => (
+                    <li key={a.kind}>{a.message}</li>
+                  ))}
+                </ul>
               </div>
-              <ul>
-                {items.map((a) => (
-                  <li key={a.kind}>
-                    <span className="tag">{LABELS[a.kind]}</span> {a.message}
-                  </li>
-                ))}
-              </ul>
+              {top > 0 && (
+                <span className="advice-worth" title="Estimated time this advice is worth">
+                  ~{formatSave(top)}
+                </span>
+              )}
             </li>
           );
         })}

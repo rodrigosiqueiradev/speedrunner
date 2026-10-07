@@ -54,6 +54,21 @@ describe("App", () => {
     expect(how.textContent).toMatch(/50 clean times/);
   });
 
+  it("highlights a segment picked on the route strip", async () => {
+    Element.prototype.scrollIntoView = () => {};
+    render(<App />);
+    fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
+    await screen.findByRole("heading", { name: /Dishonored/ });
+    fireEvent.click(screen.getByRole("button", { name: /^Troubled Waters: / }));
+    expect(document.getElementById("segment-7")?.className).toBe("selected");
+  });
+
+  it("explains what to do when a file isn't valid splits", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File(["<Layout/>"], "x.lss")] } });
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/saved from LiveSplit/));
+  });
+
   it("rejects files that aren't .lss", async () => {
     render(<App />);
     const file = new File(["hello"], "notes.txt");

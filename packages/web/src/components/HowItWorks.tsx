@@ -1,4 +1,5 @@
 import type { RunAnalysis } from "@speedrunner/core";
+import { ChevronIcon } from "./Icons";
 import { ADVICE_RULES, CLEAN_TIME, METRICS, type MetricDoc } from "../explain";
 
 const SUMMARY = ["personalBest", "realisticTarget", "sumOfBest", "attempts"];
@@ -21,7 +22,11 @@ export function HowItWorks({ analysis }: { analysis: RunAnalysis }) {
 
       <h4>Practice advice</h4>
       <details id="how-advice" className="how-entry">
-        <summary>When each kind of advice appears</summary>
+        <summary>
+          <ChevronIcon />
+          <span className="how-label">Advice rules</span>
+          <span className="how-short">When each kind of advice appears and how it's ranked.</span>
+        </summary>
         <div className="how-body">
           <p>
             Every segment is checked against four rules. Advice is ranked by the time it is estimated to be worth,
@@ -58,6 +63,7 @@ function Entry({ doc, analysis }: { doc: MetricDoc; analysis: RunAnalysis }) {
   return (
     <details id={`how-${doc.id}`} className="how-entry">
       <summary>
+        <ChevronIcon />
         <span className="how-label">{doc.label}</span>
         <span className="how-short">{doc.short}</span>
       </summary>

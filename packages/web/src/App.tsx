@@ -1,9 +1,11 @@
 import { analyzeRun, parseLss, type Run, type TimingMethod } from "@speedrunner/core";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AdviceList } from "./components/AdviceList";
-import { FilePicker } from "./components/FilePicker";
+import { FilePicker, type FilePickerHandle } from "./components/FilePicker";
 import { HowItWorks } from "./components/HowItWorks";
+import { UploadIcon } from "./components/Icons";
 import { revealExplanation } from "./components/InfoTip";
+import { RouteStrip } from "./components/RouteStrip";
 import { SavingsChart } from "./components/SavingsChart";
 import { SegmentTable } from "./components/SegmentTable";
 import { Summary } from "./components/Summary";
@@ -17,111 +19,147 @@ export function App() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [timing, setTiming] = useState<TimingMethod | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const picker = useRef<FilePickerHandle>(null);
 
   const result = useMemo(() => {
     if (!loaded) return null;
     try {
       const run = parseLss(loaded.xml, timing ? { timingMethod: timing } : {});
       return { run, analysis: analyzeRun(run), hasGameTime: hasGameTime(loaded.xml) };
-    } catch (e) {
-      return { error: e instanceof Error ? e.message : String(e) };
+    } catch {
+      return { error: true as const };
     }
   }, [loaded, timing]);
 
   const load = (fileName: string, xml: string) => {
     setError(null);
     setTiming(null);
+    setSelected(null);
     setLoaded({ fileName, xml });
   };
 
+  const selectSegment = (index: number) => {
+    setSelected(index);
+    document.getElementById(`segment-${index}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   const ok = result && "analysis" in result && result.analysis ? result : null;
+  const a = ok?.analysis;
 
   return (
-    <div className="app">
-      <header className="header">
-        <div>
-          <h1>Speedrunner</h1>
-          {!ok && <p className="tagline">See where your run loses time and how fast you could realistically be.</p>}
+    <>
+      <header className="shell">
+        <div className="shell-inner">
+          <span className="brand">Speedrunner</span>
+          {ok && (
+            <nav className="shell-nav" aria-label="Page">
+              <a
+                href="#how-it-works"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                How it's calculated
+              </a>
+              <button className="shell-button" onClick={() => picker.current?.open()}>
+                <UploadIcon /> Open file
+              </button>
+            </nav>
+          )}
         </div>
-        {ok && (
-          <a
-            className="header-link"
-            href="#how-it-works"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            How it's calculated
-          </a>
-        )}
       </header>
 
-      <FilePicker onLoad={load} onError={setError} fileName={loaded?.fileName} />
-
-      {error && <p className="error" role="alert">{error}</p>}
-      {result && "error" in result && (
-        <p className="error" role="alert">
-          Couldn't read that file: {result.error}
-        </p>
-      )}
-
-      {ok && (
-        <main className="results">
-          <div className="run-title">
-            <h2>
-              {ok.analysis.game || "Unknown game"} <span className="muted">· {ok.analysis.category}</span>
-            </h2>
-            {ok.hasGameTime && <TimingToggle value={ok.run.timingMethod} onChange={setTiming} />}
-          </div>
-
-          <Summary analysis={ok.analysis} />
-
-          <section className="card">
-            <div className="card-head">
-              <h3>What to practise first</h3>
-              <p className="section-note">Segments ranked by how much time the advice is worth.</p>
-            </div>
-            <AdviceList advice={ok.analysis.advice} />
+      <div className="app">
+        {!ok && (
+          <section className="landing" aria-labelledby="landing-title">
+            <h1 id="landing-title">Find where your run loses time</h1>
+            <p className="lede">
+              Load your LiveSplit splits to see a realistic target time, which segments to practise first, and how
+              every number is worked out.
+            </p>
           </section>
+        )}
 
-          <section className="card">
-            <div className="card-head">
-              <h3>Where the time is</h3>
-              <p className="section-note">
-                How much each segment could give back against your PB. The strong part is what a good attempt would
-                save; the full bar goes down to your gold.
-              </p>
+        <FilePicker ref={picker} onLoad={load} onError={setError} compact={!!ok} />
+
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+        {result && "error" in result && (
+          <p className="error" role="alert">
+            We couldn't read that file as LiveSplit splits. Make sure it's an .lss file saved from LiveSplit, not a
+            layout (.lsl) or a renamed file.
+          </p>
+        )}
+
+        {ok && a && (
+          <main className="results">
+            <div className="run-head">
+              <div>
+                <h1 className="run-title">
+                  {a.game || "Unknown game"} <span>{a.category}</span>
+                </h1>
+                <p className="run-meta">
+                  {loaded?.fileName} · {a.attemptCount.toLocaleString()} attempts ·{" "}
+                  {a.finishedAttempts.toLocaleString()} finished
+                </p>
+              </div>
+              {ok.hasGameTime && <TimingToggle value={ok.run.timingMethod} onChange={setTiming} />}
             </div>
-            <SavingsChart segments={ok.analysis.segments} />
-          </section>
 
-          <section className="card">
-            <div className="card-head">
-              <h3>All segments</h3>
-              <p className="section-note">
-                Tap <span className="inline-q">?</span> on any column to see how it's worked out. Stats use only{" "}
-                <a
-                  href="#how-clean-time"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    revealExplanation("clean-time");
-                  }}
-                >
-                  clean segment times
-                </a>
-                .
-              </p>
-            </div>
-            <SegmentTable segments={ok.analysis.segments} />
-          </section>
+            <Summary analysis={a} />
+            <RouteStrip segments={a.segments} onSelect={selectSegment} />
 
-          <HowItWorks analysis={ok.analysis} />
-        </main>
-      )}
+            <section className="block" aria-labelledby="practise-title">
+              <div className="block-head">
+                <h2 id="practise-title">What to practise first</h2>
+                <p className="section-note">Ranked by the time each segment's advice is estimated to be worth.</p>
+              </div>
+              <AdviceList advice={a.advice} onSelect={selectSegment} />
+            </section>
 
-      <footer className="footer muted">Your splits never leave your browser.</footer>
-    </div>
+            <section className="block" aria-labelledby="time-title">
+              <div className="block-head">
+                <h2 id="time-title">Where the time is</h2>
+                <p className="section-note">
+                  How much each segment could give back against your PB. The blue part is what a good attempt would
+                  save; the bar continues down to your gold.
+                </p>
+              </div>
+              <SavingsChart segments={a.segments} />
+            </section>
+
+            <section className="block" aria-labelledby="segments-title">
+              <div className="block-head">
+                <h2 id="segments-title">All segments</h2>
+                <p className="section-note">
+                  Use the info buttons on each column to see how it's worked out. Stats use only{" "}
+                  <a
+                    href="#how-clean-time"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      revealExplanation("clean-time");
+                    }}
+                  >
+                    clean segment times
+                  </a>
+                  .
+                </p>
+              </div>
+              <SegmentTable segments={a.segments} selected={selected} />
+            </section>
+
+            <HowItWorks analysis={a} />
+          </main>
+        )}
+
+        <footer className="footer">Your splits never leave your browser.</footer>
+      </div>
+    </>
   );
 }
 

@@ -3,72 +3,55 @@ import { METRICS, type MetricDoc } from "../explain";
 import { formatSave } from "../format";
 import { InfoTip } from "./InfoTip";
 
+/**
+ * The three comparisons a runner cares about, laid out like a splits panel:
+ * name on the left, time on the right, delta against the PB beside it.
+ */
 export function Summary({ analysis: a }: { analysis: RunAnalysis }) {
-  const realisticSave =
-    a.personalBest != null && a.realisticTarget != null ? a.personalBest - a.realisticTarget : null;
+  const pb = a.personalBest;
+  const delta = (t: number | null) => (pb != null && t != null && t !== pb ? `−${formatSave(pb - t)}` : null);
   return (
-    <div className="summary">
-      <div className="hero">
-        <div className="hero-label">
-          Realistic target <InfoTip doc={METRICS.realisticTarget} />
-        </div>
-        <div className="hero-value">{formatTime(a.realisticTarget)}</div>
-        <div className="hero-note">
-          {realisticSave != null
-            ? realisticSave > 0
-              ? `${formatSave(realisticSave)} faster than your PB if each segment goes like a good attempt`
-              : "Your PB already matches your good-day pace everywhere"
-            : `Needs more attempts per segment`}
-        </div>
-        <TimeScale analysis={a} />
-      </div>
-      <div className="tiles">
-        <Tile doc={METRICS.personalBest} value={formatTime(a.personalBest)} />
-        <Tile
-          doc={METRICS.sumOfBest}
-          value={formatTime(a.sumOfBest)}
-          note={a.possibleTimeSave != null ? `${formatSave(a.possibleTimeSave)} under PB` : undefined}
-        />
-        <Tile
-          doc={METRICS.attempts}
-          value={a.attemptCount.toLocaleString()}
-          note={`${a.finishedAttempts.toLocaleString()} finished`}
-        />
-      </div>
+    <div className="comparisons" role="table" aria-label="Run comparisons">
+      <Row doc={METRICS.personalBest} time={a.personalBest} note="Where you are now" />
+      <Row
+        doc={METRICS.realisticTarget}
+        time={a.realisticTarget}
+        delta={delta(a.realisticTarget)}
+        note={
+          a.realisticTarget == null
+            ? "Needs more attempts per segment"
+            : "Every segment at your good-day pace"
+        }
+        lead
+      />
+      <Row doc={METRICS.sumOfBest} time={a.sumOfBest} delta={delta(a.sumOfBest)} note="Every segment at its gold" />
     </div>
   );
 }
 
-function Tile({ doc, value, note }: { doc: MetricDoc; value: string; note?: string }) {
+function Row({
+  doc,
+  time,
+  delta,
+  note,
+  lead,
+}: {
+  doc: MetricDoc;
+  time: number | null;
+  delta?: string | null;
+  note: string;
+  lead?: boolean;
+}) {
   return (
-    <div className="tile">
-      <div className="tile-label">
-        {doc.label} <InfoTip doc={doc} />
+    <div className={`comparison${lead ? " lead" : ""}`} role="row">
+      <div className="comparison-name" role="rowheader">
+        <span className="comparison-label">
+          {doc.label} <InfoTip doc={doc} />
+        </span>
+        <span className="comparison-note">{note}</span>
       </div>
-      <div className="tile-value">{value}</div>
-      {note && <div className="tile-note">{note}</div>}
-    </div>
-  );
-}
-
-/** Places sum of best, realistic target and PB on one line so the gaps are visible. */
-function TimeScale({ analysis: a }: { analysis: RunAnalysis }) {
-  if (a.personalBest == null || a.sumOfBest == null || a.realisticTarget == null) return null;
-  const span = a.personalBest - a.sumOfBest;
-  if (span <= 0) return null;
-  const at = (t: number) => `${((t - a.sumOfBest!) / span) * 100}%`;
-  return (
-    <div className="scale" aria-hidden>
-      <div className="scale-track">
-        <span className="scale-fill" style={{ left: at(a.realisticTarget), right: 0 }} />
-        <span className="scale-mark" style={{ left: at(a.sumOfBest) }} />
-        <span className="scale-mark target" style={{ left: at(a.realisticTarget) }} />
-        <span className="scale-mark" style={{ left: at(a.personalBest) }} />
-      </div>
-      <div className="scale-labels">
-        <span>Sum of best {formatTime(a.sumOfBest)}</span>
-        <span>PB {formatTime(a.personalBest)}</span>
-      </div>
+      <div className="comparison-delta" role="cell">{delta ?? ""}</div>
+      <div className="comparison-time" role="cell">{formatTime(time)}</div>
     </div>
   );
 }

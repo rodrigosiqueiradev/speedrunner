@@ -28,7 +28,7 @@ export function SavingsChart({ segments }: { segments: SegmentStats[] }) {
             <i className="swatch realistic" /> Good-day save <InfoTip doc={METRICS.realisticTimeSave} />
           </span>
           <span>
-            <i className="swatch gold" /> Save to gold <InfoTip doc={METRICS.timeSaveVsGold} />
+            <i className="swatch gold" /> Down to gold <InfoTip doc={METRICS.timeSaveVsGold} />
           </span>
         </div>
         <div className="toggle small" role="group" aria-label="Order">

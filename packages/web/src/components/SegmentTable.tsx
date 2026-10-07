@@ -15,7 +15,7 @@ const COLUMNS: Array<{ doc: MetricDoc; cell: (s: SegmentStats) => string }> = [
   { doc: METRICS.resetRate, cell: (s) => pct(s.resetRate) },
 ];
 
-export function SegmentTable({ segments }: { segments: SegmentStats[] }) {
+export function SegmentTable({ segments, selected }: { segments: SegmentStats[]; selected: number | null }) {
   return (
     <div className="table-wrap">
       <table className="segments">
@@ -33,7 +33,7 @@ export function SegmentTable({ segments }: { segments: SegmentStats[] }) {
         </thead>
         <tbody>
           {segments.map((s) => (
-            <tr key={s.index}>
+            <tr key={s.index} id={`segment-${s.index}`} className={selected === s.index ? "selected" : undefined}>
               <th scope="row">
                 {s.name}
                 {s.suspiciousGold && (
