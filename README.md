@@ -7,6 +7,18 @@ and (later) how their runs score against other runners across games and categori
 
 - `packages/core`: parses LiveSplit `.lss` split files and analyses them. Shared by the web app
   and any future desktop app. Runs in Node and the browser.
+- `packages/web`: React web app. Upload an `.lss` file (or try the sample) to see your PB, realistic
+  target, where time is lost, and what to practise. Files are analysed in the browser and never uploaded.
+
+## Running the web app
+
+```sh
+npm install
+npm run dev --workspace @speedrunner/web
+```
+
+The sample run (`packages/web/public/sample.lss`) comes from the MIT-licensed
+[livesplit-core](https://github.com/LiveSplit/livesplit-core) test suite.
 
 ## Using the analyzer
 
