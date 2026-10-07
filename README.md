@@ -26,8 +26,14 @@ the app makes no network requests.
 
 Every push to `main` and every pull request builds installers for Linux (`.deb`, `.AppImage`),
 Windows (`.msi`, `.exe`) and macOS (`.dmg`). Download them from the run's artifacts on the
-**Desktop app** workflow in GitHub Actions. The builds aren't code-signed yet, so Windows SmartScreen
-and macOS Gatekeeper will warn on first launch (on macOS, right-click the app and choose Open).
+**Desktop app** workflow in GitHub Actions. The builds aren't signed with a
+developer certificate yet, so both systems warn on first launch:
+
+- **Windows:** on the SmartScreen prompt, choose **More info**, then **Run anyway**.
+- **macOS:** open the `.dmg` and drag Speedrunner to Applications. The first time, right-click the app
+  and choose **Open**, or allow it under System Settings › Privacy & Security › **Open Anyway**. If
+  macOS says the app "is damaged and can't be opened", that's the download quarantine flag on an
+  unsigned app; clear it with `xattr -cr /Applications/Speedrunner.app` and open it again.
 
 To build or run it yourself you need [Rust](https://rustup.rs) and the
 [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS:
