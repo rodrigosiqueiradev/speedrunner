@@ -70,10 +70,18 @@ export interface RunAnalysis {
   advice: Advice[];
 }
 
+/** Default analysis settings. Exported so the UI and docs can quote the real numbers. */
+export const ANALYSIS_DEFAULTS = {
+  recentWindow: 50,
+  minSamples: 5,
+  outlierFloor: 0.6,
+  goodDayPercentile: 0.25,
+} as const;
+
 export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis {
-  const recentWindow = options.recentWindow ?? 50;
-  const minSamples = options.minSamples ?? 5;
-  const outlierFloor = options.outlierFloor ?? 0.6;
+  const recentWindow = options.recentWindow ?? ANALYSIS_DEFAULTS.recentWindow;
+  const minSamples = options.minSamples ?? ANALYSIS_DEFAULTS.minSamples;
+  const outlierFloor = options.outlierFloor ?? ANALYSIS_DEFAULTS.outlierFloor;
   const { segments } = run;
   const realAttemptIds = run.attempts.map((a) => a.id).filter((id) => id > 0);
 
@@ -102,7 +110,7 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
     const gold = minOrNull(minOrNull(suspiciousGold ? null : segment.gold, historyGold), pbTime);
     const enough = recent.length >= minSamples;
     const median = enough ? quantile(recent, 0.5) : null;
-    const p25 = enough ? quantile(recent, 0.25) : null;
+    const p25 = enough ? quantile(recent, ANALYSIS_DEFAULTS.goodDayPercentile) : null;
     const p75 = enough ? quantile(recent, 0.75) : null;
 
     const reachedIds = i === 0 ? realAttemptIds : realAttemptIds.filter((id) => segments[i - 1].history.has(id));

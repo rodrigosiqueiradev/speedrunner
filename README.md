@@ -35,6 +35,8 @@ const analysis = analyzeRun(parseLss(xmlText), { recentWindow: 50 });
 
 ## What the analysis reports
 
+For a full, plain-language explanation of every number, see [docs/how-it-works.md](docs/how-it-works.md).
+
 | Field | Meaning |
 | --- | --- |
 | `personalBest` | Final time of the PB. |

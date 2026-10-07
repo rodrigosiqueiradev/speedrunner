@@ -26,13 +26,32 @@ describe("App", () => {
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [file] } });
 
     await waitFor(() => expect(screen.getByRole("heading", { name: /Dishonored/ })).toBeTruthy());
-    expect(screen.getByText("Personal best")).toBeTruthy();
-    expect(screen.getByText("40:01.52")).toBeTruthy();
-    expect(screen.getAllByText("⚠ gold ignored", { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("40:01.52").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("gold ignored").length).toBeGreaterThan(0);
 
     // Switching to game time recomputes the PB.
     fireEvent.click(screen.getByRole("button", { name: "Game time" }));
-    await waitFor(() => expect(screen.getByText("37:37.97")).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText("37:37.97").length).toBeGreaterThan(0));
+  });
+
+  it("explains how each number is calculated", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
+    await screen.findByRole("heading", { name: /Dishonored/ });
+
+    // The ? next to a metric opens a short explanation.
+    fireEvent.click(screen.getByRole("button", { name: "How is Realistic target calculated?" }));
+    expect(screen.getByRole("note").textContent).toMatch(/good attempt/);
+
+    // Every column of the segment table has its own explanation.
+    for (const label of ["Gold", "Typical", "Save to gold", "Good-day save", "Variability", "Reset rate"]) {
+      expect(screen.getAllByRole("button", { name: `How is ${label} calculated?` }).length).toBeGreaterThan(0);
+    }
+
+    // The How it's calculated section works the formula through with the loaded run.
+    const how = screen.getByRole("region", { name: "How it's calculated" });
+    expect(how.textContent).toMatch(/40:01\.52 − .* = 39:50\.66/);
+    expect(how.textContent).toMatch(/50 clean times/);
   });
 
   it("rejects files that aren't .lss", async () => {

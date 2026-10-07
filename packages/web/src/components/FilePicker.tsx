@@ -24,48 +24,60 @@ export function FilePicker({ onLoad, onError, fileName }: Props) {
     onLoad("Sample: Dishonored Any%", await res.text());
   };
 
-  return (
-    <div
-      className={`dropzone${dragging ? " dragging" : ""}`}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        const file = e.dataTransfer.files[0];
+  const dropHandlers = {
+    onDragOver: (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragging(true);
+    },
+    onDragLeave: () => setDragging(false),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragging(false);
+      const file = e.dataTransfer.files[0];
+      if (file) void readFile(file);
+    },
+  };
+
+  const fileInput = (
+    <input
+      ref={input}
+      type="file"
+      accept=".lss"
+      hidden
+      data-testid="file-input"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
         if (file) void readFile(file);
+        e.target.value = "";
       }}
-    >
-      <p>
-        {fileName ? (
-          <>
-            Showing <strong>{fileName}</strong>. Drop another .lss file to switch.
-          </>
-        ) : (
-          "Drop your LiveSplit splits (.lss) here"
-        )}
+    />
+  );
+
+  if (fileName) {
+    return (
+      <div className={`filebar${dragging ? " dragging" : ""}`} {...dropHandlers}>
+        <span className="filebar-name" title={fileName}>
+          {fileName}
+        </span>
+        <button onClick={() => input.current?.click()}>Open another file</button>
+        {fileInput}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`dropzone${dragging ? " dragging" : ""}`} {...dropHandlers}>
+      <p className="dropzone-title">Drop your LiveSplit splits here</p>
+      <p className="dropzone-hint">
+        In LiveSplit, right-click → Save Splits As… gives you an .lss file. It's read in your browser and never uploaded.
       </p>
       <div className="dropzone-actions">
         <button className="primary" onClick={() => input.current?.click()}>
-          Choose file
+          Choose .lss file
         </button>
-        <button onClick={loadSample}>Try a sample</button>
+        <button onClick={loadSample}>Try a sample run</button>
       </div>
-      <input
-        ref={input}
-        type="file"
-        accept=".lss"
-        hidden
-        data-testid="file-input"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void readFile(file);
-          e.target.value = "";
-        }}
-      />
+      {fileInput}
     </div>
   );
 }

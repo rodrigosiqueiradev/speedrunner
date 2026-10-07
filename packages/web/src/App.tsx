@@ -2,6 +2,8 @@ import { analyzeRun, parseLss, type Run, type TimingMethod } from "@speedrunner/
 import { useMemo, useState } from "react";
 import { AdviceList } from "./components/AdviceList";
 import { FilePicker } from "./components/FilePicker";
+import { HowItWorks } from "./components/HowItWorks";
+import { revealExplanation } from "./components/InfoTip";
 import { SavingsChart } from "./components/SavingsChart";
 import { SegmentTable } from "./components/SegmentTable";
 import { Summary } from "./components/Summary";
@@ -32,11 +34,27 @@ export function App() {
     setLoaded({ fileName, xml });
   };
 
+  const ok = result && "analysis" in result && result.analysis ? result : null;
+
   return (
     <div className="app">
       <header className="header">
-        <h1>Speedrunner</h1>
-        <p className="tagline">Find where your run loses time and how fast you could realistically be.</p>
+        <div>
+          <h1>Speedrunner</h1>
+          {!ok && <p className="tagline">See where your run loses time and how fast you could realistically be.</p>}
+        </div>
+        {ok && (
+          <a
+            className="header-link"
+            href="#how-it-works"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            How it's calculated
+          </a>
+        )}
       </header>
 
       <FilePicker onLoad={load} onError={setError} fileName={loaded?.fileName} />
@@ -48,33 +66,57 @@ export function App() {
         </p>
       )}
 
-      {result && "analysis" in result && result.analysis && (
+      {ok && (
         <main className="results">
           <div className="run-title">
             <h2>
-              {result.analysis.game || "Unknown game"} <span className="muted">· {result.analysis.category}</span>
+              {ok.analysis.game || "Unknown game"} <span className="muted">· {ok.analysis.category}</span>
             </h2>
-            {result.hasGameTime && (
-              <TimingToggle value={result.run.timingMethod} onChange={setTiming} />
-            )}
+            {ok.hasGameTime && <TimingToggle value={ok.run.timingMethod} onChange={setTiming} />}
           </div>
-          <Summary analysis={result.analysis} />
-          <section>
-            <h3>Where the time is</h3>
-            <p className="section-note">
-              Time each segment could give back compared with your PB. "Good-day save" is what a good attempt
-              (your 25th percentile of recent attempts) would save; the full bar goes all the way down to your gold.
-            </p>
-            <SavingsChart segments={result.analysis.segments} />
+
+          <Summary analysis={ok.analysis} />
+
+          <section className="card">
+            <div className="card-head">
+              <h3>What to practise first</h3>
+              <p className="section-note">Segments ranked by how much time the advice is worth.</p>
+            </div>
+            <AdviceList advice={ok.analysis.advice} />
           </section>
-          <section>
-            <h3>What to practise</h3>
-            <AdviceList advice={result.analysis.advice} />
+
+          <section className="card">
+            <div className="card-head">
+              <h3>Where the time is</h3>
+              <p className="section-note">
+                How much each segment could give back against your PB. The strong part is what a good attempt would
+                save; the full bar goes down to your gold.
+              </p>
+            </div>
+            <SavingsChart segments={ok.analysis.segments} />
           </section>
-          <section>
-            <h3>All segments</h3>
-            <SegmentTable segments={result.analysis.segments} />
+
+          <section className="card">
+            <div className="card-head">
+              <h3>All segments</h3>
+              <p className="section-note">
+                Tap <span className="inline-q">?</span> on any column to see how it's worked out. Stats use only{" "}
+                <a
+                  href="#how-clean-time"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    revealExplanation("clean-time");
+                  }}
+                >
+                  clean segment times
+                </a>
+                .
+              </p>
+            </div>
+            <SegmentTable segments={ok.analysis.segments} />
           </section>
+
+          <HowItWorks analysis={ok.analysis} />
         </main>
       )}
 
