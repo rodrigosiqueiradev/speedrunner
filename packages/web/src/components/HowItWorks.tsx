@@ -8,19 +8,19 @@ const SEGMENT = ["pbTime", "gold", "median", "timeSaveVsGold", "realisticTimeSav
 export function HowItWorks({ analysis }: { analysis: RunAnalysis }) {
   return (
     <section id="how-it-works" className="how" aria-labelledby="how-title">
-      <h3 id="how-title">How it's calculated</h3>
+      <h2 id="how-title">How it's calculated</h2>
       <p className="section-note">
         Everything is worked out from your split file in your browser. Examples use the run you loaded.
       </p>
 
-      <h4>Run totals</h4>
+      <h3>Run totals</h3>
       {SUMMARY.map((k) => <Entry key={k} doc={METRICS[k]} analysis={analysis} />)}
 
-      <h4>Per segment</h4>
+      <h3>Per segment</h3>
       <Entry doc={CLEAN_TIME} analysis={analysis} />
       {SEGMENT.map((k) => <Entry key={k} doc={METRICS[k]} analysis={analysis} />)}
 
-      <h4>Practice advice</h4>
+      <h3>Practice advice</h3>
       <details id="how-advice" className="how-entry">
         <summary>
           <ChevronIcon />

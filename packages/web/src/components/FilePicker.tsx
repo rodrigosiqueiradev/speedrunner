@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { UploadIcon } from "./Icons";
 
 interface Props {
@@ -30,6 +30,12 @@ export const FilePicker = forwardRef<FilePickerHandle, Props>(function FilePicke
     if (!res.ok) return onError("The sample run didn't load. Check your connection and try again.");
     onLoad("Sample run: Dishonored Any%", await res.text());
   };
+
+  // "?sample" in the URL opens the sample run directly, so the demo can be linked to.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("sample")) void loadSample();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fileInput = (
     <input

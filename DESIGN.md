@@ -5,6 +5,8 @@ colors:
   split-blue: "#2a78d6"
   split-blue-ink: "#1c5cab"
   split-blue-wash: "#e8f1fc"
+  split-blue-fill: "#256abf"
+  split-blue-fill-hover: "#1c5cab"
   on-split-blue: "#ffffff"
   gold-split: "#b8860b"
   gold-split-ink: "#7a5600"
@@ -20,7 +22,7 @@ colors:
   rule-line-strong: "#c9cfd8"
   ink: "#0d1420"
   ink-secondary: "#47505e"
-  ink-muted: "#6b7482"
+  ink-muted: "#5d6573"
   error-red: "#b42323"
   error-wash: "#fdecec"
   route-0: "#e7ebf0"
@@ -43,9 +45,19 @@ typography:
     letterSpacing: "-0.02em"
   title:
     fontFamily: "IBM Plex Sans, system-ui, sans-serif"
-    fontSize: "1.2rem"
+    fontSize: "1.25rem"
     fontWeight: 600
     letterSpacing: "-0.01em"
+  title-lead:
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: 600
+    letterSpacing: "-0.015em"
+  lede:
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
+    fontSize: "1.0625rem"
+    fontWeight: 400
+    lineHeight: 1.55
   body:
     fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "1rem"
@@ -59,6 +71,10 @@ typography:
   label:
     fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "0.8125rem"
+    fontWeight: 500
+  micro:
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
+    fontSize: "0.75rem"
     fontWeight: 500
   time-lead:
     fontFamily: "IBM Plex Mono, ui-monospace, monospace"
@@ -77,8 +93,10 @@ typography:
     fontWeight: 400
     fontFeature: "\"tnum\""
 rounded:
+  xxs: "2px"
   xs: "3px"
   sm: "4px"
+  row: "6px"
   md: "8px"
   lg: "10px"
   xl: "14px"
@@ -101,15 +119,15 @@ components:
   button-hover:
     backgroundColor: "{colors.hover-tint}"
   button-primary:
-    backgroundColor: "{colors.split-blue}"
+    backgroundColor: "{colors.split-blue-fill}"
     textColor: "{colors.on-split-blue}"
     rounded: "{rounded.md}"
     padding: "0 16px"
     height: "36px"
   button-primary-hover:
-    backgroundColor: "{colors.split-blue-ink}"
+    backgroundColor: "{colors.split-blue-fill-hover}"
   toggle-pressed:
-    backgroundColor: "{colors.split-blue}"
+    backgroundColor: "{colors.split-blue-fill}"
     textColor: "{colors.on-split-blue}"
   shell-button:
     textColor: "{colors.night-shell-ink}"
@@ -174,7 +192,7 @@ The density is moderate. Comfortable reading measures (56–78ch) sit alongside 
 A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Gold Split.
 
 ### Primary
-- **Split Blue** (`split-blue`): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, the focus ring, text selection and the strongest steps of the route strip. **Split Blue Ink** (`split-blue-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Wash** (`split-blue-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts.
+- **Split Blue** (`split-blue`): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, the focus ring, text selection and the strongest steps of the route strip. **Split Blue Ink** (`split-blue-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Fill** (`split-blue-fill`, hover `split-blue-fill-hover`) is the slightly deeper step used behind white text on filled controls (the primary button and the pressed toggle), because white on Split Blue only reaches 4.4:1. **Split Blue Wash** (`split-blue-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts.
 
 ### Secondary
 - **Gold Split** (`gold-split`): LiveSplit's gold, used only for gold segments (the gold portion of savings bars and its legend swatch). **Gold Split Ink** and **Gold Split Wash** pair as the small flag that marks gold-related notes in the segment table.
@@ -192,7 +210,7 @@ A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Go
 - **Error Red / Error Wash**: file-read errors only.
 
 ### Route ramp
-- **Route 0–4** (`route-0` … `route-4`): a five-step Split Blue ramp from near-surface to strong, used only by the route strip and its legend. Steps 3 and 4 take white labels and steps 0–2 take ink. In dark mode the ramp runs the other way in lightness (dark steps first, light strongest), so "more to gain" always reads as more contrast.
+- **Route 0–4** (`route-0` … `route-4`): a five-step Split Blue ramp from near-surface to strong, used only by the route strip and its legend. Labels use ink on steps 0–3 and white on step 4 in light mode; in dark mode steps 0–2 use light ink and steps 3–4 use dark ink, so every label clears 4.5:1. In dark mode the ramp runs the other way in lightness (dark steps first, light strongest), so "more to gain" always reads as more contrast.
 
 ### Named Rules
 **The Meaning-Only Colour Rule.** Blue means time a good attempt would save. Gold means a gold segment. No other hues appear, and neither is ever used decoratively.
@@ -209,10 +227,12 @@ A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Go
 ### Hierarchy
 - **Display** (600, clamp(1.9rem, 4vw, 2.6rem), 1.15): only the landing headline.
 - **Headline** (600, clamp(1.6rem, 3.2vw, 2.1rem), 1.2): the run title (the game, followed by the category in Ink Muted at 500).
-- **Title** (600, 1.2rem): section headings such as "What to practise first" and "Where the time is". "How it's calculated" steps up to 1.35rem.
+- **Title** (600, 1.25rem): section headings such as "What to practise first" and "Where the time is", and the dropzone title. "How it's calculated" steps up to **Title Lead** (1.5rem) because it closes the page as its own reading section. Its group headings (Run totals, Per segment, Practice advice) are h3s at body size and weight 600.
+- **Lede** (400, 1.0625rem): the landing introduction only.
 - **Body** (400, 16px, 1.55): base text.
 - **Note** (400, 0.9375rem): section notes, advice reasons and explanation bodies in Ink Secondary, capped at 70–78ch.
 - **Label** (500, 0.8125rem): table headers, captions and the route legend. Sentence case, never uppercase.
+- **Micro** (500, 0.75rem): tags, table flags and route strip labels.
 - **Time Lead / Time / Time Cell** (Plex Mono, tabular numerals): 2rem/600 for the lead comparison, 1.375rem/500 for the other comparisons, 0.875rem for table cells, bar values and save amounts.
 
 ### Named Rules
@@ -240,7 +260,7 @@ The system is flat. Depth comes from tone (ground, then surface, then sunk) and 
 
 ## Shapes
 
-Corners are gently rounded and stay small. Panels use 10px, buttons, popovers and callouts 8px, the dropzone 14px, row and summary hovers 6px, flags and focus rings 4px, and route segments 3px (6px at the outer ends of the strip). Tags are the only pill shape. Borders are 1px hairlines, except the dropzone's 1.5px dash. The lead comparison row and the selected table row are marked by a wash, and the selected row also gets a 3px Split Blue inset bar on its left.
+Corners are gently rounded and stay small. Panels use 10px, buttons, popovers and callouts 8px, the dropzone 14px, row and summary hovers 6px (`row`), flags and focus rings 4px, route segments 3px (6px at the outer ends of the strip) and legend swatches 2px (`xxs`). Tags are the only pill shape. Borders are 1px hairlines, except the dropzone's 1.5px dash. The lead comparison row and the selected table row are marked by a wash, and the selected row also gets a 3px Split Blue inset bar on its left.
 
 Icons are a single family of 16px stroke icons with a 1.5px stroke and round caps and joins, drawn in `currentColor`.
 
