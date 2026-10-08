@@ -7,7 +7,18 @@ on:
       - "packages/**"
       - "package-lock.json"
       - ".github/workflows/desktop.yml"
+  # Publishing a GitHub release builds the apps and attaches them to it.
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and attach the apps to (leave empty to only build)"
+        required: false
+permissions:
+  contents: write
+env:
+  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
 jobs:
   build:
     name: build (${{ matrix.name }})
@@ -30,6 +41,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG || github.ref }}
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -52,8 +65,8 @@ jobs:
         run: |
           mkdir out
           case "${{ matrix.name }}" in
-            linux) cp packages/desktop/src-tauri/target/release/bundle/appimage/*.AppImage out/ ;;
-            windows) cp packages/desktop/src-tauri/target/release/speedrunner.exe out/Speedrunner.exe ;;
+            linux) cp packages/desktop/src-tauri/target/release/bundle/appimage/*.AppImage out/Speedrunner-linux.AppImage ;;
+            windows) cp packages/desktop/src-tauri/target/release/speedrunner.exe out/Speedrunner-windows.exe ;;
             # ditto keeps the bundle's signature, symlinks and permissions intact.
             macos) ditto -c -k --keepParent packages/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Speedrunner.app out/Speedrunner-macos.zip ;;
           esac
@@ -62,3 +75,9 @@ jobs:
           name: speedrunner-${{ matrix.name }}
           path: out/*
           if-no-files-found: error
+      - name: Attach to the release
+        if: env.RELEASE_TAG != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" out/* --clobber --repo "$GITHUB_REPOSITORY"

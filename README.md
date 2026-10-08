@@ -24,14 +24,20 @@ npm run dev --workspace @speedrunner/web
 same page in a native window, with no backend: split files are still read and analysed locally, and
 the app makes no network requests.
 
-Every push to `main` and every pull request builds portable apps, with nothing to install. Download
-them from the run's artifacts on the **Desktop app** workflow in GitHub Actions:
+Every push to `main` and every pull request builds portable apps, with nothing to install, and
+publishing a GitHub release attaches them to that release. Download them from the
+[latest release](https://github.com/rodrigosiqueiradev/speedrunner/releases/latest), or from a run's
+artifacts on the **Desktop app** workflow in GitHub Actions:
 
-- **Windows:** `Speedrunner.exe`. Put it anywhere and run it. It uses the WebView2 runtime that ships
-  with Windows 10 and 11.
+- **Windows:** `Speedrunner-windows.exe`. Put it anywhere and run it. It uses the WebView2 runtime
+  that ships with Windows 10 and 11.
 - **macOS:** `Speedrunner-macos.zip` holds `Speedrunner.app`, which runs on Apple Silicon and Intel.
   Unzip it and run it from any folder.
-- **Linux:** `Speedrunner_<version>_amd64.AppImage`. Make it executable (`chmod +x`) and run it.
+- **Linux:** `Speedrunner-linux.AppImage`. Make it executable (`chmod +x`) and run it.
+
+To publish a version, create a release on GitHub with a new tag such as `v0.2.0`; the apps appear on
+it a few minutes later. To add the apps to an existing release, run the **Desktop app** workflow
+by hand from the Actions tab and enter the release's tag.
 
 The apps aren't signed with a developer certificate yet, so both Windows and macOS warn on first launch:
 
