@@ -33,7 +33,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "appimage",
+      "app"
+    ],
     "category": "Utility",
     "shortDescription": "Find where your run loses time",
     "longDescription": "Load your LiveSplit splits to see a realistic target time, which segments to practise first, and how every number is worked out. Your splits never leave your computer.",

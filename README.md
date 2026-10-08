@@ -24,16 +24,22 @@ npm run dev --workspace @speedrunner/web
 same page in a native window, with no backend: split files are still read and analysed locally, and
 the app makes no network requests.
 
-Every push to `main` and every pull request builds installers for Linux (`.deb`, `.AppImage`),
-Windows (`.msi`, `.exe`) and macOS (`.dmg`). Download them from the run's artifacts on the
-**Desktop app** workflow in GitHub Actions. The builds aren't signed with a
-developer certificate yet, so both systems warn on first launch:
+Every push to `main` and every pull request builds portable apps, with nothing to install. Download
+them from the run's artifacts on the **Desktop app** workflow in GitHub Actions:
+
+- **Windows:** `Speedrunner.exe`. Put it anywhere and run it. It uses the WebView2 runtime that ships
+  with Windows 10 and 11.
+- **macOS:** `Speedrunner-macos.zip` holds `Speedrunner.app`, which runs on Apple Silicon and Intel.
+  Unzip it and run it from any folder.
+- **Linux:** `Speedrunner_<version>_amd64.AppImage`. Make it executable (`chmod +x`) and run it.
+
+The apps aren't signed with a developer certificate yet, so both Windows and macOS warn on first launch:
 
 - **Windows:** on the SmartScreen prompt, choose **More info**, then **Run anyway**.
-- **macOS:** open the `.dmg` and drag Speedrunner to Applications. The first time, right-click the app
-  and choose **Open**, or allow it under System Settings › Privacy & Security › **Open Anyway**. If
-  macOS says the app "is damaged and can't be opened", that's the download quarantine flag on an
-  unsigned app; clear it with `xattr -cr /Applications/Speedrunner.app` and open it again.
+- **macOS:** the first time, right-click the app and choose **Open**, or allow it under System
+  Settings › Privacy & Security › **Open Anyway**. If macOS says the app "is damaged and can't be
+  opened", that's the download quarantine flag on an unsigned app; clear it with
+  `xattr -cr Speedrunner.app` and open it again.
 
 To build or run it yourself you need [Rust](https://rustup.rs) and the
 [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS:
@@ -41,7 +47,7 @@ To build or run it yourself you need [Rust](https://rustup.rs) and the
 ```sh
 npm install
 npm run dev -w packages/desktop   # desktop window with live reload
-npm run app                       # installers in packages/desktop/src-tauri/target/release/bundle
+npm run app                       # portable app in packages/desktop/src-tauri/target/release
 ```
 
 The sample run (`packages/web/public/sample.lss`) comes from the MIT-licensed
