@@ -20,22 +20,22 @@ function jitter(seed: number): number {
 
 interface PlannedAttempt {
   start: number;
-  /** Multiplier on every segment time (1.05 = 5% slower). */
-  slow?: number;
+  /** Multiplier on every segment time (1.05 = 5% slower), or one per segment. */
+  slow?: number | ((segment: number) => number);
   /** Segments completed before resetting; omit to finish. */
   resetAfter?: number;
 }
 
-/** Builds a run of 6 one-minute segments from planned attempts, with ±2% noise per segment. */
-function plannedRun(plan: PlannedAttempt[]): Run {
-  const base = [60_000, 60_000, 60_000, 60_000, 60_000, 60_000];
+/** Builds a run (6 one-minute segments by default) from planned attempts, with ±2% noise per segment. */
+function plannedRun(plan: PlannedAttempt[], base = [60_000, 60_000, 60_000, 60_000, 60_000, 60_000]): Run {
   const segments = base.map((_, i) => ({ name: `S${i + 1}`, pbSplit: null, gold: null, history: new Map<number, number | null>() }));
   const attempts = plan.map((p, k) => {
     const id = k + 1;
     const stop = p.resetAfter ?? base.length;
     let total = 0;
     for (let i = 0; i < stop; i++) {
-      const t = Math.round(base[i] * (p.slow ?? 1) * (1 + 0.02 * jitter(id * 7 + i)));
+      const slow = typeof p.slow === "function" ? p.slow(i) : (p.slow ?? 1);
+      const t = Math.round(base[i] * slow * (1 + 0.02 * jitter(id * 7 + i)));
       segments[i].history.set(id, t);
       total += t;
     }
@@ -83,11 +83,11 @@ describe("analyzeSessions", () => {
     expect(r.reason).toMatch(/no attempt dates/);
   });
 
-  it("finds a warm-up when the first attempts of each session are slower", () => {
+  it("finds a warm-up when the first minutes of each session are slower", () => {
     const run = plannedRun(daily(12, 8, (_, i) => ({ slow: i < 3 ? 1.05 : 1 })));
     const f = finding(run, "warm-up");
     expect(f.status).toBe("clear");
-    expect(f.message).toMatch(/first 3 attempts of a session run [45]\.\d% slower/);
+    expect(f.message).toMatch(/^In the first 20 minutes of a session you run [45]\.\d% slower/);
   });
 
   it("states no effect when sessions are steady", () => {
@@ -118,6 +118,29 @@ describe("analyzeSessions", () => {
     expect(f.message).toMatch(/^After 2 hours, your reset rate goes from 20% to 80%/);
   });
 
+  it("finds fatigue inside long runs with few attempts per session", () => {
+    // Ten days of one 5-hour run (30 ten-minute segments). On odd days the run starts after an hour of
+    // quick resets, so the same segments land at different times. Anything played after 2 hours is 5% slower.
+    const plan: PlannedAttempt[] = [];
+    for (let s = 0; s < 10; s++) {
+      const warm = s % 2 === 1 ? 6 : 0;
+      for (let k = 0; k < warm; k++) plan.push({ start: T0 + s * DAY + k * 10 * MIN, resetAfter: 0 });
+      const offset = warm * 10;
+      plan.push({ start: T0 + s * DAY + offset * MIN, slow: (i) => (offset + i * 10 >= 120 ? 1.05 : 1) });
+    }
+    const r = analyzeSessions(plannedRun(plan, Array(30).fill(600_000)), { localTime: utc });
+    const f = r.findings.find((x) => x.kind === "fatigue")!;
+    expect(f.status).toBe("clear");
+    expect(f.message).toMatch(/^After (1.5|2|2.5) hours, your splits run \d\.\d% slower/);
+  });
+
+  it("can't see fatigue when every run plays each segment at the same time", () => {
+    // Same runs, always started fresh: segment 13 is always slow, so it's just how long segment 13 takes.
+    const plan = Array.from({ length: 10 }, (_, s) => ({ start: T0 + s * DAY, slow: (i: number) => (i >= 12 ? 1.05 : 1) }));
+    const f = finding(plannedRun(plan, Array(30).fill(600_000)), "fatigue");
+    expect(f.status).toBe("no-effect");
+  });
+
   it("finds tilt when a late reset is followed by an early reset", () => {
     // Every 4th attempt resets at the last split; the attempt after it resets in the first segment.
     const run = plannedRun(daily(12, 8, (_, i) => ({ resetAfter: i % 4 === 1 ? 5 : i % 4 === 2 ? 1 : undefined })));
@@ -135,7 +158,7 @@ describe("analyzeSessions", () => {
     }
     const f = finding(plannedRun(plan), "time-of-day");
     expect(f.status).toBe("clear");
-    expect(f.message).toMatch(/You run 4\.\d% (slower in the morning|faster in the evening)/);
+    expect(f.message).toMatch(/You run 4\.\d% (slower in sessions you start in the morning|faster in sessions you start in the evening)/);
   });
 
   it("stays honest on a real file", () => {
@@ -144,8 +167,8 @@ describe("analyzeSessions", () => {
     expect(r.available).toBe(true);
     expect(r.sessions).toBe(185);
     expect(r.findings).toHaveLength(7);
-    // This file rarely gets past the first split, so most effects can't be judged yet.
-    expect(r.findings.find((f) => f.kind === "warm-up")!.status).toBe("not-enough-data");
+    // Few runs get late in this file, so tilt can't be judged yet.
+    expect(r.findings.find((f) => f.kind === "tilt-near-pb")!.status).toBe("not-enough-data");
     for (const f of r.findings) expect(f.message.length).toBeGreaterThan(10);
   });
 

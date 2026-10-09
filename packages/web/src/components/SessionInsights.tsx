@@ -29,13 +29,13 @@ export function SessionInsights({ insights: r }: { insights: Insights }) {
         ))}
       </ul>
       <div className="pace-charts">
-        <PaceChart title="Minutes into a session" note="Against each session's own average" buckets={r.byMinutesIn} />
+        <PaceChart title="Time into a session" note="Each split by when it was played, against that session's average" buckets={r.byMinutesIn} />
         <PaceChart
           title="Time of day"
-          note="Against your overall average. Night is 0-6h, morning 6-12h, afternoon 12-18h, evening 18-24h"
+          note="By when the session started, against your average. Night is 0-6h, morning 6-12h, afternoon 12-18h, evening 18-24h"
           buckets={r.byTimeOfDay}
         />
-        <PaceChart title="Day of week" note="Against your overall average" buckets={r.byWeekday} />
+        <PaceChart title="Day of week" note="By when the session started, against your average" buckets={r.byWeekday} />
       </div>
       <HowSessions />
     </>
@@ -76,7 +76,7 @@ function PaceChart({ title, note, buckets }: { title: string; note: string; buck
             </span>
             <span className="pace-track" role="cell">
               {b.pace == null ? (
-                <span className="pace-thin">{b.sessions === 0 ? "no attempts" : `${b.sessions} of ${S.minSessions} sessions`}</span>
+                <span className="pace-thin">{b.sessions === 0 ? "no sessions" : `${b.sessions} of ${S.minSessions} sessions`}</span>
               ) : (
                 <>
                   <span
@@ -108,22 +108,25 @@ function HowSessions() {
         <ul>
           <li>
             Sessions come from the start and end time LiveSplit saves for every attempt. A break of more than{" "}
-            {S.gapMinutes} minutes starts a new session. Times of day use this computer's time zone.
+            {S.gapMinutes} minutes starts a new session.
           </li>
           <li>
-            Pace compares each attempt's clean segment times with your usual time for those segments: the median of
-            the {S.paceWindow} clean times around that attempt. Using nearby attempts means getting better over the
-            months doesn't look like a time-of-day or session effect. A segment counts as at most {S.paceCap}× its
-            usual time, so a pause doesn't swamp the rest.
+            Pace compares your clean segment times with your usual time for each segment: the median of the{" "}
+            {S.paceWindow} clean times around that attempt. Using nearby attempts means getting better over the months
+            doesn't look like a session effect. A segment counts as at most {S.paceCap}× its usual time, so a pause
+            doesn't swamp the rest.
           </li>
           <li>
-            Sessions, not single attempts, are what gets compared, because attempts in one session aren't independent.
-            Warm-up, peak window and fatigue compare parts of the same session with each other.
+            Each split is placed at the time it was played, not when its attempt started, so a single long run spreads
+            across the whole session. Because pace is against each segment's own usual time, fatigue only shows when
+            the same segments get played at different points in a session.
           </li>
           <li>
-            Warm-up: your first {S.warmupAttempts} attempts against the rest of the session. Fatigue: reset rate and pace
-            before and after {S.fatigueThresholds.map((t) => (t < 60 ? `${t} min` : `${t / 60}h`)).join(", ")} into a
-            session, reporting the point where things get worse the most.
+            Warm-up: the first {S.warmupMinutes} minutes from a session's first split against the rest of it. Peak
+            window: each stretch of a session against that session's average. Fatigue: reset rate and pace before
+            and after {S.fatigueThresholds.map((t) => (t < 60 ? `${t} min` : `${t / 60}h`)).join(", ")} into a session,
+            reporting the point where things get worse the most. Reset rate needs {S.fatigueMinAttemptsPerSide} attempts
+            on each side, so it only counts for sessions with many attempts.
           </li>
           <li>
             Tilt: the attempt right after a reset in the last {pct(1 - S.lateResetFraction)} of the route, or after a
@@ -131,10 +134,15 @@ function HowSessions() {
             looks at early resets (in the first {pct(S.earlyResetFraction)} of the route) and pace.
           </li>
           <li>
-            An effect is stated only when it is at least {pct(S.minPaceEffect)} of pace (or {pct(S.minRateEffect)}{" "}
-            points of reset rate) and its {pct(S.confidence)} interval doesn't include zero ({pct(S.searchConfidence)}{" "}
-            when we pick the best of several windows or days). Each needs {S.minSessions} sessions or {S.minEvents}{" "}
-            events first. Otherwise it says there's no clear effect, or not enough data yet.
+            Time of day and day of week go by when each session started, in this computer's time zone, comparing
+            whole sessions so a long session isn't split across both.
+          </li>
+          <li>
+            Sessions, not single attempts, are what gets compared, because attempts in one session aren't
+            independent. An effect is stated only when it is at least {pct(S.minPaceEffect)} of pace (or{" "}
+            {pct(S.minRateEffect)} points of reset rate) and its {pct(S.confidence)} interval doesn't include zero (
+            {pct(S.searchConfidence)} when we pick the best of several windows or days). Each needs {S.minSessions}{" "}
+            sessions or {S.minEvents} events first. Otherwise it says there's no clear effect, or not enough data yet.
           </li>
         </ul>
       </div>

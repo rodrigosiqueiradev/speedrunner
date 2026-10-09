@@ -99,18 +99,23 @@ on its own is in [`packages/core/src/sessions.ts`](../packages/core/src/sessions
 
 - **Sessions.** LiveSplit 1.6 and later save when every attempt started and ended (in UTC). A break of more than
   30 minutes starts a new session. Files without attempt dates, or with fewer than 8 sessions, get no insights.
-- **Pace.** Each attempt's clean segment times are compared with your usual time for those segments: the median
-  of the 51 clean times around that attempt. Using nearby attempts keeps months of improvement from looking like
-  a time-of-day or session effect. A segment counts as at most 2× its usual time, so a pause doesn't swamp the rest.
-- **Warm-up.** Your first 3 attempts of each session against the rest of that session.
+- **Pace.** Each clean segment time is compared with your usual time for that segment: the median of the 51 clean
+  times around that attempt. Using nearby attempts keeps months of improvement from looking like a session effect. A
+  segment counts as at most 2× its usual time, so a pause doesn't swamp the rest.
+- **When a split was played.** Each split is placed at the time it was played within its session, not when its
+  attempt started, so one long run (a 5-hour Twilight Princess run, say) spreads across the whole session. Because
+  pace is against each segment's own usual time, fatigue only shows up when the same segments get played at
+  different points in a session, for example after a long block of resets one day and fresh the next.
+- **Warm-up.** The first 20 minutes from a session's first split against the rest of that session.
 - **Peak window.** Pace in each stretch of a session (0-20 min, 20-40 min, 40 min-1h, 1-1.5h, 1.5-2h, 2-3h, 3-4h,
   4h+) against that session's own average.
-- **Fatigue.** Reset rate and pace before and after 1h, 1.5h, 2h, 2.5h, 3h and 4h into a session, for sessions with at
-  least 3 attempts on each side. The point where things get worse the most is reported.
+- **Fatigue.** Pace before and after 1h, 1.5h, 2h, 2.5h, 3h and 4h into a session, for sessions with at least 3
+  splits on each side, and reset rate for sessions with at least 3 attempts on each side. The point where things get
+  worse the most is reported.
 - **Tilt.** The attempt right after a reset in the last third of the route, or after a finished run within 2% of the
   PB standing at the time, against every other next attempt: how often it resets in the first third, and its pace.
-- **Time of day and day of week.** Each session's pace in each part of the day (or day of the week) against all other
-  sessions, using the computer's time zone.
+- **Time of day and day of week.** Each session's pace, grouped by when the session started (in the computer's time
+  zone), against all other sessions.
 
 Sessions, not attempts, are the unit for every comparison except tilt, because attempts in one session aren't
 independent. An effect is stated only when it is at least 0.5% of pace (or 5 points of reset rate), its 95% interval

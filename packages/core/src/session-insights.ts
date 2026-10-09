@@ -17,13 +17,15 @@ export const SESSION_INSIGHT_SETTINGS = {
   minSessions: 8,
   /** Events (late resets, near-PBs) needed before a tilt effect is judged. */
   minEvents: 15,
-  /** How many opening attempts of a session count as warm-up. */
-  warmupAttempts: 3,
+  /** Minutes from a session's first split that count as warm-up. */
+  warmupMinutes: 20,
+  /** Segment times needed on each side of a split (warm-up, fatigue) for a session to count. */
+  minSegmentsPerSide: 3,
   /** Minutes-into-session buckets for the peak window and the chart. */
   minuteBuckets: [0, 20, 40, 60, 90, 120, 180, 240],
   /** Candidate points (minutes in) where fatigue might start. */
   fatigueThresholds: [60, 90, 120, 150, 180, 240],
-  /** Attempts needed on each side of a fatigue threshold for a session to count. */
+  /** Attempts needed on each side of a fatigue threshold for a session's reset rate to count. */
   fatigueMinAttemptsPerSide: 3,
   /** A reset at or after this fraction of the route counts as a late reset. */
   lateResetFraction: 2 / 3,
@@ -55,7 +57,8 @@ export interface Finding {
 
 export interface PaceBucket {
   label: string;
-  attempts: number;
+  /** Segment times played in this bucket. */
+  segments: number;
   sessions: number;
   /** Mean pace relative to usual (0.02 = 2% slower), or null when the bucket is too thin to show. */
   pace: number | null;
@@ -74,7 +77,7 @@ export interface SessionInsights {
   findings: Finding[];
   /** Pace against each session's own average, by minutes into the session. */
   byMinutesIn: PaceBucket[];
-  /** Pace against your usual, by local time of day and day of week. */
+  /** Pace against your usual, by the local time of day and day of week each session started. */
   byTimeOfDay: PaceBucket[];
   byWeekday: PaceBucket[];
 }
@@ -84,9 +87,18 @@ export interface SessionInsightOptions {
   localTime?: (ms: number) => { hour: number; weekday: number };
 }
 
+/** One segment as played: when it started in its session, its time (capped) and its usual time. */
+interface SegmentPlay {
+  minutesIn: number;
+  time: number;
+  usual: number;
+}
+
 /** Facts about one attempt that the insights use. */
 interface AttemptFacts {
   t: TimedAttempt;
+  /** Every clean segment this attempt played, placed at the time it started within the session. */
+  plays: SegmentPlay[];
   /** Segment-time-weighted pace against the rolling usual: 0.02 = 2% slower. Null when no clean segment. */
   pace: number | null;
   finished: boolean;
@@ -135,6 +147,7 @@ export function analyzeSessions(run: Run, options: SessionInsightOptions = {}): 
 
   const facts = attemptFacts(run, sessions);
   const bySession = sessions.map((s) => s.attempts.map((t) => facts.get(t.attempt.id)!));
+  const startOf = (attempts: AttemptFacts[]) => localTime(attempts[0].t.start);
 
   const peak = peakWindow(bySession);
   const findings = [
@@ -143,111 +156,124 @@ export function analyzeSessions(run: Run, options: SessionInsightOptions = {}): 
     fatigue(bySession),
     tilt(bySession, run, "late-reset"),
     tilt(bySession, run, "near-pb"),
-    timeEffect(bySession, localTime, "time-of-day"),
-    timeEffect(bySession, localTime, "day-of-week"),
+    timeEffect(bySession, (a) => periodOf(startOf(a).hour), "time-of-day"),
+    timeEffect(bySession, (a) => startOf(a).weekday, "day-of-week"),
   ];
   return {
     ...base,
     available: true,
     findings,
     byMinutesIn: peak.buckets,
-    byTimeOfDay: timeBuckets(bySession, (f) => periodOf(localTime(f.t.start).hour), PERIODS.length).map((b, i) => ({
+    byTimeOfDay: timeBuckets(bySession, (a) => periodOf(startOf(a).hour), PERIODS.length).map((b, i) => ({
       ...b,
       label: PERIODS[i].label,
     })),
-    byWeekday: timeBuckets(bySession, (f) => localTime(f.t.start).weekday, 7).map((b, i) => ({ ...b, label: DAYS[i] })),
+    byWeekday: timeBuckets(bySession, (a) => startOf(a).weekday, 7).map((b, i) => ({ ...b, label: DAYS[i] })),
   };
 }
 
-/** Works out each attempt's pace against a rolling usual time per segment, and how far it got. */
+/**
+ * Works out how each attempt's segments compare with a rolling usual time per segment, when in
+ * the session each segment was played, and how far the attempt got. Placing segments at their own
+ * time (not the attempt's start) is what lets one five-hour run show fatigue on its own.
+ */
 function attemptFacts(run: Run, sessions: Session[]): Map<number, AttemptFacts> {
   const n = run.segments.length;
-  // Per attempt: summed clean segment times and summed usual times for those segments.
-  const sums = new Map<number, { time: number; usual: number }>();
-  for (const seg of run.segments) {
+  // Usual time for each (segment, attempt) clean time.
+  const usualTimes = run.segments.map((seg) => {
+    const usual = new Map<number, number>();
     const entries = [...seg.history.entries()].filter((e): e is [number, number] => e[1] != null && e[1] > 0);
-    if (entries.length < ANALYSIS_DEFAULTS.minSamples) continue;
+    if (entries.length < ANALYSIS_DEFAULTS.minSamples) return usual;
     const overall = quantile(entries.map((e) => e[1]).sort((a, b) => a - b), 0.5);
     const clean = entries.filter((e) => e[1] >= overall * ANALYSIS_DEFAULTS.outlierFloor).sort((a, b) => a[0] - b[0]);
     const half = Math.floor(S.paceWindow / 2);
-    clean.forEach(([id, time], i) => {
+    clean.forEach(([id], i) => {
       const from = Math.max(0, Math.min(i - half, clean.length - S.paceWindow));
       const window = clean.slice(from, from + S.paceWindow).map((e) => e[1]).sort((a, b) => a - b);
-      const usual = quantile(window, 0.5);
-      const acc = sums.get(id) ?? { time: 0, usual: 0 };
-      acc.time += Math.min(time, usual * S.paceCap);
-      acc.usual += usual;
-      sums.set(id, acc);
+      usual.set(id, quantile(window, 0.5));
     });
-  }
+    return usual;
+  });
 
   const facts = new Map<number, AttemptFacts>();
   for (const s of sessions) {
     for (const t of s.attempts) {
       const id = t.attempt.id;
-      let reached = run.segments.findIndex((seg) => !seg.history.has(id));
-      if (reached === -1) reached = n;
-      const sum = sums.get(id);
-      facts.set(id, { t, pace: sum ? sum.time / sum.usual - 1 : null, finished: n > 0 && reached === n, reached });
+      const plays: SegmentPlay[] = [];
+      let elapsed = 0;
+      let reached = n;
+      for (let i = 0; i < n; i++) {
+        const seg = run.segments[i];
+        if (!seg.history.has(id)) {
+          reached = i;
+          break;
+        }
+        const time = seg.history.get(id);
+        if (time == null) continue; // skipped split: its time lands in the next segment
+        const usual = usualTimes[i].get(id);
+        if (usual != null) plays.push({ minutesIn: t.minutesIn + elapsed / 60_000, time: Math.min(time, usual * S.paceCap), usual });
+        elapsed += time;
+      }
+      facts.set(id, { t, plays, pace: paceOf(plays), finished: n > 0 && reached === n, reached });
     }
   }
   return facts;
 }
 
+/** Your first minutes of play in each session against the rest of that session. */
 function warmUp(bySession: AttemptFacts[][]): Finding {
-  const k = S.warmupAttempts;
+  const w = S.warmupMinutes;
   const diffs: number[] = [];
   for (const attempts of bySession) {
-    const first = paces(attempts.slice(0, k));
-    const rest = paces(attempts.slice(k));
-    if (first.length > 0 && rest.length >= k) diffs.push(mean(first) - mean(rest));
+    // Counted from the first split of the session, so quick resets before it don't use up the window.
+    const all = attempts.flatMap((f) => f.plays);
+    if (all.length === 0) continue;
+    const from = all[0].minutesIn;
+    const first = all.filter((p) => p.minutesIn < from + w);
+    const rest = all.filter((p) => p.minutesIn >= from + w);
+    if (first.length >= S.minSegmentsPerSide && rest.length >= S.minSegmentsPerSide) diffs.push(paceOf(first)! - paceOf(rest)!);
   }
   const base = { kind: "warm-up" as const, title: "Warm-up", sample: diffs.length };
   if (diffs.length < S.minSessions) {
-    return { ...base, status: "not-enough-data", message: `Needs ${S.minSessions} sessions with at least ${2 * k} attempts that reach a split; this file has ${diffs.length}.` };
+    return {
+      ...base,
+      status: "not-enough-data",
+      message: `Needs ${S.minSessions} sessions with at least ${S.minSegmentsPerSide} splits in the first ${w} minutes and ${S.minSegmentsPerSide} after; this file has ${diffs.length}.`,
+    };
   }
   const ci = meanInterval(diffs, S.confidence);
   if (isClear(ci, S.minPaceEffect)) {
-    return {
-      ...base,
-      status: "clear",
-      message: `Your first ${k} attempts of a session run ${paceWords(ci.mean)} than the rest of the session.`,
-    };
+    return { ...base, status: "clear", message: `In the first ${w} minutes of a session you run ${paceWords(ci.mean)} than the rest of it.` };
   }
-  return { ...base, status: "no-effect", message: `Your first ${k} attempts of a session are about as fast as the rest.` };
+  return { ...base, status: "no-effect", message: `The first ${w} minutes of a session go about as fast as the rest.` };
 }
 
 /** Pace against each session's own average, by minutes in, and the window where it's clearly best. */
 function peakWindow(bySession: AttemptFacts[][]): { finding: Finding; buckets: PaceBucket[] } {
   const edges = S.minuteBuckets;
   const bucketOf = (m: number) => edges.filter((e) => m >= e).length - 1;
-  // Per session, centred pace values grouped by bucket.
-  const perSession: Map<number, number[]>[] = [];
+  // Per session: its overall pace and its plays grouped by bucket.
+  const perSession: { avg: number; groups: Map<number, SegmentPlay[]> }[] = [];
   for (const attempts of bySession) {
-    const withPace = attempts.filter((f) => f.pace != null);
-    if (withPace.length < 4) continue;
-    const avg = mean(withPace.map((f) => f.pace!));
-    const groups = new Map<number, number[]>();
-    for (const f of withPace) {
-      const b = bucketOf(f.t.minutesIn);
-      groups.set(b, [...(groups.get(b) ?? []), f.pace! - avg]);
-    }
-    perSession.push(groups);
+    const plays = attempts.flatMap((f) => f.plays);
+    if (plays.length < 2 * S.minSegmentsPerSide) continue;
+    const groups = new Map<number, SegmentPlay[]>();
+    for (const p of plays) groups.set(bucketOf(p.minutesIn), [...(groups.get(bucketOf(p.minutesIn)) ?? []), p]);
+    if (groups.size >= 2) perSession.push({ avg: paceOf(plays)!, groups });
   }
   const valuesFor = (from: number, to: number) =>
-    perSession.flatMap((g) => {
-      const v = [...g.entries()].filter(([b]) => b >= from && b <= to).flatMap(([, x]) => x);
-      return v.length > 0 ? [mean(v)] : [];
+    perSession.flatMap(({ avg, groups }) => {
+      const v = [...groups.entries()].filter(([b]) => b >= from && b <= to).flatMap(([, x]) => x);
+      return v.length > 0 ? [paceOf(v)! - avg] : [];
     });
 
   const buckets: PaceBucket[] = edges.map((from, i) => {
     const to = edges[i + 1];
     const values = valuesFor(i, i);
-    const attempts = perSession.reduce((n, g) => n + (g.get(i)?.length ?? 0), 0);
     const ci = values.length >= S.minSessions ? meanInterval(values, S.confidence) : null;
     return {
       label: to == null ? `${shortMinutes(from)}+` : `${shortMinutes(from)}-${shortMinutes(to)}`,
-      attempts,
+      segments: perSession.reduce((n, s) => n + (s.groups.get(i)?.length ?? 0), 0),
       sessions: values.length,
       pace: ci?.mean ?? null,
       low: ci?.low ?? null,
@@ -260,7 +286,12 @@ function peakWindow(bySession: AttemptFacts[][]): { finding: Finding; buckets: P
   if (shown.length < 2) {
     return {
       buckets,
-      finding: { ...base, sample: perSession.length, status: "not-enough-data", message: `Needs ${S.minSessions} sessions with attempts in at least two stretches of a session (0-20 min, 20-40 min and so on).` },
+      finding: {
+        ...base,
+        sample: perSession.length,
+        status: "not-enough-data",
+        message: `Needs ${S.minSessions} sessions with splits in at least two stretches of a session (0-20 min, 20-40 min and so on).`,
+      },
     };
   }
   // Grow the fastest bucket into its neighbours while they are also faster than average.
@@ -280,12 +311,7 @@ function peakWindow(bySession: AttemptFacts[][]): { finding: Finding; buckets: P
   if (isClear(ci, S.minPaceEffect) && ci.mean < 0) {
     return {
       buckets,
-      finding: {
-        ...base,
-        sample: values.length,
-        status: "clear",
-        message: `You run best ${span}: ${paceWords(ci.mean)} than your session average.`,
-      },
+      finding: { ...base, sample: values.length, status: "clear", message: `You run best ${span}: ${paceWords(ci.mean)} than your session average.` },
     };
   }
   return {
@@ -294,9 +320,13 @@ function peakWindow(bySession: AttemptFacts[][]): { finding: Finding; buckets: P
   };
 }
 
+/**
+ * Reset rate and pace before and after each candidate point in a session. Reset rate needs several
+ * attempts on each side; pace only needs splits, so long runs with one attempt a session still count.
+ */
 function fatigue(bySession: AttemptFacts[][]): Finding {
   const base = { kind: "fatigue" as const, title: "Fatigue" };
-  type Candidate = { threshold: number; rate: Interval; pace: Interval | null; before: number; after: number; n: number };
+  type Candidate = { threshold: number; rate: Interval | null; pace: Interval | null; before: number; after: number; n: number };
   const candidates: Candidate[] = [];
   for (const threshold of S.fatigueThresholds) {
     const rateDiffs: number[] = [];
@@ -306,24 +336,28 @@ function fatigue(bySession: AttemptFacts[][]): Finding {
     for (const attempts of bySession) {
       const early = attempts.filter((f) => f.t.minutesIn < threshold);
       const late = attempts.filter((f) => f.t.minutesIn >= threshold);
-      if (early.length < S.fatigueMinAttemptsPerSide || late.length < S.fatigueMinAttemptsPerSide) continue;
-      const rb = resetRate(early);
-      const ra = resetRate(late);
-      rateDiffs.push(ra - rb);
-      before += rb;
-      after += ra;
-      const pe = paces(early);
-      const pl = paces(late);
-      if (pe.length > 0 && pl.length > 0) paceDiffs.push(mean(pl) - mean(pe));
+      if (early.length >= S.fatigueMinAttemptsPerSide && late.length >= S.fatigueMinAttemptsPerSide) {
+        const rb = resetRate(early);
+        const ra = resetRate(late);
+        rateDiffs.push(ra - rb);
+        before += rb;
+        after += ra;
+      }
+      const plays = attempts.flatMap((f) => f.plays);
+      const pe = plays.filter((p) => p.minutesIn < threshold);
+      const pl = plays.filter((p) => p.minutesIn >= threshold);
+      if (pe.length >= S.minSegmentsPerSide && pl.length >= S.minSegmentsPerSide) paceDiffs.push(paceOf(pl)! - paceOf(pe)!);
     }
-    if (rateDiffs.length < S.minSessions) continue;
+    const rate = rateDiffs.length >= S.minSessions ? meanInterval(rateDiffs, S.searchConfidence) : null;
+    const pace = paceDiffs.length >= S.minSessions ? meanInterval(paceDiffs, S.searchConfidence) : null;
+    if (!rate && !pace) continue;
     candidates.push({
       threshold,
-      rate: meanInterval(rateDiffs, S.searchConfidence),
-      pace: paceDiffs.length >= S.minSessions ? meanInterval(paceDiffs, S.searchConfidence) : null,
-      before: before / rateDiffs.length,
-      after: after / rateDiffs.length,
-      n: rateDiffs.length,
+      rate,
+      pace,
+      before: before / Math.max(1, rateDiffs.length),
+      after: after / Math.max(1, rateDiffs.length),
+      n: Math.max(rateDiffs.length, paceDiffs.length),
     });
   }
   if (candidates.length === 0) {
@@ -331,27 +365,27 @@ function fatigue(bySession: AttemptFacts[][]): Finding {
       ...base,
       sample: 0,
       status: "not-enough-data",
-      message: `Needs ${S.minSessions} sessions longer than ${minutesLabel(S.fatigueThresholds[0])} with at least ${S.fatigueMinAttemptsPerSide} attempts on each side.`,
+      message: `Needs ${S.minSessions} sessions longer than ${minutesLabel(S.fatigueThresholds[0])} with splits on both sides of it.`,
     };
   }
   // The threshold where reset rate (or else pace) gets clearly worse by the most: the change point.
-  const rateWorse = (c: Candidate) => isClear(c.rate, S.minRateEffect) && c.rate.mean > 0;
+  const rateWorse = (c: Candidate) => c.rate != null && isClear(c.rate, S.minRateEffect) && c.rate.mean > 0;
   const paceWorse = (c: Candidate) => c.pace != null && isClear(c.pace, S.minPaceEffect) && c.pace.mean > 0;
-  const byRate = candidates.filter(rateWorse).sort((x, y) => y.rate.mean - x.rate.mean);
+  const byRate = candidates.filter(rateWorse).sort((x, y) => y.rate!.mean - x.rate!.mean);
   const byPace = candidates.filter(paceWorse).sort((x, y) => y.pace!.mean - x.pace!.mean);
   const c = byRate[0] ?? byPace[0];
   if (c) {
     const parts: string[] = [];
     if (rateWorse(c)) parts.push(`your reset rate goes from ${pctText(c.before)} to ${pctText(c.after)}`);
-    if (paceWorse(c)) parts.push(`segments run ${paceWords(c.pace!.mean)}`);
+    if (paceWorse(c)) parts.push(`your splits run ${paceWords(c.pace!.mean)}`);
     return { ...base, sample: c.n, status: "clear", message: `After ${minutesLabel(c.threshold)}, ${parts.join(" and ")}.` };
   }
-  const longest = candidates[0];
+  const checked = candidates.some((c) => c.rate != null) ? "reset rate or pace" : "pace";
   return {
     ...base,
-    sample: longest.n,
+    sample: candidates[0].n,
     status: "no-effect",
-    message: `Your reset rate and pace hold steady in long sessions (checked from ${minutesLabel(longest.threshold)} on).`,
+    message: `No clear drop in your ${checked} late in a session (checked from ${minutesLabel(candidates[0].threshold)} to ${minutesLabel(candidates.at(-1)!.threshold)} in).`,
   };
 }
 
@@ -385,7 +419,7 @@ function tilt(bySession: AttemptFacts[][], run: Run, trigger: "late-reset" | "ne
   const base = { kind: trigger === "late-reset" ? ("tilt-late-reset" as const) : ("tilt-near-pb" as const), title, sample: after.length };
   if (after.length < S.minEvents || usual.length < S.minEvents) {
     const what = trigger === "late-reset" ? "resets in the last third of the run" : `finished runs within ${pctText(S.nearPbFraction)} of your PB`;
-    return { ...base, status: "not-enough-data", message: `Needs ${S.minEvents} ${what} followed by another attempt; this file has ${after.length}.` };
+    return { ...base, status: "not-enough-data", message: `Needs ${S.minEvents} ${what} followed by another attempt; this file has ${after.length === 0 ? "none" : after.length}.` };
   }
 
   const early = (f: AttemptFacts) => (!f.finished && f.reached < earlyBefore ? 1 : 0);
@@ -404,14 +438,8 @@ function tilt(bySession: AttemptFacts[][], run: Run, trigger: "late-reset" | "ne
   return { ...base, status: "no-effect", message: `Your next attempt after ${event} goes about like any other.` };
 }
 
-/** Compares sessions played at one time of day (or day of week) with the rest, on session-level pace. */
-function timeEffect(
-  bySession: AttemptFacts[][],
-  localTime: NonNullable<SessionInsightOptions["localTime"]>,
-  kind: "time-of-day" | "day-of-week",
-): Finding {
-  const groupOf = (f: AttemptFacts) =>
-    kind === "time-of-day" ? periodOf(localTime(f.t.start).hour) : localTime(f.t.start).weekday;
+/** Compares sessions started at one time of day (or day of week) with the rest, on session pace. */
+function timeEffect(bySession: AttemptFacts[][], groupOf: (attempts: AttemptFacts[]) => number, kind: "time-of-day" | "day-of-week"): Finding {
   const groups = kind === "time-of-day" ? PERIODS.length : 7;
   const units = sessionUnits(bySession, groupOf);
   const base = { kind, title: kind === "time-of-day" ? "Time of day" : "Day of week", sample: units.length };
@@ -424,22 +452,32 @@ function timeEffect(
   }
   if (tested.length < 2) {
     const what = kind === "time-of-day" ? "times of day" : "days of the week";
-    return { ...base, status: "not-enough-data", message: `Needs ${S.minSessions} sessions in at least two different ${what}.` };
+    const names = kind === "time-of-day" ? PERIODS.map((p) => p.noun.replace(/ \(.*\)/, "")) : DAYS.map((d) => `on ${d}s`);
+    const counts = Array.from({ length: groups }, (_, g) => units.filter((u) => u.group === g).length)
+      .map((n, g) => ({ n, g }))
+      .filter(({ n }) => n > 0)
+      .sort((x, y) => y.n - x.n)
+      .map(({ n, g }) => `${n} ${names[g]}`);
+    return {
+      ...base,
+      status: "not-enough-data",
+      message: `Needs ${S.minSessions} sessions in each of at least two ${what}. Your sessions with splits started ${listText(counts)}.`,
+    };
   }
   const clear = tested.filter((t) => isClear(t.ci, S.minPaceEffect)).sort((x, y) => Math.abs(y.ci.mean) - Math.abs(x.ci.mean));
   if (clear.length > 0) {
     const { g, ci } = clear[0];
-    const when = kind === "time-of-day" ? PERIODS[g].noun : `on ${DAYS[g]}s`;
-    return { ...base, status: "clear", message: `You run ${paceWords(ci.mean)} ${when} than at other times.` };
+    const when = kind === "time-of-day" ? `in sessions you start ${PERIODS[g].noun}` : `in sessions you start on a ${DAYS[g]}`;
+    return { ...base, status: "clear", message: `You run ${paceWords(ci.mean)} ${when} than in the rest.` };
   }
   return {
     ...base,
     status: "no-effect",
-    message: kind === "time-of-day" ? "Your pace is about the same whatever the time of day." : "Your pace is about the same on every day of the week.",
+    message: kind === "time-of-day" ? "Your pace is about the same whatever time of day you start." : "Your pace is about the same whichever day you play.",
   };
 }
 
-function timeBuckets(bySession: AttemptFacts[][], groupOf: (f: AttemptFacts) => number, groups: number): Omit<PaceBucket, "label">[] {
+function timeBuckets(bySession: AttemptFacts[][], groupOf: (attempts: AttemptFacts[]) => number, groups: number): Omit<PaceBucket, "label">[] {
   const units = sessionUnits(bySession, groupOf);
   // Shown against your overall average, so the buckets read as faster or slower than usual.
   const overall = mean(units.map((u) => u.pace));
@@ -447,7 +485,7 @@ function timeBuckets(bySession: AttemptFacts[][], groupOf: (f: AttemptFacts) => 
     const mine = units.filter((u) => u.group === g);
     const ci = mine.length >= S.minSessions ? meanInterval(mine.map((u) => u.pace - overall), S.confidence) : null;
     return {
-      attempts: mine.reduce((n, u) => n + u.attempts, 0),
+      segments: mine.reduce((n, u) => n + u.segments, 0),
       sessions: mine.length,
       pace: ci?.mean ?? null,
       low: ci?.low ?? null,
@@ -456,15 +494,12 @@ function timeBuckets(bySession: AttemptFacts[][], groupOf: (f: AttemptFacts) => 
   });
 }
 
-/** One value per session and group: the session's mean pace in that group. Sessions, not attempts, are the unit. */
-function sessionUnits(bySession: AttemptFacts[][], groupOf: (f: AttemptFacts) => number) {
-  const units: { group: number; pace: number; attempts: number }[] = [];
-  for (const attempts of bySession) {
-    const groups = new Map<number, number[]>();
-    for (const f of attempts) if (f.pace != null) groups.set(groupOf(f), [...(groups.get(groupOf(f)) ?? []), f.pace]);
-    for (const [group, v] of groups) units.push({ group, pace: mean(v), attempts: v.length });
-  }
-  return units;
+/** One value per session: its pace over every split played. Sessions, not attempts, are the unit. */
+function sessionUnits(bySession: AttemptFacts[][], groupOf: (attempts: AttemptFacts[]) => number) {
+  return bySession.flatMap((attempts) => {
+    const plays = attempts.flatMap((f) => f.plays);
+    return plays.length === 0 ? [] : [{ group: groupOf(attempts), pace: paceOf(plays)!, segments: plays.length }];
+  });
 }
 
 // ---- small statistics helpers ----
@@ -523,6 +558,18 @@ function median(values: number[]): number | null {
   return values.length === 0 ? null : quantile([...values].sort((a, b) => a - b), 0.5);
 }
 
+/** Time-weighted pace of a set of plays: total time over total usual time, minus 1. */
+function paceOf(plays: SegmentPlay[]): number | null {
+  if (plays.length === 0) return null;
+  let time = 0;
+  let usual = 0;
+  for (const p of plays) {
+    time += p.time;
+    usual += p.usual;
+  }
+  return time / usual - 1;
+}
+
 function paces(attempts: AttemptFacts[]): number[] {
   return attempts.flatMap((f) => (f.pace == null ? [] : [f.pace]));
 }
@@ -538,6 +585,11 @@ function periodOf(hour: number): number {
 /** "2.1% slower" or "1.4% faster". */
 function paceWords(pace: number): string {
   return `${(Math.abs(pace) * 100).toFixed(1)}% ${pace > 0 ? "slower" : "faster"}`;
+}
+
+/** "a", "a and b", "a, b and c". */
+function listText(items: string[]): string {
+  return items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
 }
 
 function pctText(x: number): string {

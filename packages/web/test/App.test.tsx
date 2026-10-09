@@ -39,8 +39,8 @@ describe("App", () => {
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
     const section = await screen.findByRole("region", { name: "How your sessions go" });
     expect(section.textContent).toMatch(/185 sessions from 1,788 attempts/);
-    expect(section.textContent).toMatch(/Warm-upNot enough data/);
-    expect(screen.getByRole("table", { name: "Pace by minutes into a session" })).toBeTruthy();
+    expect(section.textContent).toMatch(/After a near-PBNot enough data/);
+    expect(screen.getByRole("table", { name: "Pace by time into a session" })).toBeTruthy();
   });
 
   it("explains how each number is calculated", async () => {
