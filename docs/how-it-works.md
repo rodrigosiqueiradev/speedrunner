@@ -91,6 +91,25 @@ Adding a newer file for the same game and category replaces the old one.
 - **WR pace:** a reference time ÷ PB, also shown for the realistic target. The reference is a time you type in, or a
   comparison in the split file named "World Record" or "WR". It's shown next to the score but doesn't change it.
 
+## Year in runs
+
+A recap of one calendar year across every split file you add, drawn as a 1080 × 1350 image on your machine. Nothing
+is uploaded; the PNG is only shared if you share it. Settings come from `RECAP_SETTINGS` in
+[`packages/core/src/recap.ts`](../packages/core/src/recap.ts).
+
+- **Year:** each attempt counts in the year it started, on your computer's clock (LiveSplit saves times in UTC).
+  Attempts with no start time, as in files from before LiveSplit 1.6, aren't in any year.
+- **Hours played:** start to reset or finish, summed. Attempts longer than 12 hours are left out as a timer left running.
+- **Personal bests:** finished runs faster than every earlier finish in that category. The biggest PB is the category
+  whose best time dropped the most over the year.
+- **Golds:** clean segment times faster than all earlier clean times of that segment, once it has at least 5. The best
+  gold is the one that beat the old best by the most.
+- **Most improved:** the segment whose median over its last 10 clean times of the year is the most seconds faster than
+  over its first 10 (or each half of the year's times, when it has fewer than 20). Needs 10 clean times in the year.
+- **Longest streak:** the most days in a row with at least one attempt.
+
+Adding two files for the same game and category keeps only the newer one, so attempts aren't counted twice.
+
 ## Practice plan
 
 The practice plan ranks segments by the time an hour of practice is expected to take off a typical run, then turns

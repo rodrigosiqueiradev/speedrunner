@@ -87,7 +87,8 @@ export function ScoreEntries({ score }: { score: CategoryScore | null }) {
   );
 }
 
-function Entry({ doc, example }: { doc: MetricDoc | ScoreDoc; example?: string | null }) {
+/** One explanation, collapsed to its label and short description until opened. */
+export function Entry({ doc, example }: { doc: MetricDoc | ScoreDoc; example?: string | null }) {
   return (
     <details id={`how-${doc.id}`} className="how-entry">
       <summary>

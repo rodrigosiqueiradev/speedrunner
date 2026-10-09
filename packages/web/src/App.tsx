@@ -6,6 +6,7 @@ import { GoalPlanner } from "./components/GoalPlanner";
 import { HowItWorks } from "./components/HowItWorks";
 import { PracticePlan } from "./components/PracticePlan";
 import { Profile } from "./components/Profile";
+import { YearInRuns } from "./components/YearInRuns";
 import { UploadIcon } from "./components/Icons";
 import { revealExplanation } from "./components/InfoTip";
 import { RouteStrip } from "./components/RouteStrip";
@@ -22,8 +23,10 @@ interface Loaded {
   xml: string;
 }
 
-type View = "run" | "profile";
-const viewFromHash = (): View => (window.location.hash === "#profile" ? "profile" : "run");
+type View = "run" | "profile" | "recap";
+const VIEW_LINKS: Record<View, string> = { run: "Analyse a run", profile: "Profile", recap: "Year in runs" };
+const viewFromHash = (): View =>
+  window.location.hash === "#profile" ? "profile" : window.location.hash === "#recap" ? "recap" : "run";
 
 export function App() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -34,6 +37,7 @@ export function App() {
   const [profile, setProfile] = useState<ProfileEntry[]>(loadProfile);
   const picker = useRef<FilePickerHandle>(null);
   const profilePicker = useRef<FilePickerHandle>(null);
+  const recapPicker = useRef<FilePickerHandle>(null);
 
   useEffect(() => saveProfile(profile), [profile]);
   useEffect(() => {
@@ -62,7 +66,7 @@ export function App() {
   const go = (next: View) => {
     setError(null);
     setView(next);
-    history.pushState(null, "", next === "profile" ? "#profile" : window.location.pathname + window.location.search);
+    history.pushState(null, "", next === "run" ? window.location.pathname + window.location.search : `#${next}`);
     window.scrollTo({ top: 0 });
   };
 
@@ -97,29 +101,21 @@ export function App() {
         <div className="shell-inner">
           <span className="brand">Speedrunner</span>
           <nav className="shell-nav" aria-label="Page">
-            {view === "profile" ? (
-              <a
-                href="#"
-                className="keep"
-                onClick={(e) => {
-                  e.preventDefault();
-                  go("run");
-                }}
-              >
-                Analyse a run
-              </a>
-            ) : (
-              <a
-                href="#profile"
-                className="keep"
-                onClick={(e) => {
-                  e.preventDefault();
-                  go("profile");
-                }}
-              >
-                Profile
-              </a>
-            )}
+            {(["run", "profile", "recap"] as const)
+              .filter((v) => v !== view)
+              .map((v) => (
+                <a
+                  key={v}
+                  href={v === "run" ? "#" : `#${v}`}
+                  className="keep"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    go(v);
+                  }}
+                >
+                  {VIEW_LINKS[v]}
+                </a>
+              ))}
             {view === "profile" && profile.length > 0 && (
               <>
                 <a
@@ -135,6 +131,11 @@ export function App() {
                   <UploadIcon /> Add files
                 </button>
               </>
+            )}
+            {view === "recap" && (
+              <button className="shell-button recap-add" onClick={() => recapPicker.current?.open()}>
+                <UploadIcon /> Add files
+              </button>
             )}
           {view === "run" && ok && (
             <>
@@ -179,6 +180,8 @@ export function App() {
             />
           </>
         )}
+
+        {view === "recap" && <YearInRuns ref={recapPicker} initial={loaded} />}
 
         {view === "run" && (
           <>

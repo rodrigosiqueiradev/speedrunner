@@ -480,6 +480,25 @@ table.profile-table th:first-child { white-space: nowrap; }
   .score-part:nth-child(even) { border-left: 1px solid var(--line); }
 }
 
+/* Year in runs */
+.recap { display: grid; margin-bottom: var(--s7); grid-template-columns: minmax(0, 540px) minmax(0, 1fr); gap: var(--s6); align-items: start; }
+.recap-card { width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: var(--radius); display: block; background: #0e1726; }
+.recap-actions { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.recap-subhead { font-size: 1rem; margin: var(--s5) 0 var(--s2); }
+.recap-stats .comparison-time { font-size: 1.125rem; }
+.recap-highlight { grid-template-columns: minmax(0, 1fr); }
+.recap-files { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.recap-files li { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) 0; border-bottom: 1px solid var(--line); font-size: 0.9375rem; }
+.recap-file { color: var(--ink-3); font-size: 0.875rem; margin-left: var(--s1); overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .recap { grid-template-columns: minmax(0, 1fr); gap: var(--s5); }
+}
+.shell-nav a { white-space: nowrap; }
+/* The page has its own add button, so the header one goes first when space runs out. */
+@media (max-width: 520px) {
+  .recap-add { display: none; }
+}
+
 /* Practice plan */
 .plan-controls { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; margin-bottom: var(--s3); }
 .plan-controls-label { display: inline-flex; align-items: center; gap: 2px; font-size: 0.875rem; font-weight: 500; color: var(--ink-2); }
