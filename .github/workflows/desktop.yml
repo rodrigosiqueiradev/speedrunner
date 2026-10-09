@@ -83,6 +83,15 @@ jobs:
     if: github.ref_type == 'tag' || inputs.tag != ''
     runs-on: ubuntu-latest
     steps:
+      # Full history and tags, to list the changes since the previous version tag.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+      # Checking out a tag can replace an annotated tag with a lightweight one; restore its message.
+      - run: git fetch --force --tags origin
+      - name: Write the release notes
+        run: .github/scripts/release-notes.sh "$RELEASE_TAG" > notes.md
       - uses: actions/download-artifact@v7
         with:
           path: out
@@ -98,8 +107,8 @@ jobs:
           fi
           if gh release view "$RELEASE_TAG" --repo "$RELEASES_REPO" > /dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" out/* --clobber --repo "$RELEASES_REPO"
+            gh release edit "$RELEASE_TAG" --notes-file notes.md --repo "$RELEASES_REPO"
           else
             gh release create "$RELEASE_TAG" out/* --repo "$RELEASES_REPO" \
-              --title "Speedrunner $RELEASE_TAG" \
-              --notes "Portable desktop apps for Speedrunner $RELEASE_TAG."
+              --title "Speedrunner $RELEASE_TAG" --notes-file notes.md
           fi

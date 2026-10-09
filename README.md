@@ -39,7 +39,9 @@ from a run's artifacts on the **Desktop app** workflow in GitHub Actions:
 - **Linux:** `Speedrunner-linux.AppImage`. Make it executable (`chmod +x`) and run it.
 
 To publish a version, push a new tag such as `v0.2.0` (`git tag v0.2.0 && git push origin v0.2.0`);
-a release with the apps appears on the releases repo a few minutes later. To rebuild the apps for
+a release with the apps appears on the releases repo a few minutes later. Its notes list every pull
+request merged since the previous tag. To put a summary on top, use an annotated tag
+(`git tag -a v0.2.0`) and write it in the tag message. To rebuild the apps for
 an existing tag, run the **Desktop app** workflow by hand from the Actions tab and enter the tag.
 Publishing needs a `RELEASES_TOKEN` secret in this repo: a fine-grained token with **Contents**
 read and write access to `speedrunner-releases` only.
