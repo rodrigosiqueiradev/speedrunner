@@ -3,7 +3,7 @@ import type { MetricDoc } from "../explain";
 import { InfoIcon } from "./Icons";
 
 /** A small "?" button that explains a metric and links to its full explanation. */
-export function InfoTip({ doc }: { doc: MetricDoc }) {
+export function InfoTip({ doc }: { doc: Pick<MetricDoc, "id" | "label" | "short"> }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const id = useId();

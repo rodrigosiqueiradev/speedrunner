@@ -1,12 +1,12 @@
-import type { RunAnalysis } from "@speedrunner/core";
+import type { CategoryScore, RunAnalysis } from "@speedrunner/core";
 import { ChevronIcon } from "./Icons";
-import { ADVICE_RULES, CLEAN_TIME, METRICS, type MetricDoc } from "../explain";
+import { ADVICE_RULES, CLEAN_TIME, METRICS, SCORE_METRICS, type MetricDoc, type ScoreDoc } from "../explain";
 import { localPlace } from "../platform";
 
 const SUMMARY = ["personalBest", "realisticTarget", "sumOfBest", "attempts"];
 const SEGMENT = ["pbTime", "gold", "median", "timeSaveVsGold", "realisticTimeSave", "variability", "resetRate"];
 
-export function HowItWorks({ analysis }: { analysis: RunAnalysis }) {
+export function HowItWorks({ analysis, score }: { analysis: RunAnalysis; score: CategoryScore }) {
   return (
     <section id="how-it-works" className="how" aria-labelledby="how-title">
       <h2 id="how-title">How it's calculated</h2>
@@ -15,11 +15,11 @@ export function HowItWorks({ analysis }: { analysis: RunAnalysis }) {
       </p>
 
       <h3>Run totals</h3>
-      {SUMMARY.map((k) => <Entry key={k} doc={METRICS[k]} analysis={analysis} />)}
+      {SUMMARY.map((k) => <Entry key={k} doc={METRICS[k]} example={METRICS[k].example?.(analysis)} />)}
 
       <h3>Per segment</h3>
-      <Entry doc={CLEAN_TIME} analysis={analysis} />
-      {SEGMENT.map((k) => <Entry key={k} doc={METRICS[k]} analysis={analysis} />)}
+      <Entry doc={CLEAN_TIME} />
+      {SEGMENT.map((k) => <Entry key={k} doc={METRICS[k]} example={METRICS[k].example?.(analysis)} />)}
 
       <h3>Practice advice</h3>
       <details id="how-advice" className="how-entry">
@@ -55,12 +55,27 @@ export function HowItWorks({ analysis }: { analysis: RunAnalysis }) {
           </div>
         </div>
       </details>
+
+      <h3>Category score</h3>
+      <ScoreEntries score={score} />
     </section>
   );
 }
 
-function Entry({ doc, analysis }: { doc: MetricDoc; analysis: RunAnalysis }) {
-  const example = doc.example?.(analysis);
+const SCORE_ENTRIES = ["category", "efficiency", "consistency", "completion", "improvement", "provisional", "overall", "pace"] as const;
+
+/** Explanations for the category score and its parts, with examples from the given score. */
+export function ScoreEntries({ score }: { score: CategoryScore | null }) {
+  return (
+    <>
+      {SCORE_ENTRIES.map((k) => (
+        <Entry key={k} doc={SCORE_METRICS[k]} example={score ? SCORE_METRICS[k].example?.(score) : null} />
+      ))}
+    </>
+  );
+}
+
+function Entry({ doc, example }: { doc: MetricDoc | ScoreDoc; example?: string | null }) {
   return (
     <details id={`how-${doc.id}`} className="how-entry">
       <summary>

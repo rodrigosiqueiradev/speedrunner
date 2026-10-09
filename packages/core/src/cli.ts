@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { analyzeRun } from "./analyze.js";
 import { parseLss } from "./parse.js";
+import { scoreRun } from "./score.js";
 import { formatTime } from "./time.js";
 
 const file = process.argv[2];
@@ -10,13 +11,21 @@ if (!file) {
   process.exit(1);
 }
 
-const a = analyzeRun(parseLss(readFileSync(file, "utf8")));
+const run = parseLss(readFileSync(file, "utf8"));
+const a = analyzeRun(run);
+const score = scoreRun(run, a);
 const t = (ms: number | null) => formatTime(ms);
 
 console.log(`${a.game} - ${a.category} (${a.timingMethod})`);
 console.log(`Attempts: ${a.attemptCount}, finished: ${a.finishedAttempts}`);
 console.log(`PB: ${t(a.personalBest)}   Sum of best: ${t(a.sumOfBest)}   Possible save: ${t(a.possibleTimeSave)}`);
-console.log(`Realistic target: ${t(a.realisticTarget)}\n`);
+console.log(`Realistic target: ${t(a.realisticTarget)}`);
+const part = (x: number | null) => (x == null ? "-" : String(Math.round(x)));
+console.log(
+  `Category score: ${part(score.score)}${score.provisional ? " (provisional)" : ""}  ` +
+    `efficiency ${part(score.efficiency.score)}, consistency ${part(score.consistency.score)}, ` +
+    `completion ${part(score.completion.score)}, improvement ${part(score.improvement.score)}\n`,
+);
 
 console.table(
   a.segments.map((s) => ({

@@ -1,37 +1,71 @@
-import { analyzeRun, parseLss, type Run, type TimingMethod } from "@speedrunner/core";
-import { useMemo, useRef, useState } from "react";
+import { analyzeRun, parseLss, scoreRun, type Run, type TimingMethod } from "@speedrunner/core";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AdviceList } from "./components/AdviceList";
 import { FilePicker, type FilePickerHandle } from "./components/FilePicker";
 import { HowItWorks } from "./components/HowItWorks";
+import { Profile } from "./components/Profile";
 import { UploadIcon } from "./components/Icons";
 import { revealExplanation } from "./components/InfoTip";
 import { RouteStrip } from "./components/RouteStrip";
 import { SavingsChart } from "./components/SavingsChart";
+import { ScoreBreakdown } from "./components/ScoreBreakdown";
 import { SegmentTable } from "./components/SegmentTable";
 import { Summary } from "./components/Summary";
 import { isDesktop } from "./platform";
+import { categoryKey, loadProfile, saveProfile, upsertEntry, type ProfileEntry } from "./profile";
 
 interface Loaded {
   fileName: string;
   xml: string;
 }
 
+type View = "run" | "profile";
+const viewFromHash = (): View => (window.location.hash === "#profile" ? "profile" : "run");
+
 export function App() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [timing, setTiming] = useState<TimingMethod | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
+  const [view, setView] = useState<View>(viewFromHash);
+  const [profile, setProfile] = useState<ProfileEntry[]>(loadProfile);
   const picker = useRef<FilePickerHandle>(null);
+  const profilePicker = useRef<FilePickerHandle>(null);
+
+  useEffect(() => saveProfile(profile), [profile]);
+  useEffect(() => {
+    const onHash = () => setView(viewFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const result = useMemo(() => {
     if (!loaded) return null;
     try {
       const run = parseLss(loaded.xml, timing ? { timingMethod: timing } : {});
-      return { run, analysis: analyzeRun(run), hasGameTime: hasGameTime(loaded.xml) };
+      const analysis = analyzeRun(run);
+      return { run, analysis, score: scoreRun(run, analysis), hasGameTime: hasGameTime(loaded.xml) };
     } catch {
       return { error: true as const };
     }
   }, [loaded, timing]);
+
+  const go = (next: View) => {
+    setError(null);
+    setView(next);
+    history.pushState(null, "", next === "profile" ? "#profile" : window.location.pathname + window.location.search);
+    window.scrollTo({ top: 0 });
+  };
+
+  const addToProfile = (fileName: string, xml: string) => {
+    try {
+      const run = parseLss(xml);
+      const score = scoreRun(run);
+      setProfile((p) => upsertEntry(p, score, fileName));
+    } catch {
+      setError(`We couldn't read "${fileName}" as LiveSplit splits, so it wasn't added.`);
+    }
+  };
 
   const load = (fileName: string, xml: string) => {
     setError(null);
@@ -53,8 +87,48 @@ export function App() {
       <header className="shell">
         <div className="shell-inner">
           <span className="brand">Speedrunner</span>
-          {ok && (
-            <nav className="shell-nav" aria-label="Page">
+          <nav className="shell-nav" aria-label="Page">
+            {view === "profile" ? (
+              <a
+                href="#"
+                className="keep"
+                onClick={(e) => {
+                  e.preventDefault();
+                  go("run");
+                }}
+              >
+                Analyse a run
+              </a>
+            ) : (
+              <a
+                href="#profile"
+                className="keep"
+                onClick={(e) => {
+                  e.preventDefault();
+                  go("profile");
+                }}
+              >
+                Profile
+              </a>
+            )}
+            {view === "profile" && profile.length > 0 && (
+              <>
+                <a
+                  href="#how-it-works"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  How it's calculated
+                </a>
+                <button className="shell-button" onClick={() => profilePicker.current?.open()}>
+                  <UploadIcon /> Add files
+                </button>
+              </>
+            )}
+          {view === "run" && ok && (
+            <>
               <a
                 href="#how-it-works"
                 onClick={(e) => {
@@ -67,12 +141,38 @@ export function App() {
               <button className="shell-button" onClick={() => picker.current?.open()}>
                 <UploadIcon /> Open file
               </button>
-            </nav>
+            </>
           )}
+          </nav>
         </div>
       </header>
 
       <div className="app">
+        {view === "profile" && (
+          <>
+            {error && (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            )}
+            <Profile
+              ref={profilePicker}
+              entries={profile}
+              onAdd={(name, xml) => {
+                setError(null);
+                addToProfile(name, xml);
+              }}
+              onError={setError}
+              onRemove={(key) => setProfile((p) => p.filter((e) => e.key !== key))}
+              onSetReference={(key, time) =>
+                setProfile((p) => p.map((e) => (e.key === key ? { ...e, typedReference: time } : e)))
+              }
+            />
+          </>
+        )}
+
+        {view === "run" && (
+          <>
         {!ok && (
           <section className="landing" aria-labelledby="landing-title">
             <h1 id="landing-title">Find where your run loses time</h1>
@@ -154,13 +254,70 @@ export function App() {
               <SegmentTable segments={a.segments} selected={selected} />
             </section>
 
-            <HowItWorks analysis={a} />
+            <section className="block" aria-labelledby="score-title">
+              <div className="block-head">
+                <h2 id="score-title">How well you run this category</h2>
+                <p className="section-note">
+                  A score from 0 to 100 worked out from this file alone, so it can be compared across games in your
+                  profile.
+                </p>
+              </div>
+              <ScoreBreakdown score={ok.score} />
+              <ProfileAction
+                inProfile={profile.find((e) => e.key === categoryKey(ok.score))}
+                fileName={loaded!.fileName}
+                onAdd={() => setProfile((p) => upsertEntry(p, ok.score, loaded!.fileName))}
+                onView={() => go("profile")}
+              />
+            </section>
+
+            <HowItWorks analysis={a} score={ok.score} />
           </main>
+        )}
+          </>
         )}
 
         <footer className="footer">Your splits never leave {isDesktop ? "your computer" : "your browser"}.</footer>
       </div>
     </>
+  );
+}
+
+/** Adds the loaded run to the profile, or says it's already there. */
+function ProfileAction({
+  inProfile,
+  fileName,
+  onAdd,
+  onView,
+}: {
+  inProfile: ProfileEntry | undefined;
+  fileName: string;
+  onAdd: () => void;
+  onView: () => void;
+}) {
+  const viewLink = (
+    <a
+      href="#profile"
+      onClick={(e) => {
+        e.preventDefault();
+        onView();
+      }}
+    >
+      View your profile
+    </a>
+  );
+  if (inProfile?.fileName === fileName) {
+    return <p className="section-foot">This category is in your profile. {viewLink}</p>;
+  }
+  return (
+    <p className="section-foot profile-action">
+      <button onClick={onAdd}>{inProfile ? "Replace in your profile" : "Add to your profile"}</button>
+      {inProfile ? (
+        <span>Your profile has this category from {inProfile.fileName}.</span>
+      ) : (
+        <span>Saved {isDesktop ? "on this computer" : "in this browser"} only.</span>
+      )}
+    </p>
   );
 }
 

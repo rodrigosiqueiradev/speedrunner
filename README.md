@@ -1,14 +1,15 @@
 # Speedrunner
 
 Tools that show speedrunners where they lose time, how fast they could realistically be,
-and (later) how their runs score against other runners across games and categories.
+and how well they run each category on one 0-100 scale across games.
 
 ## Packages
 
 - `packages/core`: parses LiveSplit `.lss` split files and analyses them. Shared by the web app
   and the desktop app. Runs in Node and the browser.
 - `packages/web`: React web app. Upload an `.lss` file (or try the sample) to see your PB, realistic
-  target, where time is lost, and what to practise. Files are analysed in the browser and never uploaded.
+  target, where time is lost, and what to practise, plus a category score. The Profile page combines the scores of
+  several split files into an overall score. Files are analysed in the browser and never uploaded.
 - `packages/desktop`: the web app packaged as a desktop app for Windows, macOS and Linux.
 
 ## Running the web app

@@ -59,6 +59,38 @@ Every segment is checked against four rules. Advice is grouped by segment and ra
 | **Gold is rare** | Your typical time is more than 8% slower than your gold. | The smaller of save to gold and typical − gold. |
 | **Runs die here** | Reset rate is above 15% and at least 10 attempts reached the segment. | The segment's good-day save. |
 
+## Category score
+
+Each game and category gets a score from 0 to 100 for how well you run it, worked out from that category's split
+file alone. Every part is a ratio of your own run rather than a time, so a 12 minute category and a 2 hour one sit on
+the same scale. It doesn't compare you with other runners. Settings come from `SCORE_SETTINGS` in
+[`packages/core/src/score.ts`](../packages/core/src/score.ts).
+
+| Part | Weight | How it's calculated |
+| --- | --- | --- |
+| **Efficiency** | 40% | Gap = (PB − sum of best) ÷ sum of best. Score = 100 × (1 − gap ÷ 10%): 100 when the PB equals the sum of best, 0 at a 10% gap or more. |
+| **Consistency** | 25% | Segment variabilities averaged with each segment's typical time as its weight. Score = 100 × (1 − variability ÷ 20%), so 10% (where Inconsistent advice starts) scores 50. Segments with fewer than 5 clean times are left out. |
+| **Completion** | 20% | Finished attempts ÷ attempts that reached the middle segment, × 100. Early resets don't count. |
+| **Improvement** | 15% | Change = (median of the previous 10 finishes − median of the last 10) ÷ previous median. Score = 50 + 50 × change ÷ 3%: no change is 50, 3% faster is 100, 3% slower is 0. Needs 20 finished runs. |
+
+Every part is clamped to 0–100. A part that can't be worked out is left out and the other weights are scaled up to
+make 100%. The score is rounded to a whole number.
+
+A score is **provisional** when the file has fewer than 20 finished runs, fewer than 5 segments, or fewer than 3 parts
+could be worked out.
+
+Example (Dishonored sample, real time): efficiency 76 (2.4% gap) × 40% + consistency 64 (7.2% variability) × 25% +
+completion 26 (30 of 116 attempts from halfway finished) × 20% + improvement 74 (1.4% faster) × 15% = 63.
+
+### Profile
+
+The profile keeps one score per game and category, saved in your browser (or on your computer in the desktop app).
+Adding a newer file for the same game and category replaces the old one.
+
+- **Overall score:** the average of your 5 best category scores, leaving out provisional ones.
+- **WR pace:** a reference time ÷ PB, also shown for the realistic target. The reference is a time you type in, or a
+  comparison in the split file named "World Record" or "WR". It's shown next to the score but doesn't change it.
+
 ## Timing method
 
 Real time is used unless the PB only has game time. When a file has both, the app shows a Real time / Game time switch and every number is recalculated for the one you pick.

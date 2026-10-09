@@ -1,6 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import { parseTime } from "./time.js";
-import type { Attempt, Ms, Run, Segment, TimingMethod } from "./types.js";
+import type { Attempt, Comparison, Ms, Run, Segment, TimingMethod } from "./types.js";
 
 const ARRAY_TAGS = new Set(["Attempt", "Segment", "SplitTime", "Time"]);
 
@@ -59,6 +59,12 @@ export function parseLss(xml: string, options: ParseOptions = {}): Run {
     };
   });
 
+  // Custom comparisons live next to the PB in each segment's <SplitTimes>; the last split holds the final time.
+  const lastSplitTimes: any[] = rawSegments.at(-1)?.SplitTimes?.SplitTime ?? [];
+  const comparisons: Comparison[] = lastSplitTimes
+    .filter((t) => t["@name"] && t["@name"] !== "Personal Best")
+    .map((t) => ({ name: String(t["@name"]), time: read(t) }));
+
   return {
     game: text(run.GameName) ?? "",
     category: text(run.CategoryName) ?? "",
@@ -66,6 +72,7 @@ export function parseLss(xml: string, options: ParseOptions = {}): Run {
     attemptCount: Number(text(run.AttemptCount) ?? attempts.length),
     attempts,
     segments,
+    comparisons,
   };
 }
 

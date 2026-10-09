@@ -1,4 +1,12 @@
-import { ADVICE_THRESHOLDS, ANALYSIS_DEFAULTS, formatTime, type RunAnalysis } from "@speedrunner/core";
+import {
+  ADVICE_THRESHOLDS,
+  ANALYSIS_DEFAULTS,
+  SCORE_SETTINGS,
+  formatTime,
+  type CategoryScore,
+  type ComponentKey,
+  type RunAnalysis,
+} from "@speedrunner/core";
 import { formatSave } from "./format";
 
 /**
@@ -161,3 +169,119 @@ export const ADVICE_RULES: Array<{ tag: string; when: string; worth: string }> =
     worth: "The segment's good-day save.",
   },
 ];
+
+/** Like MetricDoc, but its worked example comes from a category score. */
+export interface ScoreDoc extends Omit<MetricDoc, "example"> {
+  example?: (s: CategoryScore) => string | null;
+}
+
+const S = SCORE_SETTINGS;
+const pct1 = (x: number) => `${(x * 100).toFixed(1)}%`;
+export const COMPONENT_LABELS: Record<ComponentKey, string> = {
+  efficiency: "Efficiency",
+  consistency: "Consistency",
+  completion: "Completion",
+  improvement: "Improvement",
+};
+
+export const SCORE_METRICS: Record<"category" | ComponentKey | "provisional" | "overall" | "pace", ScoreDoc> = {
+  category: {
+    id: "category-score",
+    label: "Category score",
+    short: "How well you run this category, from 0 to 100, worked out from your own split file.",
+    how: [
+      `A weighted average of four parts: efficiency ${pct(S.weights.efficiency)}, consistency ${pct(S.weights.consistency)}, completion ${pct(S.weights.completion)} and improvement ${pct(S.weights.improvement)}.`,
+      "Each part is a ratio of your own run, not a time, so a 12 minute category and a 2 hour one are scored on the same scale.",
+      "When a part can't be worked out from the file, it's left out and the other weights are scaled up to make 100%.",
+      "It measures how well you run your category, not how fast you are against other runners. Nothing is compared with anyone else's times.",
+    ],
+    example: (s) => {
+      if (s.score == null) return null;
+      const parts = (["efficiency", "consistency", "completion", "improvement"] as const)
+        .filter((k) => s[k].score != null)
+        .map((k) => `${COMPONENT_LABELS[k]} ${Math.round(s[k].score!)} × ${pct(s.weights[k])}`);
+      return `${parts.join(" + ")} = ${s.score}.`;
+    },
+  },
+  efficiency: {
+    id: "efficiency",
+    label: "Efficiency",
+    short: "How close your PB is to your sum of best.",
+    how: [
+      "Gap = (PB − sum of best) ÷ sum of best.",
+      `Efficiency = 100 × (1 − gap ÷ ${pct(S.efficiencyZeroGap)}). A PB equal to your sum of best scores 100, a 5% gap scores 50, and a gap of ${pct(S.efficiencyZeroGap)} or more scores 0.`,
+    ],
+    example: (s) =>
+      s.efficiency.gap == null
+        ? null
+        : `(${formatTime(s.efficiency.personalBest)} − ${formatTime(s.efficiency.sumOfBest)}) ÷ ${formatTime(s.efficiency.sumOfBest)} = ${pct1(s.efficiency.gap)} gap → ${Math.round(s.efficiency.score!)}.`,
+  },
+  consistency: {
+    id: "consistency",
+    label: "Consistency",
+    short: "How much your segment times swing, across the whole run.",
+    how: [
+      "Each segment's variability, averaged with the segment's typical time as its weight, so a 5 minute segment counts more than a 10 second one.",
+      `Consistency = 100 × (1 − variability ÷ ${pct(S.consistencyZeroVariability)}). ${pct(ADVICE_THRESHOLDS.inconsistent)}, where the Inconsistent advice starts, scores 50.`,
+      `Segments with fewer than ${D.minSamples} clean times are left out.`,
+    ],
+    example: (s) =>
+      s.consistency.variability == null
+        ? null
+        : `Variability ${pct1(s.consistency.variability)} across ${s.consistency.segmentsUsed} segments → ${Math.round(s.consistency.score!)}.`,
+  },
+  completion: {
+    id: "completion",
+    label: "Completion",
+    short: "Of the attempts that reached the middle of the run, the share that finished.",
+    how: [
+      "Resetting after a bad start is normal, so early resets don't count. Only attempts that reached the middle segment are counted.",
+      "Completion = 100 × finished attempts ÷ attempts that reached the middle segment.",
+    ],
+    example: (s) =>
+      s.completion.rate == null
+        ? null
+        : `${s.completion.finished} of ${s.completion.reachedMiddle} attempts that reached ${s.completion.middleSegmentName} finished (${pct(s.completion.rate)}) → ${Math.round(s.completion.score!)}.`,
+  },
+  improvement: {
+    id: "improvement",
+    label: "Improvement",
+    short: `Whether your last ${S.improvementWindow} finished runs are faster than the ${S.improvementWindow} before them.`,
+    how: [
+      `Change = (median of the previous ${S.improvementWindow} finishes − median of the last ${S.improvementWindow}) ÷ the previous median.`,
+      `No change scores 50, ${pct(S.improvementFullChange)} faster scores 100 and ${pct(S.improvementFullChange)} slower scores 0.`,
+      `It needs at least ${S.improvementWindow * 2} finished runs. With fewer, it's left out.`,
+    ],
+    example: (s) =>
+      s.improvement.change == null
+        ? null
+        : `Median ${formatTime(s.improvement.previousMedian)} → ${formatTime(s.improvement.recentMedian)}, ${pct1(Math.abs(s.improvement.change))} ${s.improvement.change >= 0 ? "faster" : "slower"} → ${Math.round(s.improvement.score!)}.`,
+  },
+  provisional: {
+    id: "provisional",
+    label: "Provisional",
+    short: "Too little data to trust the score yet, so it's left out of your overall score.",
+    how: [
+      `A category score is provisional when the file has fewer than ${S.provisional.minFinished} finished runs, fewer than ${S.provisional.minSegments} segments, or fewer than ${S.provisional.minComponents} of the four parts could be worked out.`,
+    ],
+  },
+  overall: {
+    id: "overall-score",
+    label: "Overall score",
+    short: `The average of your ${S.overallTop} best category scores.`,
+    how: [
+      `The average of your ${S.overallTop} best category scores, or of all of them if you have fewer. Provisional scores are left out.`,
+      "Using your best categories means a casual run in a side game doesn't drag you down.",
+    ],
+  },
+  pace: {
+    id: "wr-pace",
+    label: "WR pace",
+    short: "A reference time, such as the world record, as a share of your PB.",
+    how: [
+      "WR pace = reference time ÷ PB. 90% means the reference is 10% quicker than your PB.",
+      "The reference comes from a comparison in your split file named \"World Record\" or \"WR\", or a time you type in, which takes priority.",
+      "It's shown next to the score but doesn't change it, because only some categories have one.",
+    ],
+  },
+};

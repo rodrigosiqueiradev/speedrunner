@@ -31,4 +31,12 @@ export interface Run {
   attemptCount: number;
   attempts: Attempt[];
   segments: Segment[];
+  /** Custom comparisons saved in the file (such as "World Record"), with their final time. */
+  comparisons: Comparison[];
+}
+
+export interface Comparison {
+  name: string;
+  /** The comparison's time at the last split, or null if it has none. */
+  time: Ms | null;
 }

@@ -1,0 +1,263 @@
+import { formatTime, overallScore, referencePace, type CategoryScore, type ComponentKey } from "@speedrunner/core";
+import { forwardRef, useState, type FormEvent } from "react";
+import { SCORE_METRICS, type ScoreDoc } from "../explain";
+import { formatScore, parseTypedTime } from "../format";
+import { localPlace } from "../platform";
+import { referenceOf, type ProfileEntry } from "../profile";
+import { FilePicker, type FilePickerHandle } from "./FilePicker";
+import { ScoreEntries } from "./HowItWorks";
+import { InfoTip } from "./InfoTip";
+import { ScoreBreakdown } from "./ScoreBreakdown";
+
+interface Props {
+  entries: ProfileEntry[];
+  onAdd: (fileName: string, xml: string) => void;
+  onError: (message: string) => void;
+  onRemove: (key: string) => void;
+  onSetReference: (key: string, time: number | null) => void;
+}
+
+const pace1 = (x: number | null) => (x == null ? "-" : `${(x * 100).toFixed(1)}%`);
+const title = (s: CategoryScore) => `${s.game || "Unknown game"} ${s.category}`.trim();
+
+const COLUMNS: Array<{ doc: ScoreDoc; cell: (e: ProfileEntry) => string }> = [
+  { doc: SCORE_METRICS.category, cell: (e) => formatScore(e.score.score) },
+  ...(["efficiency", "consistency", "completion", "improvement"] as ComponentKey[]).map((k) => ({
+    doc: SCORE_METRICS[k],
+    cell: (e: ProfileEntry) => formatScore(e.score[k].score),
+  })),
+  {
+    doc: SCORE_METRICS.pace,
+    cell: (e) => {
+      const ref = referenceOf(e);
+      return ref ? pace1(referencePace(e.score, ref.time).pbPace) : "-";
+    },
+  },
+];
+
+/** The runner profile: one score per game and category, and an overall score from the best of them. */
+export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
+  { entries, onAdd, onError, onRemove, onSetReference },
+  picker,
+) {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  // Firm scores first, best first; provisional ones after them.
+  const rank = (e: ProfileEntry) => (e.score.score ?? -1) - (e.score.provisional ? 1000 : 0);
+  const sorted = [...entries].sort((a, b) => rank(b) - rank(a));
+  const selected = sorted.find((e) => e.key === selectedKey) ?? sorted[0] ?? null;
+
+  if (!selected) {
+    return (
+      <>
+        <section className="landing" aria-labelledby="landing-title">
+          <h1 id="landing-title">Your runner profile</h1>
+          <p className="lede">
+            Add a split file for each game and category you run. Each gets a score from 0 to 100 for how well you run
+            it, so different games sit on one scale, and your best five make your overall score.
+          </p>
+        </section>
+        <FilePicker ref={picker} onLoad={onAdd} onError={onError} multiple noSample title="Drop your split files here" />
+      </>
+    );
+  }
+
+  const overall = overallScore(entries.map((e) => e.score));
+  const firm = sorted.filter((e) => !e.score.provisional && e.score.score != null);
+  const strongest = firm[0];
+  const weakest = firm.length > 1 ? firm.at(-1) : undefined;
+  const select = (key: string) => {
+    setSelectedKey(key);
+    document.getElementById("category-detail")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <main className="results">
+      <FilePicker ref={picker} onLoad={onAdd} onError={onError} multiple compact />
+      <div className="run-head">
+        <div>
+          <h1 className="run-title">Runner profile</h1>
+          <p className="run-meta">
+            {entries.length} {entries.length === 1 ? "category" : "categories"} · saved {localPlace}
+          </p>
+        </div>
+      </div>
+
+      <div className="comparisons" role="table" aria-label="Profile scores">
+        <div className="comparison lead" role="row">
+          <div className="comparison-name" role="rowheader">
+            <span className="comparison-label">
+              {SCORE_METRICS.overall.label} <InfoTip doc={SCORE_METRICS.overall} />
+            </span>
+            <span className="comparison-note">
+              {overall.score == null
+                ? "Needs a category that isn't provisional"
+                : overall.counted.length === 1
+                  ? "From your one scored category. Add more to average your best 5"
+                  : `Average of your ${overall.counted.length} best categories`}
+            </span>
+          </div>
+          <div className="comparison-delta" role="cell" />
+          <div className="comparison-time" role="cell">
+            {formatScore(overall.score)}
+          </div>
+        </div>
+        {strongest && <ScoreRow label="Strongest" entry={strongest} onSelect={select} />}
+        {weakest && <ScoreRow label="Weakest" entry={weakest} onSelect={select} />}
+      </div>
+
+      <section className="block" aria-labelledby="categories-title">
+        <div className="block-head">
+          <h2 id="categories-title">Categories</h2>
+          <p className="section-note">
+            Each score only uses that category's split file. Pick a category to see how its score is made up.
+          </p>
+        </div>
+        <div className="table-wrap">
+          <table className="segments profile-table">
+            <thead>
+              <tr>
+                <th scope="col">Category</th>
+                {COLUMNS.map((c) => (
+                  <th key={c.doc.id} scope="col">
+                    <span className="th-inner">
+                      {c.doc.id === "category-score" ? "Score" : c.doc.label} <InfoTip doc={c.doc} />
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((e) => (
+                <tr key={e.key} className={e.key === selected.key ? "selected" : undefined}>
+                  <th scope="row">
+                    <button className="link-button" onClick={() => select(e.key)}>
+                      {title(e.score)}
+                    </button>
+                    {e.score.provisional && <span className="flag muted">provisional</span>}
+                  </th>
+                  {COLUMNS.map((c) => (
+                    <td key={c.doc.id}>{c.cell(e)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="category-detail" className="block" aria-labelledby="detail-title">
+        <div className="block-head">
+          <h2 id="detail-title">{title(selected.score)}</h2>
+          <p className="section-note">
+            From {selected.fileName}, {selected.score.timingMethod === "GameTime" ? "game time" : "real time"},{" "}
+            {selected.score.finishedAttempts.toLocaleString()} finished runs.
+          </p>
+        </div>
+        <ScoreBreakdown score={selected.score} />
+        <Reference key={selected.key} entry={selected} onSet={(t) => onSetReference(selected.key, t)} />
+        <p className="section-foot">
+          <button className="link-button remove" onClick={() => onRemove(selected.key)}>
+            Remove {title(selected.score)} from your profile
+          </button>
+        </p>
+      </section>
+
+      <section id="how-it-works" className="how" aria-labelledby="how-title">
+        <h2 id="how-title">How the score is calculated</h2>
+        <p className="section-note">
+          Everything is worked out from your split files {localPlace}. Examples use {title(selected.score)}.
+        </p>
+        <ScoreEntries score={selected.score} />
+      </section>
+    </main>
+  );
+});
+
+function ScoreRow({ label, entry, onSelect }: { label: string; entry: ProfileEntry; onSelect: (key: string) => void }) {
+  return (
+    <div className="comparison" role="row">
+      <div className="comparison-name" role="rowheader">
+        <span className="comparison-label">{label}</span>
+        <span className="comparison-note">
+          <button className="link-button" onClick={() => onSelect(entry.key)}>
+            {title(entry.score)}
+          </button>
+        </span>
+      </div>
+      <div className="comparison-delta" role="cell" />
+      <div className="comparison-time" role="cell">
+        {formatScore(entry.score.score)}
+      </div>
+    </div>
+  );
+}
+
+/** The reference pace for one category, and the field to type a reference time in. */
+function Reference({ entry, onSet }: { entry: ProfileEntry; onSet: (time: number | null) => void }) {
+  const ref = referenceOf(entry);
+  const [text, setText] = useState(entry.typedReference != null ? formatTime(entry.typedReference) : "");
+  const [invalid, setInvalid] = useState(false);
+  const s = entry.score;
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (text.trim() === "") return onSet(null);
+    const t = parseTypedTime(text);
+    setInvalid(t == null);
+    if (t != null) onSet(t);
+  };
+
+  let sentence: string;
+  if (!ref) {
+    sentence =
+      'Add the world record or a goal time to see how close your PB is to its pace. A comparison named "World Record" or "WR" in your split file is picked up on its own.';
+  } else {
+    const p = referencePace(s, ref.time);
+    const from = ref.source === "typed" ? "typed in" : `from your "${ref.name}" comparison`;
+    sentence = `Your PB of ${formatTime(s.personalBest)} is at ${pace1(p.pbPace)} of the reference pace (${formatTime(ref.time)}, ${from}).`;
+    if (p.targetPace != null && s.realisticTarget !== s.personalBest)
+      sentence += ` Your realistic target of ${formatTime(s.realisticTarget)} would be at ${pace1(p.targetPace)}.`;
+  }
+
+  return (
+    <div className="reference">
+      <p className="reference-text">
+        <span className="comparison-label">
+          {SCORE_METRICS.pace.label} <InfoTip doc={SCORE_METRICS.pace} />
+        </span>{" "}
+        {sentence}
+      </p>
+      <form className="reference-form" onSubmit={submit}>
+        <label htmlFor={`ref-${entry.key}`}>Reference time</label>
+        <input
+          id={`ref-${entry.key}`}
+          inputMode="decimal"
+          placeholder={s.fileReference ? formatTime(s.fileReference.time) : "e.g. 36:12.5"}
+          value={text}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? `ref-${entry.key}-error` : undefined}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <button type="submit">Save</button>
+        {entry.typedReference != null && (
+          <button
+            type="button"
+            onClick={() => {
+              setText("");
+              setInvalid(false);
+              onSet(null);
+            }}
+          >
+            {s.fileReference ? "Use the file's time" : "Clear"}
+          </button>
+        )}
+      </form>
+      {invalid && (
+        <p className="reference-error" id={`ref-${entry.key}-error`} role="alert">
+          Type the time as hours, minutes and seconds, like 1:02:03.4 or 36:12.5.
+        </p>
+      )}
+    </div>
+  );
+}
+

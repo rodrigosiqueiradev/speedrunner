@@ -278,6 +278,12 @@ The logbook's headline entry: Personal best, Realistic target and Sum of best la
 ### Route strip (signature)
 The PB drawn as its route, built to stay readable from 5 splits to 100. A 10px Route Track runs the full width, split into one column per segment as wide as the segment took, with 1px gaps. Where a good attempt would save time, a Split Blue bar rises from the track, as tall as the save relative to the run's biggest (44px at most, 2px at least), so the eye goes to the peaks however many splits there are. There are no labels inside columns. The three biggest saves carry a mono rank number above their bar, and the caption lists them by name and save; each list item is a button too. When the file uses LiveSplit subsplits ("-Name", closed by "{Section}Name"), section names run under the track in 1px-ruled bands, and narrow sections stay unlabelled. A mono axis gives 0:00 and the PB time. Every column is a full-height button that scrolls to its row; hover tints the column and darkens its bar, and the tooltip gives name, PB time and save.
 
+### Category score panel
+The run page's score and the profile's per-category detail. One bordered 10px panel: on the left, the category score on Split Blue Wash (Time Lead mono with a muted "/100") with its info tip and a note naming the biggest drag or why it's provisional; then four ruled columns, one per part (efficiency, consistency, completion, improvement), each with its label and info tip, its weight in Micro mono, its 0–100 value in Time mono and a one-line note saying what it was worked out from. Below 860px the parts fold into a 2×2 grid under the score.
+
+### Runner profile
+Reuses the logbook pieces rather than adding new ones. The comparisons panel holds the overall score as its lead row, then the strongest and weakest categories. A table lists one row per category (score, the four parts and WR pace), firm scores first; its first column is a link button that selects the category, and provisional rows carry a muted flag. The selected category gets a score panel, a WR pace sentence with a mono reference-time field, and a quiet remove link. "How the score is calculated" closes the page.
+
 ### Advice list
 A ranked logbook entry, one row per segment. A mono rank number in Ink Muted comes first, then the segment name as a link button and its advice tags as pills, then the reasons in Note type, with the estimated worth right-aligned in Split Blue Ink mono. Rows are divided by hairlines with no card around them.
 
