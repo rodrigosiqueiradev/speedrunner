@@ -29,7 +29,11 @@ export function SessionInsights({ insights: r }: { insights: Insights }) {
         ))}
       </ul>
       <div className="pace-charts">
-        <PaceChart title="Time into a session" note="Each split by when it was played, against that session's average" buckets={r.byMinutesIn} />
+        <PaceChart
+          title="How long you'd been playing"
+          note="Each split by how long the session had been going when you did it (a split at 13:30 in a session that started at 9:00 counts as 4h30), against that session's average"
+          buckets={r.byMinutesIn}
+        />
         <PaceChart
           title="Time of day"
           note="By when the session started, against your average. Night is 0-6h, morning 6-12h, afternoon 12-18h, evening 18-24h"

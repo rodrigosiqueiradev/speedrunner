@@ -40,7 +40,7 @@ describe("App", () => {
     const section = await screen.findByRole("region", { name: "How your sessions go" });
     expect(section.textContent).toMatch(/185 sessions from 1,788 attempts/);
     expect(section.textContent).toMatch(/After a near-PBNot enough data/);
-    expect(screen.getByRole("table", { name: "Pace by time into a session" })).toBeTruthy();
+    expect(screen.getByRole("table", { name: "Pace by how long you'd been playing" })).toBeTruthy();
   });
 
   it("explains how each number is calculated", async () => {
