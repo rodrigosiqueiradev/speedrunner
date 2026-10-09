@@ -2,6 +2,7 @@ import type { CategoryScore, RunAnalysis } from "@speedrunner/core";
 import { ChevronIcon } from "./Icons";
 import { ADVICE_RULES, CLEAN_TIME, METRICS, SCORE_METRICS, type MetricDoc, type ScoreDoc } from "../explain";
 import { localPlace } from "../platform";
+import { SESSION_ENTRIES } from "../session-explain";
 
 const SUMMARY = ["personalBest", "realisticTarget", "sumOfBest", "attempts"];
 const SEGMENT = ["pbTime", "gold", "median", "timeSaveVsGold", "realisticTimeSave", "variability", "resetRate"];
@@ -55,6 +56,9 @@ export function HowItWorks({ analysis, score }: { analysis: RunAnalysis; score: 
           </div>
         </div>
       </details>
+
+      <h3>Session insights</h3>
+      {SESSION_ENTRIES.map((doc) => <Entry key={doc.id} doc={doc} />)}
 
       <h3>Category score</h3>
       <ScoreEntries score={score} />

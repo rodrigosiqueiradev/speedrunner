@@ -38,8 +38,15 @@ describe("App", () => {
     render(<App />);
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
     const section = await screen.findByRole("region", { name: "How your sessions go" });
-    expect(section.textContent).toMatch(/185 sessions from 1,788 attempts/);
-    expect(section.textContent).toMatch(/After a near-PBNot enough data/);
+    expect(section.textContent).toMatch(/185 sessions\s*from 1,788 attempts/);
+    expect(section.textContent).toMatch(/After a near-PB\s*Not enough data/);
+
+    // Each check and chart explains itself in a tooltip, with a full entry in How it's calculated.
+    fireEvent.click(screen.getByRole("button", { name: "How is Fatigue calculated?" }));
+    expect(screen.getByRole("note").textContent).toMatch(/pace or reset rate/);
+    expect(screen.getAllByRole("button", { name: "How is How long you'd been playing calculated?" }).length).toBe(1);
+    const how = screen.getByRole("region", { name: "How it's calculated" });
+    expect(how.querySelector("#how-fatigue")).toBeTruthy();
     expect(screen.getByRole("table", { name: "Pace by how long you'd been playing" })).toBeTruthy();
   });
 
