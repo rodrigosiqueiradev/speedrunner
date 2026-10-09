@@ -479,3 +479,30 @@ table.profile-table th:first-child { white-space: nowrap; }
   .score-part { border-left: none; border-top: 1px solid var(--line); }
   .score-part:nth-child(even) { border-left: 1px solid var(--line); }
 }
+
+/* Session insights: findings as a ruled list, then diverging pace bars */
+.session-meta { margin: 0 0 var(--s3); color: var(--ink-3); font-size: 0.875rem; }
+.findings { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.finding { padding: var(--s3) 0; border-bottom: 1px solid var(--line); }
+.finding-head { display: flex; align-items: baseline; gap: var(--s3); flex-wrap: wrap; }
+.finding-title { font-weight: 600; }
+.finding-message { margin: var(--s1) 0 0; color: var(--ink-2); font-size: 0.9375rem; max-width: 72ch; }
+.finding.clear .finding-message { color: var(--ink); }
+.finding.not-enough-data .finding-title { color: var(--ink-2); }
+.finding-status.clear { background: var(--accent-wash); border-color: transparent; color: var(--accent-ink); }
+.pace-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s4); margin-top: var(--s5); }
+.pace-chart figcaption { display: flex; flex-direction: column; margin-bottom: var(--s2); }
+.pace-chart-title { font-weight: 600; font-size: 0.9375rem; }
+.pace-chart-note { color: var(--ink-3); font-size: 0.8125rem; }
+.pace-axis { display: grid; grid-template-columns: 1fr 1fr; margin-left: calc(84px + var(--s3)); margin-right: calc(6ch + var(--s3)); font-size: 0.75rem; color: var(--ink-3); }
+.pace-axis span:last-child { text-align: right; }
+.pace-row { display: grid; grid-template-columns: 84px 1fr 6ch; gap: var(--s3); align-items: center; padding: 4px 0; }
+.pace-track { position: relative; height: 16px; }
+.pace-track::before { content: ""; position: absolute; left: 50%; top: -4px; bottom: -4px; border-left: 1px solid var(--line-strong); }
+.pace-bar { position: absolute; top: 2px; height: 12px; border-radius: 3px; }
+.pace-bar.faster { background: var(--accent); }
+.pace-bar.slower { background: var(--line-strong); }
+.pace-range { position: absolute; top: 7px; height: 2px; background: var(--ink-3); opacity: 0.6; }
+.pace-thin { position: absolute; inset: -4px 0; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--ink-3); }
+.pace-row .bar-value { text-align: right; }
+.session-how { margin-top: var(--s4); border-top: 1px solid var(--line); }

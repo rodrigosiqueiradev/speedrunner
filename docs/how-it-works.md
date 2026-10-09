@@ -91,6 +91,32 @@ Adding a newer file for the same game and category replaces the old one.
 - **WR pace:** a reference time ÷ PB, also shown for the realistic target. The reference is a time you type in, or a
   comparison in the split file named "World Record" or "WR". It's shown next to the score but doesn't change it.
 
+## Session insights
+
+Settings come from `SESSION_INSIGHT_SETTINGS` in
+[`packages/core/src/session-insights.ts`](../packages/core/src/session-insights.ts). Session grouping
+on its own is in [`packages/core/src/sessions.ts`](../packages/core/src/sessions.ts) for other features to reuse.
+
+- **Sessions.** LiveSplit 1.6 and later save when every attempt started and ended (in UTC). A break of more than
+  30 minutes starts a new session. Files without attempt dates, or with fewer than 8 sessions, get no insights.
+- **Pace.** Each attempt's clean segment times are compared with your usual time for those segments: the median
+  of the 51 clean times around that attempt. Using nearby attempts keeps months of improvement from looking like
+  a time-of-day or session effect. A segment counts as at most 2× its usual time, so a pause doesn't swamp the rest.
+- **Warm-up.** Your first 3 attempts of each session against the rest of that session.
+- **Peak window.** Pace in each stretch of a session (0-20 min, 20-40 min, 40 min-1h, 1-1.5h, 1.5-2h, 2-3h, 3-4h,
+  4h+) against that session's own average.
+- **Fatigue.** Reset rate and pace before and after 1h, 1.5h, 2h, 2.5h, 3h and 4h into a session, for sessions with at
+  least 3 attempts on each side. The point where things get worse the most is reported.
+- **Tilt.** The attempt right after a reset in the last third of the route, or after a finished run within 2% of the
+  PB standing at the time, against every other next attempt: how often it resets in the first third, and its pace.
+- **Time of day and day of week.** Each session's pace in each part of the day (or day of the week) against all other
+  sessions, using the computer's time zone.
+
+Sessions, not attempts, are the unit for every comparison except tilt, because attempts in one session aren't
+independent. An effect is stated only when it is at least 0.5% of pace (or 5 points of reset rate), its 95% interval
+excludes zero (99% when the best of several windows, days or times is picked), and at least 8 sessions or 15 events
+back it. Otherwise the app says there is no clear effect, or not enough data yet.
+
 ## Timing method
 
 Real time is used unless the PB only has game time. When a file has both, the app shows a Real time / Game time switch and every number is recalculated for the one you pick.

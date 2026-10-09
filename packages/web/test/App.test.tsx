@@ -34,6 +34,15 @@ describe("App", () => {
     await waitFor(() => expect(screen.getAllByText("37:37.97").length).toBeGreaterThan(0));
   });
 
+  it("shows session insights only where the data backs them", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
+    const section = await screen.findByRole("region", { name: "How your sessions go" });
+    expect(section.textContent).toMatch(/185 sessions from 1,788 attempts/);
+    expect(section.textContent).toMatch(/Warm-upNot enough data/);
+    expect(screen.getByRole("table", { name: "Pace by minutes into a session" })).toBeTruthy();
+  });
+
   it("explains how each number is calculated", async () => {
     render(<App />);
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });

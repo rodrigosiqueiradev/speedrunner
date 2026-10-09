@@ -1,4 +1,4 @@
-import { analyzeRun, parseLss, scoreRun, type Run, type TimingMethod } from "@speedrunner/core";
+import { analyzeRun, analyzeSessions, parseLss, scoreRun, type Run, type TimingMethod } from "@speedrunner/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdviceList } from "./components/AdviceList";
 import { FilePicker, type FilePickerHandle } from "./components/FilePicker";
@@ -10,6 +10,7 @@ import { RouteStrip } from "./components/RouteStrip";
 import { SavingsChart } from "./components/SavingsChart";
 import { ScoreBreakdown } from "./components/ScoreBreakdown";
 import { SegmentTable } from "./components/SegmentTable";
+import { SessionInsights } from "./components/SessionInsights";
 import { Summary } from "./components/Summary";
 import { isDesktop } from "./platform";
 import { categoryKey, loadProfile, saveProfile, upsertEntry, type ProfileEntry } from "./profile";
@@ -44,7 +45,13 @@ export function App() {
     try {
       const run = parseLss(loaded.xml, timing ? { timingMethod: timing } : {});
       const analysis = analyzeRun(run);
-      return { run, analysis, score: scoreRun(run, analysis), hasGameTime: hasGameTime(loaded.xml) };
+      return {
+        run,
+        analysis,
+        score: scoreRun(run, analysis),
+        sessions: analyzeSessions(run),
+        hasGameTime: hasGameTime(loaded.xml),
+      };
     } catch {
       return { error: true as const };
     }
@@ -252,6 +259,17 @@ export function App() {
                 </p>
               </div>
               <SegmentTable segments={a.segments} selected={selected} />
+            </section>
+
+            <section className="block" aria-labelledby="sessions-title">
+              <div className="block-head">
+                <h2 id="sessions-title">How your sessions go</h2>
+                <p className="section-note">
+                  Warm-up, fatigue and tilt, from when each attempt was played. An effect is only stated when there are
+                  enough sessions to say so honestly.
+                </p>
+              </div>
+              <SessionInsights insights={ok.sessions} />
             </section>
 
             <section className="block" aria-labelledby="score-title">
