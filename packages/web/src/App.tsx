@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AdviceList } from "./components/AdviceList";
 import { FilePicker, type FilePickerHandle } from "./components/FilePicker";
 import { HowItWorks } from "./components/HowItWorks";
+import { PracticePlan } from "./components/PracticePlan";
 import { Profile } from "./components/Profile";
 import { UploadIcon } from "./components/Icons";
 import { revealExplanation } from "./components/InfoTip";
@@ -228,6 +229,17 @@ export function App() {
                 <p className="section-note">Ranked by the time each segment's advice is estimated to be worth.</p>
               </div>
               <AdviceList advice={a.advice} onSelect={selectSegment} />
+            </section>
+
+            <section className="block" aria-labelledby="plan-title">
+              <div className="block-head">
+                <h2 id="plan-title">Practice plan</h2>
+                <p className="section-note">
+                  Where an hour of practice should take the most time off a typical run, from your gap to a good day,
+                  how long one rep takes and how fast you've improved there before.
+                </p>
+              </div>
+              <PracticePlan run={ok.run} analysis={a} onSelect={selectSegment} />
             </section>
 
             <section className="block" aria-labelledby="time-title">

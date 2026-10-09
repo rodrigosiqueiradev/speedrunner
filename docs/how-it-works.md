@@ -91,6 +91,27 @@ Adding a newer file for the same game and category replaces the old one.
 - **WR pace:** a reference time ÷ PB, also shown for the realistic target. The reference is a time you type in, or a
   comparison in the split file named "World Record" or "WR". It's shown next to the score but doesn't change it.
 
+## Practice plan
+
+The practice plan ranks segments by the time an hour of practice is expected to take off a typical run, then turns
+the ranking into a session. Settings come from `PRACTICE_SETTINGS` in
+[`packages/core/src/practice.ts`](../packages/core/src/practice.ts). The assumed learning rate and the rep overhead
+are first guesses, to be tuned against real split files.
+
+| Number | How it's calculated |
+| --- | --- |
+| **Gap to good day** | Typical time − good-day time. The most practice is expected to take off a typical run. A shaky segment has a wider gap. |
+| **One rep** | Typical time + 20 seconds to reload a save or get back into position. |
+| **Learning per doubling** | How much faster the segment got each time your number of clean times doubled: a straight line through (log2 of rep number, segment time), fitted to 8 equal groups of your clean times in attempt order (average log2 rep number, median time). Getting slower counts as no learning. Needs 10 clean times. |
+| **Learning rate used** | Your own rate blended with an assumed 2% of the typical time per doubling. Your rate's weight is n ÷ (n + 30) for n clean times, so it counts as much as the assumption at 30 times. |
+| **Per hour** | Learning rate used × log2((n + reps in an hour) ÷ n), capped at the gap to good day. Each extra rep is worth less than the last, so a segment you've played 500 times gains less from an hour than one you've played 50 times. |
+
+**The session** (60 minutes unless you pick 30, 90 or 120): a quarter of it, rounded so the rest is whole 5 minute
+blocks, is kept for full runs when one typical run (median of your last 50 finishes) fits in it. Otherwise the whole
+session is segment practice. The blocks are handed out one at a time, each to the segment whose next block is
+expected to save the most, so time spreads out as a segment's returns shrink. The plan's total is the sum of what each
+segment's minutes are expected to save. Segments with fewer than 5 clean times are left out.
+
 ## Session insights
 
 Settings come from `SESSION_INSIGHT_SETTINGS` in

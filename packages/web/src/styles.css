@@ -480,6 +480,29 @@ table.profile-table th:first-child { white-space: nowrap; }
   .score-part:nth-child(even) { border-left: 1px solid var(--line); }
 }
 
+/* Practice plan */
+.plan-controls { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; margin-bottom: var(--s3); }
+.plan-controls-label { display: inline-flex; align-items: center; gap: 2px; font-size: 0.875rem; font-weight: 500; color: var(--ink-2); }
+.plan { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.plan-row { display: grid; grid-template-columns: 64px minmax(0, 1.2fr) minmax(0, 1fr) 72px; gap: var(--s4); align-items: center; padding: var(--s3) 0; border-bottom: 1px solid var(--line); }
+.plan-minutes { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.plan-what { display: flex; flex-direction: column; min-width: 0; }
+.plan-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-detail { color: var(--ink-3); font-size: 0.875rem; }
+.plan-bar { height: 10px; border-radius: 4px; background: var(--r0); overflow: hidden; }
+.plan-bar span { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.plan-row.full-runs .plan-bar span { background: var(--line-strong); }
+.plan-save { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--accent-ink); text-align: right; white-space: nowrap; }
+.plan-total b { font-family: var(--mono); color: var(--accent-ink); }
+.plan-subhead { font-size: 1rem; margin: var(--s5) 0 var(--s3); }
+table.roi th:first-child { text-align: left; position: sticky; left: 0; z-index: 1; background: var(--surface); }
+table.roi thead th:first-child { background: var(--surface-sunk); }
+table.roi .roi-main { font-weight: 600; color: var(--accent-ink); }
+@media (max-width: 640px) {
+  .plan-row { grid-template-columns: 64px minmax(0, 1fr) auto; gap: var(--s3); }
+  .plan-bar { display: none; }
+}
+
 /* Session insights: findings as a ruled list, then diverging pace bars */
 .session-meta { margin: 0 0 var(--s3); color: var(--ink-3); font-size: 0.875rem; }
 .findings { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
