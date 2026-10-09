@@ -26,9 +26,11 @@ same page in a native window, with no backend: split files are still read and an
 the app makes no network requests.
 
 Every push to `main` and every pull request builds portable apps, with nothing to install, and
-publishing a GitHub release attaches them to that release. Download them from the
-[latest release](https://github.com/rodrigosiqueiradev/speedrunner/releases/latest), or from a run's
-artifacts on the **Desktop app** workflow in GitHub Actions:
+pushing a version tag publishes them as a release on the public
+[speedrunner-releases](https://github.com/rodrigosiqueiradev/speedrunner-releases) repo, so this
+repo can stay private. Download them from the
+[latest release](https://github.com/rodrigosiqueiradev/speedrunner-releases/releases/latest), or
+from a run's artifacts on the **Desktop app** workflow in GitHub Actions:
 
 - **Windows:** `Speedrunner-windows.exe`. Put it anywhere and run it. It uses the WebView2 runtime
   that ships with Windows 10 and 11.
@@ -36,9 +38,11 @@ artifacts on the **Desktop app** workflow in GitHub Actions:
   Unzip it and run it from any folder.
 - **Linux:** `Speedrunner-linux.AppImage`. Make it executable (`chmod +x`) and run it.
 
-To publish a version, create a release on GitHub with a new tag such as `v0.2.0`; the apps appear on
-it a few minutes later. To add the apps to an existing release, run the **Desktop app** workflow
-by hand from the Actions tab and enter the release's tag.
+To publish a version, push a new tag such as `v0.2.0` (`git tag v0.2.0 && git push origin v0.2.0`);
+a release with the apps appears on the releases repo a few minutes later. To rebuild the apps for
+an existing tag, run the **Desktop app** workflow by hand from the Actions tab and enter the tag.
+Publishing needs a `RELEASES_TOKEN` secret in this repo: a fine-grained token with **Contents**
+read and write access to `speedrunner-releases` only.
 
 The apps aren't signed with a developer certificate yet, so both Windows and macOS warn on first launch:
 

@@ -2,23 +2,24 @@ name: Desktop app
 on:
   push:
     branches: [main]
+    # Pushing a version tag such as v0.2.0 builds the apps and publishes them as a release on the
+    # public releases repo, so this repo and its code can stay private.
+    tags: ["v*"]
   pull_request:
     paths:
       - "packages/**"
       - "package-lock.json"
       - ".github/workflows/desktop.yml"
-  # Publishing a GitHub release builds the apps and attaches them to it.
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to build and attach the apps to (leave empty to only build)"
+        description: "Tag to build and publish to the releases repo (leave empty to only build)"
         required: false
 permissions:
-  contents: write
+  contents: read
 env:
-  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+  RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
+  RELEASES_REPO: rodrigosiqueiradev/speedrunner-releases
 jobs:
   build:
     name: build (${{ matrix.name }})
@@ -75,9 +76,30 @@ jobs:
           name: speedrunner-${{ matrix.name }}
           path: out/*
           if-no-files-found: error
-      - name: Attach to the release
-        if: env.RELEASE_TAG != ''
-        shell: bash
+
+  publish:
+    name: publish release
+    needs: build
+    if: github.ref_type == 'tag' || inputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: out
+          merge-multiple: true
+      - name: Publish to the releases repo
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$RELEASE_TAG" out/* --clobber --repo "$GITHUB_REPOSITORY"
+          # A fine-grained token with Contents read and write on the releases repo only.
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::The RELEASES_TOKEN secret is missing, so the apps can't be published to $RELEASES_REPO."
+            exit 1
+          fi
+          if gh release view "$RELEASE_TAG" --repo "$RELEASES_REPO" > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" out/* --clobber --repo "$RELEASES_REPO"
+          else
+            gh release create "$RELEASE_TAG" out/* --repo "$RELEASES_REPO" \
+              --title "Speedrunner $RELEASE_TAG" \
+              --notes "Portable desktop apps for Speedrunner $RELEASE_TAG."
+          fi
