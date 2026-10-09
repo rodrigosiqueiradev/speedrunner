@@ -19,7 +19,9 @@ export function parseTime(raw: string | undefined | null): Ms | null {
 export function formatTime(ms: Ms | null, decimals = 2): string {
   if (ms == null) return "-";
   const sign = ms < 0 ? "-" : "";
-  const abs = Math.abs(ms);
+  // Round to the shown precision first, so 59.999 reads as 1:00.00 rather than 0:60.00.
+  const unit = 10 ** (3 - decimals);
+  const abs = Math.round(Math.abs(ms) / unit) * unit;
   const hours = Math.floor(abs / 3_600_000);
   const minutes = Math.floor((abs % 3_600_000) / 60_000);
   const seconds = ((abs % 60_000) / 1000).toFixed(decimals);

@@ -2,6 +2,7 @@ import { analyzeRun, analyzeSessions, parseLss, scoreRun, type Run, type TimingM
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdviceList } from "./components/AdviceList";
 import { FilePicker, type FilePickerHandle } from "./components/FilePicker";
+import { GoalPlanner } from "./components/GoalPlanner";
 import { HowItWorks } from "./components/HowItWorks";
 import { PracticePlan } from "./components/PracticePlan";
 import { Profile } from "./components/Profile";
@@ -272,6 +273,14 @@ export function App() {
               </div>
               <SegmentTable segments={a.segments} selected={selected} />
             </section>
+
+            <GoalPlanner
+              key={`${loaded!.fileName}:${ok.run.timingMethod}`}
+              run={ok.run}
+              analysis={a}
+              xml={loaded!.xml}
+              fileName={loaded!.fileName}
+            />
 
             <section className="block" aria-labelledby="sessions-title">
               <div className="block-head">

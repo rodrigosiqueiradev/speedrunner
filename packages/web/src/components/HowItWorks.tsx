@@ -3,6 +3,7 @@ import { ChevronIcon } from "./Icons";
 import { ADVICE_RULES, CLEAN_TIME, METRICS, SCORE_METRICS, type MetricDoc, type ScoreDoc } from "../explain";
 import { localPlace } from "../platform";
 import { PRACTICE_ENTRIES } from "../practice-explain";
+import { GOAL_ENTRIES } from "../goal-explain";
 import { SESSION_ENTRIES } from "../session-explain";
 
 const SUMMARY = ["personalBest", "realisticTarget", "sumOfBest", "attempts"];
@@ -60,6 +61,9 @@ export function HowItWorks({ analysis, score }: { analysis: RunAnalysis; score: 
 
       <h3>Practice plan</h3>
       {PRACTICE_ENTRIES.map((doc) => <Entry key={doc.id} doc={doc} />)}
+
+      <h3>Goal planner and LiveSplit comparisons</h3>
+      {GOAL_ENTRIES.map((doc) => <Entry key={doc.id} doc={doc} />)}
 
       <h3>Session insights</h3>
       {SESSION_ENTRIES.map((doc) => <Entry key={doc.id} doc={doc} />)}

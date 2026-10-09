@@ -503,6 +503,34 @@ table.roi .roi-main { font-weight: 600; color: var(--accent-ink); }
   .plan-bar { display: none; }
 }
 
+/* Goal planner and LiveSplit comparisons */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.goal { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4) var(--s5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.goal-help { color: var(--ink-3); font-size: 0.875rem; }
+.goal-text { margin: 0; color: var(--ink-2); font-size: 0.9375rem; max-width: 78ch; }
+.goal-text b { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--accent-ink); }
+.goal-table { margin-top: var(--s3); }
+.goal-table th:first-child { text-align: left; }
+.export-options { margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.title-with-tip { display: inline-flex; align-items: center; gap: var(--s1); }
+.export-option { display: grid; grid-template-columns: auto 1fr auto; gap: var(--s3); align-items: center; padding: var(--s3) var(--s4); }
+.export-option label { cursor: pointer; }
+.export-option + .export-option { border-top: 1px solid var(--line); }
+.export-option:hover { background: var(--hover); }
+.export-option.disabled { background: none; }
+.export-option.disabled label { cursor: default; }
+.export-option.disabled .export-label, .export-option.disabled .export-time { color: var(--ink-3); }
+.export-option input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent-fill); }
+.export-text { display: flex; flex-direction: column; min-width: 0; }
+.export-label { font-weight: 500; }
+.export-time { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 1.125rem; font-weight: 500; text-align: right; }
+button:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 640px) {
+  .goal { padding: var(--s3) var(--s4); }
+  .export-option { grid-template-columns: auto 1fr; }
+  .export-time { grid-column: 2; text-align: left; font-size: 0.9375rem; }
+}
+
 /* Session insights: findings as a ruled list, then diverging pace bars */
 .session-meta { margin: 0 0 var(--s3); color: var(--ink-3); font-size: 0.875rem; }
 .findings { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }

@@ -112,6 +112,35 @@ session is segment practice. The blocks are handed out one at a time, each to th
 expected to save the most, so time spreads out as a segment's returns shrink. The plan's total is the sum of what each
 segment's minutes are expected to save. Segments with fewer than 5 clean times are left out.
 
+## Goal planner
+
+You type a goal such as sub 40:00. The plan starts from your PB and finds the least demanding set of segment times
+that finishes under it (a hundredth under, so LiveSplit shows it as sub).
+
+- Your own spread of times is the difficulty of each segment. The plan asks every segment for the same pace,
+  measured as a share of your recent clean times ("a time you hit in 1 of every 7 attempts"), and picks the most
+  relaxed pace whose segment times add up to the goal. Segments where your times swing widely give more time at the
+  same pace than segments you already play close to your best.
+- A segment keeps its PB time when the PB is already faster than that pace, or when it has fewer than 5 clean
+  times.
+- The realistic target is the same idea at a fixed pace of 1 in 4 (the good-day time). A goal that needs a rarer
+  pace says how much more often you'd need to hit those times to make it a good-day goal.
+- When even your best recent time in every segment isn't enough, the plan moves each segment from its recent best
+  towards its gold by the same fraction. When the goal is faster than every segment at its gold, the plan says it
+  needs new golds first.
+
+## LiveSplit comparisons
+
+"Race these in LiveSplit" saves a copy of your split file with up to three comparisons added. The original file is
+never changed, and saving again from a copy replaces these comparisons rather than adding them twice.
+
+- **Realistic target**: each segment at its good-day time, or its PB time where that's faster.
+- **Sub X (balanced)**: the goal plan, split by split. It's written for the timing method the page is showing.
+- **Recent golds**: the best clean time in each segment over its last 50 times. Unlike the sum of best, a gold set
+  long ago and never matched since doesn't count.
+
+The realistic target and recent golds are written for both real time and game time when the file has both.
+
 ## Session insights
 
 Settings come from `SESSION_INSIGHT_SETTINGS` in

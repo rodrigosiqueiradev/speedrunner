@@ -56,7 +56,8 @@ describe("App", () => {
     await screen.findByRole("heading", { name: /Dishonored/ });
 
     // The ? next to a metric opens a short explanation.
-    fireEvent.click(screen.getByRole("button", { name: "How is Realistic target calculated?" }));
+    // The first one is in the run totals at the top.
+    fireEvent.click(screen.getAllByRole("button", { name: "How is Realistic target calculated?" })[0]);
     expect(screen.getByRole("note").textContent).toMatch(/good attempt/);
 
     // Every column of the segment table has its own explanation.

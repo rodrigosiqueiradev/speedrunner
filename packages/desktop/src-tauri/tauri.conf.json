@@ -19,6 +19,7 @@
   "app": {
     "windows": [
       {
+        "create": false,
         "title": "Speedrunner",
         "width": 1200,
         "height": 860,
