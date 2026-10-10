@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { LIVE_RUN_KEY, loadLiveConfig, saveLiveConfig, type LiveConfig } from "../live/config";
 import { DEFAULT_LIVESPLIT_URL, DEMO_SPEEDS, type DemoSpeed } from "../live/feeds";
-import { LIVE_STATS, STAT_BY_ID } from "../live/stats";
+import { DEFAULT_CHOICES, LIVE_STATS, STAT_BY_ID, type StatChoice } from "../live/stats";
 import { useLive } from "../live/useLive";
 import { isDesktop } from "../platform";
 import { loadSplitFiles, putSplitFile, type StoredSplit } from "../splitFiles";
 import { FilePicker, type FilePickerHandle } from "./FilePicker";
+import { ArrowDownIcon, ArrowUpIcon } from "./Icons";
 import { Entry } from "./HowItWorks";
 import { InfoTip } from "./InfoTip";
 import { LiveCard } from "./LiveCard";
@@ -18,7 +19,7 @@ export interface LiveRunOption {
 
 const SOURCE_DOC = {
   id: "live-source",
-  label: "Timer",
+  label: "Timer source",
   short: "Where the live stats read the timer from: LiveSplit on this computer, or a replay of your own attempts.",
   how: [
     "LiveSplit: Speedrunner connects to LiveSplit's built-in server on this computer and asks for the timer a few times a second. In LiveSplit, right-click › Control › Start WebSocket Server. The port is in LiveSplit's Settings (16834 unless you changed it). It only reads the timer: it never splits or resets for you, and nothing leaves your computer.",
@@ -33,6 +34,13 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [urlDraft, setUrlDraft] = useState(config.url);
+  const [announcement, setAnnouncement] = useState("");
+  const focusAfter = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusAfter.current) return;
+    document.querySelector<HTMLButtonElement>(focusAfter.current)?.focus();
+    focusAfter.current = null;
+  });
   const picker = useRef<FilePickerHandle>(null);
 
   useEffect(() => {
@@ -64,11 +72,30 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
   const run = view.ctx?.run;
   const title = run ? `${run.game || "Unknown game"} · ${run.category}` : "";
 
-  const move = (index: number, by: number) => {
-    const stats = [...config.stats];
-    const [item] = stats.splice(index, 1);
-    stats.splice(index + by, 0, item);
-    update({ stats });
+  const shown = config.stats.filter((c) => c.shown);
+  const hidden = config.stats.filter((c) => !c.shown);
+  const label = (id: string) => STAT_BY_ID.get(id)!.doc.label;
+  // Shown stats come first, in card order; the rest keep their place in the list below.
+  const setLists = (nextShown: StatChoice[], nextHidden: StatChoice[]) => update({ stats: [...nextShown, ...nextHidden] });
+
+  const move = (index: number, by: -1 | 1) => {
+    const next = [...shown];
+    const [item] = next.splice(index, 1);
+    const to = index + by;
+    next.splice(to, 0, item);
+    setLists(next, hidden);
+    setAnnouncement(`${label(item.id)} moved to ${to + 1} of ${next.length}.`);
+    // At either end the pressed button turns off, so keep focus on the row's other arrow.
+    const atEnd = by < 0 ? to === 0 : to === next.length - 1;
+    focusAfter.current = `[data-move="${item.id}-${atEnd ? (by < 0 ? "down" : "up") : by < 0 ? "up" : "down"}"]`;
+  };
+  const show = (id: string) => {
+    setLists([...shown, { id, shown: true }], hidden.filter((c) => c.id !== id));
+    setAnnouncement(`${label(id)} added to the card, at ${shown.length + 1} of ${shown.length + 1}.`);
+  };
+  const hide = (id: string) => {
+    setLists(shown.filter((c) => c.id !== id), [{ id, shown: false }, ...hidden]);
+    setAnnouncement(`${label(id)} taken off the card.`);
   };
 
   const openOverlay = () => {
@@ -128,7 +155,8 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
         <div>
           <h1 className="run-title">Live stats</h1>
           <p className="run-meta">
-            {title} · {file.fileName}
+            {title}
+            {/\.lss$/i.test(file.fileName) && <> · {file.fileName}</>}
           </p>
         </div>
         <div className="live-run-switch">
@@ -165,9 +193,9 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
         <div className="live-settings">
           <section className="block live-block" aria-labelledby="live-source-title">
             <h2 id="live-source-title" className="title-with-tip">
-              Timer <InfoTip doc={SOURCE_DOC} />
+              Timer source <InfoTip doc={SOURCE_DOC} />
             </h2>
-            <div className="toggle" role="group" aria-label="Timer">
+            <div className="toggle" role="group" aria-label="Timer source">
               {(["livesplit", "demo"] as const).map((s) => (
                 <button key={s} aria-pressed={config.source === s} onClick={() => update({ source: s })}>
                   {s === "livesplit" ? "LiveSplit" : "Demo"}
@@ -203,40 +231,77 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
           </section>
 
           <section className="block live-block" aria-labelledby="live-stats-title">
-            <h2 id="live-stats-title">Stats to show</h2>
-            <p className="section-note">Tick the ones you want and put them in your order.</p>
-            <ol className="live-choices">
-              {config.stats.map((c, i) => {
-                const def = STAT_BY_ID.get(c.id)!;
-                return (
-                  <li key={c.id} data-shown={c.shown}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={c.shown}
-                        onChange={() =>
-                          update({ stats: config.stats.map((x) => (x.id === c.id ? { ...x, shown: !x.shown } : x)) })
-                        }
-                      />
-                      {def.doc.label}
-                    </label>
-                    <InfoTip doc={def.doc} />
-                    <span className="live-move">
-                      <button aria-label={`Move ${def.doc.label} up`} disabled={i === 0} onClick={() => move(i, -1)}>
-                        ↑
-                      </button>
-                      <button
-                        aria-label={`Move ${def.doc.label} down`}
-                        disabled={i === config.stats.length - 1}
-                        onClick={() => move(i, 1)}
-                      >
-                        ↓
-                      </button>
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
+            <div className="live-stats-head">
+              <h2 id="live-stats-title">On the card</h2>
+              <button
+                className="link-button text-link"
+                onClick={() => {
+                  update({ stats: DEFAULT_CHOICES });
+                  setAnnouncement("Stats reset to the standard set.");
+                }}
+              >
+                Reset to standard
+              </button>
+            </div>
+            {shown.length === 0 ? (
+              <p className="section-note">No stats yet. Add some from the list below.</p>
+            ) : (
+              <ol className="live-choices" aria-label="Stats on the card, in order">
+                {shown.map((c, i) => {
+                  const def = STAT_BY_ID.get(c.id)!;
+                  return (
+                    <li key={c.id}>
+                      <span className="live-rank">{i + 1}</span>
+                      <label>
+                        <input type="checkbox" checked onChange={() => hide(c.id)} />
+                        {def.doc.label}
+                      </label>
+                      <InfoTip doc={def.doc} />
+                      <span className="live-move">
+                        <button
+                          data-move={`${c.id}-up`}
+                          aria-label={`Move ${def.doc.label} up`}
+                          disabled={i === 0}
+                          onClick={() => move(i, -1)}
+                        >
+                          <ArrowUpIcon />
+                        </button>
+                        <button
+                          data-move={`${c.id}-down`}
+                          aria-label={`Move ${def.doc.label} down`}
+                          disabled={i === shown.length - 1}
+                          onClick={() => move(i, 1)}
+                        >
+                          <ArrowDownIcon />
+                        </button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+            {hidden.length > 0 && (
+              <>
+                <h3 className="live-more-title">More stats</h3>
+                <ul className="live-choices live-available" aria-label="Stats not on the card">
+                  {hidden.map((c) => {
+                    const def = STAT_BY_ID.get(c.id)!;
+                    return (
+                      <li key={c.id}>
+                        <label>
+                          <input type="checkbox" checked={false} onChange={() => show(c.id)} />
+                          {def.doc.label}
+                        </label>
+                        <InfoTip doc={def.doc} />
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+            <p className="visually-hidden" role="status" aria-live="polite">
+              {announcement}
+            </p>
           </section>
         </div>
 
@@ -249,7 +314,7 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
             <span>
               {isDesktop
                 ? "Fills this window with the card. Press Esc to come back."
-                : "A small window to keep next to LiveSplit or capture in OBS."}
+                : "A small window to keep next to LiveSplit or capture in OBS. Press Esc in it to close it."}
             </span>
           </p>
         </div>

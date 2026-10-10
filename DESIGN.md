@@ -314,6 +314,11 @@ These are data views. Headers sit on Page Sunk in Label type, cells are Time Cel
 ### Dropzone
 The first-run entry point: a 640px panel on Page Surface with a 1.5px dashed Rule Line Strong border and 14px corners. While dragging, it switches to a Split Blue border and wash. Inside are a title, a hint that restates the privacy promise, and a primary and a default button.
 
+### Live card
+The live stats card that sits next to LiveSplit or on stream. It's a Night Shell surface in both themes, like the header and like LiveSplit, with a 1px `#22304a` rule border and no shadow. Rows are ruled: the label on the left in Night Shell Ink Muted, the value right-aligned in Time mono (sans for words such as "Reset"), with a muted micro detail line under it. Colour keeps the system's meanings on the dark ground: Split Blue Ink (`#86b6ef`) for time ahead and "Keep going", Gold Split Ink (`#f0c25a`) for golds, plain ink for everything else, including time behind and "Reset". The status dot is an outline, filled blue only while LiveSplit is connected. In the overlay window the card fills the window and its values grow with the window width.
+
+The live page puts the card's stats first, numbered and in card order with up and down buttons from the icon family, then "More stats" with checkboxes only. Moves are announced to screen readers.
+
 ### Navigation
 A Night Shell bar, sticky, 56px tall. The wordmark is "Speedrunner" in 600 sans. The right side links to the other views (Analyse a run, Profile, Year in runs). Once a run is loaded it shows the shell "Open file" button; "How it's calculated" for a run is its last tab.
 

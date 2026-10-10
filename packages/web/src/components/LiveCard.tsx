@@ -24,7 +24,7 @@ export function LiveCard({
         <StatusDot status={status} />
       </header>
       {shown.length === 0 ? (
-        <p className="live-card-empty">No stats chosen.</p>
+        <p className="live-card-empty">No stats on the card yet. Pick them on the Live stats page.</p>
       ) : (
         <dl className="live-rows">
           {shown.map((def) => {
@@ -41,7 +41,11 @@ export function LiveCard({
           })}
         </dl>
       )}
-      {status?.kind === "offline" && <p className="live-card-note">{status.reason}</p>}
+      {status?.kind === "offline" && (
+        <p className="live-card-note">
+          {status.reason} Trying again every few seconds.
+        </p>
+      )}
       {status?.kind === "connected" && status.mismatch && <p className="live-card-note">{status.mismatch}</p>}
     </section>
   );

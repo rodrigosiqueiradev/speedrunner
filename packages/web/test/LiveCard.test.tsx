@@ -38,7 +38,7 @@ describe("live stats card", () => {
       />,
     );
     expect(screen.getByText("Not connected")).toBeTruthy();
-    expect(screen.getByText("LiveSplit isn't answering.")).toBeTruthy();
+    expect(screen.getByText(/LiveSplit isn't answering. Trying again/)).toBeTruthy();
   });
 
   it("keeps a saved choice and adds new stats hidden at the end", () => {

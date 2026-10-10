@@ -48,7 +48,7 @@ export const LIVE_STATS: LiveStatDef[] = [
     standard: false,
     doc: {
       id: "live-timer",
-      label: "Timer",
+      label: "Run time",
       short: "The time on LiveSplit's timer, in its current timing method.",
       how: ["Read from LiveSplit a few times a second. It uses whichever timing method LiveSplit is showing, real time or game time."],
     },
@@ -74,8 +74,7 @@ export const LIVE_STATS: LiveStatDef[] = [
       const move = before == null || describeChance(before) === describeChance(s.pbChance) ? undefined : before;
       return {
         value: describeChance(s.pbChance),
-        detail: move == null ? undefined : `${s.pbChance > move ? "▲" : "▼"} from ${describeChance(move)}`,
-        tone: move == null ? undefined : s.pbChance > move ? "ahead" : "behind",
+        detail: move == null ? undefined : `${s.pbChance > move ? "up" : "down"} from ${describeChance(move)}`,
       };
     },
   },
@@ -95,7 +94,8 @@ export const LIVE_STATS: LiveStatDef[] = [
       s.advice
         ? {
             value: s.advice.verdict === "keep-going" ? "Keep going" : "Reset",
-            tone: s.advice.verdict === "keep-going" ? "ahead" : "behind",
+            detail: s.advice.verdict === "keep-going" ? "PBs sooner than a fresh run" : "a fresh run PBs sooner",
+            tone: s.advice.verdict === "keep-going" ? "ahead" : undefined,
             word: true,
           }
         : null,
@@ -150,7 +150,8 @@ export const LIVE_STATS: LiveStatDef[] = [
         "If the segment you're on has already run longer than usual, it counts from the time on the timer instead.",
       ],
     },
-    view: (s) => (s.likelyFinish == null || s.phase === "Ended" ? null : { value: formatTime(s.likelyFinish, 1) }),
+    view: (s) =>
+      s.likelyFinish == null ? null : { value: formatTime(s.likelyFinish, 1), detail: s.phase === "Ended" ? "final time" : undefined },
   },
   {
     id: "bestPossible",
@@ -185,7 +186,7 @@ export const LIVE_STATS: LiveStatDef[] = [
     standard: false,
     doc: {
       id: "live-risk",
-      label: "Runs end here",
+      label: "Runs die here",
       short: "How often a run that reached this segment going well was reset in it.",
       how: [
         "Among your attempts that reached this segment in the faster half of times at the split before, the share that were reset during it. Pace resets of runs that were already slow don't count.",

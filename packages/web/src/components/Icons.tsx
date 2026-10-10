@@ -35,3 +35,15 @@ export const FlagIcon = () => (
     <path d="M3.5 14V2.75M3.5 3h8l-1.75 2.75L11.5 8.5h-8" />
   </svg>
 );
+
+export const ArrowUpIcon = () => (
+  <svg {...base}>
+    <path d="M8 13V3M4 7l4-4 4 4" />
+  </svg>
+);
+
+export const ArrowDownIcon = () => (
+  <svg {...base}>
+    <path d="M8 3v10M4 9l4 4 4-4" />
+  </svg>
+);

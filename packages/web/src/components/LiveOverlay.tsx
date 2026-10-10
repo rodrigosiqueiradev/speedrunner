@@ -46,6 +46,7 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
           page first.
         </p>
       )}
+      <p className="live-overlay-hint">Esc to go back</p>
       {run && view.stats && (
         <LiveCard
           title={`${run.game || "Unknown game"} · ${run.category}`}
