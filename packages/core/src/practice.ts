@@ -73,6 +73,17 @@ export interface PracticePlan {
    * stretch of two or more segments does.
    */
   stretch: { minutes: number; from: number; to: number; fromName: string; toName: string; runs: number; runTime: Ms } | null;
+  /**
+   * Minutes too short for another rep of any segment, when there's no full run or stretch to
+   * give them to. Shown so the plan always adds up to the session.
+   */
+  spareMinutes: number;
+  /**
+   * The quickest practice rep (typical time plus overhead) among segments that can be planned for.
+   * With no plan at all, it says whether that's for lack of data (null) or because every segment
+   * takes longer than the session.
+   */
+  shortestRep: Ms | null;
   /** Expected time off a typical run if the plan's practice pays off as the learning curves suggest. */
   expectedSave: Ms;
   /** Segments left out because they have too few clean times to estimate. */
@@ -161,6 +172,18 @@ export function planPractice(
     left -= blockOf(best);
   }
 
+  // Minutes no rep fits in go to the in-context play when there is some; otherwise they're spare.
+  let spareMinutes = left;
+  if (left > 0 && fullRuns) {
+    const minutes = fullRuns.minutes + left;
+    fullRuns = { ...fullRuns, minutes, runs: Math.floor((minutes * 60_000) / fullRuns.runTime) };
+    spareMinutes = 0;
+  } else if (left > 0 && stretch) {
+    const minutes = stretch.minutes + left;
+    stretch = { ...stretch, minutes, runs: Math.floor((minutes * 60_000) / stretch.runTime) };
+    spareMinutes = 0;
+  }
+
   const items: PlanItem[] = models
     .filter((m) => given.has(m.index))
     .map((m) => {
@@ -184,6 +207,8 @@ export function planPractice(
     items,
     fullRuns,
     stretch,
+    spareMinutes,
+    shortestRep: models.length ? Math.min(...models.map((m) => m.repTime)) : null,
     expectedSave: items.reduce((a, i) => a + i.expectedSave, 0),
     segmentsWithoutData,
   };
@@ -194,6 +219,7 @@ export function describePlan(plan: PracticePlan): string {
   const parts = plan.items.map((i) => `${i.minutes} on ${i.name}`);
   if (plan.fullRuns) parts.push(`${plan.fullRuns.minutes} full runs`);
   if (plan.stretch) parts.push(`${plan.stretch.minutes} from ${plan.stretch.fromName} to ${plan.stretch.toName} in one go`);
+  if (parts.length && plan.spareMinutes) parts.push(`${plan.spareMinutes} to spare`);
   return parts.length ? `${plan.sessionMinutes} minutes: ${parts.join(", ")}` : "";
 }
 

@@ -115,3 +115,34 @@ describe("planPractice on real files", () => {
     expect(describePlan(plan)).toBe("");
   });
 });
+
+describe("planPractice with long segments", () => {
+  // Eight segments of about 40 minutes: no rep fits in a short session, and minutes go spare.
+  const long = synthRun({ base: Array(8).fill(40 * 60_000), attempts: 40, noise: (seg, id) => 60_000 * jitter(seg, id) });
+  const total = (p: ReturnType<typeof planPractice>) =>
+    p.items.reduce((a, i) => a + i.minutes, 0) + (p.fullRuns?.minutes ?? 0) + (p.stretch?.minutes ?? 0) + p.spareMinutes;
+
+  it("says when every segment takes longer than the session", () => {
+    const plan = planPractice(long, undefined, { sessionMinutes: 30 });
+    expect(plan.items).toEqual([]);
+    expect(plan.shortestRep! / 60_000).toBeGreaterThan(30);
+    expect(plan.spareMinutes).toBe(30);
+  });
+
+  it("accounts for every minute of the session", () => {
+    for (const run of [long, load("livesplit1.6_gametime.lss"), load("livesplit1.0.lss")]) {
+      for (const sessionMinutes of [30, 60, 90, 120]) {
+        const plan = planPractice(run, undefined, { sessionMinutes });
+        expect(total(plan)).toBe(sessionMinutes);
+      }
+    }
+    expect(describePlan(planPractice(long, undefined, { sessionMinutes: 60 }))).toMatch(/^60 minutes: \d+ on S\d, \d+ to spare$/);
+  });
+
+  it("has no shortest rep when no segment has data", () => {
+    const empty = synthRun({ base: [60_000, 60_000], attempts: 1, noise: () => 0 });
+    const plan = planPractice(empty);
+    expect(plan.items).toEqual([]);
+    expect(plan.shortestRep).toBeNull();
+  });
+});

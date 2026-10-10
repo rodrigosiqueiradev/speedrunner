@@ -24,11 +24,31 @@ export function PracticePlan({
   const [showAll, setShowAll] = useState(false);
   const plan = useMemo(() => planPractice(run, analysis, { sessionMinutes: minutes }), [run, analysis, minutes]);
 
-  if (plan.items.length === 0) {
+  const controls = (
+    <div className="plan-controls">
+      <span className="plan-controls-label">
+        <span id="plan-length">Session length</span> <InfoTip doc={D.plan} />
+      </span>
+      <Toggle small labelledBy="plan-length" options={SESSIONS} value={minutes} onChange={setMinutes} />
+    </div>
+  );
+
+  if (plan.items.length === 0 && !plan.fullRuns && !plan.stretch) {
+    if (plan.shortestRep == null) {
+      return (
+        <p className="empty-note">
+          No plan yet. Segments need at least a handful of clean times before their practice value can be estimated.
+        </p>
+      );
+    }
     return (
-      <p className="empty-note">
-        No plan yet. Segments need at least a handful of clean times before their practice value can be estimated.
-      </p>
+      <>
+        {controls}
+        <p className="empty-note">
+          Your segments take longer than {minutes} minutes: the quickest takes about {formatTime(plan.shortestRep, 0)} to
+          play once, reload included. Pick a longer session, or practise part of a segment.
+        </p>
+      </>
     );
   }
 
@@ -37,12 +57,7 @@ export function PracticePlan({
 
   return (
     <>
-      <div className="plan-controls">
-        <span className="plan-controls-label">
-          <span id="plan-length">Session length</span> <InfoTip doc={D.plan} />
-        </span>
-        <Toggle small labelledBy="plan-length" options={SESSIONS} value={minutes} onChange={setMinutes} />
-      </div>
+      {controls}
 
       <ol className="plan" aria-label={`${minutes} minute practice plan`}>
         {plan.items.map((i) => (
@@ -108,6 +123,8 @@ export function PracticePlan({
         <b>{formatSave(plan.expectedSave)}</b> off a typical run. <InfoTip doc={D.expected} />
         {!plan.fullRuns && plan.stretch && " A full run doesn't fit in this session, so part of it plays a stretch of the route in one go."}
         {!plan.fullRuns && !plan.stretch && " A full run doesn't fit in this session, so it's all segment practice."}
+        {plan.spareMinutes > 0 &&
+          ` ${plan.spareMinutes} ${plan.spareMinutes === 1 ? "minute is" : "minutes are"} left over, too short for another rep of any segment.`}
         {plan.segmentsWithoutData > 0 &&
           ` ${plan.segmentsWithoutData} ${plan.segmentsWithoutData === 1 ? "segment has" : "segments have"} too few clean times to plan for.`}
       </p>

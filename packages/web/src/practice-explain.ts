@@ -16,6 +16,7 @@ export const PRACTICE_DOCS: Record<"plan" | "expected" | "perHour" | "gap" | "re
       `About ${pct(P.fullRunShare)} of the session is kept for playing segments in context: full runs when one typical run (the median of your recent finishes) fits in it.`,
       "When a full run doesn't fit, as in long categories, that time goes to a stretch of the route in one go: the top segment and its neighbours, as many as fit. If not even two segments fit, the whole session is segment practice.",
       `The rest is handed out in ${P.blockMinutes} minute blocks, one at a time, each to the segment whose next block is expected to save the most per minute. A segment whose rep takes longer than ${P.blockMinutes} minutes gets blocks of the next multiple of ${P.blockMinutes} that holds a whole rep. Time spreads out as a segment's returns shrink.`,
+      "Minutes too short for another whole rep go to the full runs or the stretch when the plan has one, and are shown as left over when it hasn't, so the plan always adds up to the session. When every segment takes longer than the session to play once, there's no plan: pick a longer session.",
       "Segments with too few clean times to estimate are left out.",
     ],
   },
