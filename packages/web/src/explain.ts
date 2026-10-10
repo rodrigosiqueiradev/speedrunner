@@ -7,7 +7,7 @@ import {
   type ComponentKey,
   type RunAnalysis,
 } from "@speedrunner/core";
-import { formatSave } from "./format";
+import { RECENT_TIMES, formatSave } from "./format";
 
 /**
  * Plain-language definitions of every number the app shows. Each entry has a short
@@ -52,7 +52,7 @@ export const METRICS: Record<string, MetricDoc> = {
     label: "Realistic target",
     short: "Your PB if every segment went as well as a typical good attempt.",
     how: [
-      `For each segment, take your last ${D.recentWindow} clean times and find your good-day time: the ${ordinal(D.goodDayPercentile)} percentile, the time you beat in 1 attempt out of 4.`,
+      `For each segment, take ${RECENT_TIMES} and find your good-day time: the ${ordinal(D.goodDayPercentile)} percentile, the time you beat in 1 attempt out of 4.`,
       "Where your good-day time is faster than that segment in your PB, the difference is a good-day save. Where your PB segment was already faster, the save is zero.",
       "Realistic target = PB minus the sum of all good-day saves.",
       `Segments with fewer than ${D.minSamples} clean times have no good-day time yet, so they add nothing.`,
@@ -107,9 +107,10 @@ export const METRICS: Record<string, MetricDoc> = {
   median: {
     id: "typical",
     label: "Typical",
-    short: `Your median time over your last ${D.recentWindow} clean attempts at this segment.`,
+    short: "Your median time over your recent clean attempts at this segment.",
     how: [
-      `Half of your last ${D.recentWindow} clean times were faster than this and half slower. The median is used instead of the average so one disaster attempt doesn't drag it.`,
+      "Half of your recent clean times were faster than this and half slower. The median is used instead of the average so one disaster attempt doesn't drag it.",
+      `Recent means ${RECENT_TIMES}. Half of your history, rather than a fixed number of attempts, means a category you've run thousands of times and one you've run a few dozen times both follow your current form.`,
     ],
   },
   timeSaveVsGold: {
@@ -123,7 +124,7 @@ export const METRICS: Record<string, MetricDoc> = {
     label: "Good-day save",
     short: "Time a good attempt at this segment would save over your PB.",
     how: [
-      `PB segment minus your good-day time (${ordinal(D.goodDayPercentile)} percentile of your last ${D.recentWindow} clean times), never below zero.`,
+      `PB segment minus your good-day time (${ordinal(D.goodDayPercentile)} percentile of your recent clean times), never below zero.`,
       "Zero means your PB already had a good or better-than-good version of this segment.",
     ],
   },
@@ -132,7 +133,7 @@ export const METRICS: Record<string, MetricDoc> = {
     label: "Variability",
     short: "How much your times swing between good and bad attempts.",
     how: [
-      `Take your last ${D.recentWindow} clean times. The gap between your 25th and 75th percentile (the middle half of your attempts), divided by your median.`,
+      `Take ${RECENT_TIMES}. The gap between your 25th and 75th percentile (the middle half of your attempts), divided by your median.`,
       "0% would be identical every time. 10% on a 2 minute segment means the middle half of your attempts spans about 12 seconds.",
     ],
   },
@@ -165,7 +166,7 @@ export const ADVICE_RULES: Array<{ tag: string; when: string; worth: string }> =
   },
   {
     tag: "Runs die here",
-    when: `Reset rate is above ${pct(T.resetRate)} and at least ${T.minReachedForResets} attempts reached the segment.`,
+    when: `Runs reset here at least ${T.resetHazardRatio} times as often per minute as in the rest of the run (after the first split), with at least ${T.minResets} resets and ${T.minReachedForResets} attempts that reached it. Per minute, so a long segment isn't flagged for being long.`,
     worth: "The segment's good-day save.",
   },
 ];
@@ -246,23 +247,25 @@ export const SCORE_METRICS: Record<"category" | ComponentKey | "provisional" | "
   improvement: {
     id: "improvement",
     label: "Improvement",
-    short: `Whether your last ${S.improvementWindow} finished runs are faster than the ${S.improvementWindow} before them.`,
+    short: "Whether your latest finished runs are faster than the ones just before them.",
     how: [
-      `Change = (median of the previous ${S.improvementWindow} finishes − median of the last ${S.improvementWindow}) ÷ the previous median.`,
+      `Your finished runs are split into two equal groups: the latest ones and the ones just before them, half of your finishes each, at most ${S.improvementWindow}.`,
+      "Change = (median of the earlier group − median of the latest group) ÷ the earlier median.",
       `No change scores 50, ${pct(S.improvementFullChange)} faster scores 100 and ${pct(S.improvementFullChange)} slower scores 0.`,
-      `It needs at least ${S.improvementWindow * 2} finished runs. With fewer, it's left out.`,
+      `It needs at least ${S.minImprovementWindow * 2} finished runs, so a long category with a handful of finishes gets it too. With fewer, it's left out.`,
     ],
     example: (s) =>
       s.improvement.change == null
         ? null
-        : `Median ${formatTime(s.improvement.previousMedian)} → ${formatTime(s.improvement.recentMedian)}, ${pct1(Math.abs(s.improvement.change))} ${s.improvement.change >= 0 ? "faster" : "slower"} → ${Math.round(s.improvement.score!)}.`,
+        : `Median of ${s.improvement.window} finishes ${formatTime(s.improvement.previousMedian)} → ${formatTime(s.improvement.recentMedian)}, ${pct1(Math.abs(s.improvement.change))} ${s.improvement.change >= 0 ? "faster" : "slower"} → ${Math.round(s.improvement.score!)}.`,
   },
   provisional: {
     id: "provisional",
     label: "Provisional",
     short: "Too little data to trust the score yet, so it's left out of your overall score.",
     how: [
-      `A category score is provisional when the file has fewer than ${S.provisional.minFinished} finished runs, fewer than ${S.provisional.minSegments} segments, or fewer than ${S.provisional.minComponents} of the four parts could be worked out.`,
+      `A category score is provisional when the file has fewer than ${S.provisional.minFinished} finished runs, fewer than ${S.provisional.minSegmentSamples} clean times in a typical segment, fewer than ${S.provisional.minSegments} segments, or fewer than ${S.provisional.minComponents} of the four parts could be worked out.`,
+      "These are counted in your own runs and set low enough that a long category with few attempts can reach them.",
     ],
   },
   overall: {

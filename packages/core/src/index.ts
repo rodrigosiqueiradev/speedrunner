@@ -10,4 +10,5 @@ export * from "./practice.js";
 export * from "./goal.js";
 export * from "./comparisons.js";
 export * from "./sessions.js";
+export * from "./recency.js";
 export * from "./session-insights.js";

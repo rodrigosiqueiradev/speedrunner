@@ -16,7 +16,13 @@ export interface RecapOptions {
 }
 
 export const RECAP_SETTINGS = {
-  /** Attempts longer than this are treated as LiveSplit left running and don't count as play time. */
+  /**
+   * An attempt that lasted more than this many times the category's typical finished run is
+   * treated as LiveSplit left running: only the time on its splits counts as play. The limit
+   * follows the category, so a 10 minute category and a 20 hour one are judged the same way.
+   */
+  leftRunningFactor: 3,
+  /** The limit for a category with no finished run or segment history to judge by. */
   maxAttemptMs: 12 * 60 * 60 * 1000,
   /** A segment needs this many clean times early and late in the year to be "most improved". */
   minImprovementSamples: 5,
@@ -168,6 +174,7 @@ export function yearRecap(runs: Run[], year: number, options: RecapOptions = {})
     };
 
     // Play counts.
+    const limit = attemptLimit(run);
     const cat: RecapCategory = { game: run.game, category: run.category, attempts: 0, finished: 0, playMs: 0 };
     for (const a of run.attempts) {
       if (!inYear(a.id)) continue;
@@ -178,7 +185,7 @@ export function yearRecap(runs: Run[], year: number, options: RecapOptions = {})
       days.add(cal.day(start));
       const end = attemptDate(a.ended);
       const length = end ? end.getTime() - start.getTime() : 0;
-      if (length > 0 && length <= RECAP_SETTINGS.maxAttemptMs) cat.playMs += length;
+      if (length > 0) cat.playMs += length <= limit ? length : timeOnSplits(run, a.id);
     }
     if (cat.attempts === 0) continue;
     categories.push(cat);
@@ -277,6 +284,29 @@ export function yearRecap(runs: Run[], year: number, options: RecapOptions = {})
     mostImproved,
     categories,
   };
+}
+
+/**
+ * How long an attempt at this category can last before it counts as a timer left running:
+ * leftRunningFactor times the median finished run, or the PB, or the 12 hour fallback.
+ */
+export function attemptLimit(run: Run): Ms {
+  const finished = run.attempts.filter((a) => a.id > 0 && a.time != null && a.time > 0).map((a) => a.time!);
+  const pb = [...run.segments].reverse().find((s) => s.pbSplit != null)?.pbSplit ?? null;
+  const typical = finished.length ? median(finished.sort((a, b) => a - b)) : pb;
+  return typical != null && typical > 0 ? RECAP_SETTINGS.leftRunningFactor * typical : RECAP_SETTINGS.maxAttemptMs;
+}
+
+/** The time an attempt spent on recorded splits: its final time if it finished, else its segment times added up. */
+function timeOnSplits(run: Run, id: number): Ms {
+  const attempt = run.attempts.find((a) => a.id === id);
+  if (attempt?.time != null && attempt.time > 0) return attempt.time;
+  let total = 0;
+  for (const segment of run.segments) {
+    const t = segment.history.get(id);
+    if (t != null && t > 0) total += t;
+  }
+  return total;
 }
 
 /** Time cut from a category's PB this year; a first ever finish ranks after any real improvement. */

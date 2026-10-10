@@ -24,10 +24,11 @@ export const SESSION_DOCS: Record<"sessions" | "pace" | "clear" | "playing" | "t
     label: "Pace",
     short: "How your split times compare with your usual time for those segments. +2% means 2% slower than usual.",
     how: [
-      `Each clean segment time is compared with your usual time for that segment: the median of the ${S.paceWindow} clean times around that attempt. Using nearby attempts means getting better over the months doesn't look like a session effect.`,
+      `Each clean segment time is compared with your usual time for that segment: the median of the clean times around that attempt, half of that segment's history (at least 10, at most ${S.paceWindow - 1}). Using nearby attempts means getting better over the months doesn't look like a session effect, however many attempts you have.`,
       `A segment counts as at most ${S.paceCap}× its usual time, so a pause doesn't swamp the rest.`,
       "A group of splits' pace is their total time over their total usual time, so long segments count for more than short ones.",
       "Each split is placed at the time it was played within its session, not when its attempt started, so one long run spreads across the whole session.",
+      "For warm-up, peak window and fatigue, a split is compared only with the same split played at another time in the same session. In a long category with one run a session, the first splits are always played first, so early in the session would otherwise just mean early in the route.",
     ],
   },
   clear: {
@@ -47,7 +48,7 @@ export const SESSION_DOCS: Record<"sessions" | "pace" | "clear" | "playing" | "t
     short: "Splits grouped by how long the session had been going, against that session's own average.",
     how: [
       "A split at 13:30 in a session that started at 9:00 counts as 4h30.",
-      "Each bar is the average, over sessions, of that stretch's pace minus the whole session's pace. The thin line is its 95% interval.",
+      "Each bar is the average, over sessions, of how that stretch's splits went against the same splits played at other times in the session. The thin line is its 95% interval.",
       `Rows with fewer than ${S.minSessions} sessions show how many there are instead of a bar.`,
     ],
   },
@@ -79,7 +80,7 @@ export const FINDING_DOCS: Record<FindingKind, MetricDoc> = {
     short: `Whether your first ${S.warmupMinutes} minutes of splits in a session are slower than the rest.`,
     how: [
       `For each session, the pace of splits in the first ${S.warmupMinutes} minutes after its first split, minus the pace of the rest. Quick resets before the first split don't use up the window.`,
-      `A session counts when it has at least ${S.minSegmentsPerSide} splits on each side.`,
+      `A session counts when it replays at least ${S.minSegmentsPerSide} of the same splits on each side.`,
     ],
   },
   "peak-window": {
@@ -87,7 +88,7 @@ export const FINDING_DOCS: Record<FindingKind, MetricDoc> = {
     label: "Peak window",
     short: "The stretch of a session where you run clearly faster than that session's average.",
     how: [
-      `Sessions are cut into stretches: ${S.minuteBuckets.map((m, i) => (i + 1 < S.minuteBuckets.length ? `${hours(m)}-${hours(S.minuteBuckets[i + 1])}` : `${hours(m)}+`)).join(", ")}.`,
+      `Sessions are cut into stretches: ${S.minuteBuckets.map((m, i) => (i + 1 < S.minuteBuckets.length ? `${hours(m)}-${hours(S.minuteBuckets[i + 1])}` : `${hours(m)}+`)).join(", ")}. Only the stretches your sessions reach are used: those starting before the length that ${pct(S.sessionReach)} of your sessions fit in.`,
       "The fastest stretch is joined with neighbouring stretches that are also faster than average, then checked against that session's average.",
     ],
   },
@@ -96,10 +97,10 @@ export const FINDING_DOCS: Record<FindingKind, MetricDoc> = {
     label: "Fatigue",
     short: "Whether your pace or reset rate gets worse after you've been playing for a while.",
     how: [
-      `Checked at ${S.fatigueThresholds.map(hours).join(", ")} into a session: the pace of splits after that point minus before it, for sessions with at least ${S.minSegmentsPerSide} splits on each side.`,
+      `Checked at ${S.fatigueThresholds.map(hours).join(", ")} into a session, up to the length that ${pct(S.sessionReach)} of your sessions fit in: the pace of splits after that point minus before it, for sessions that replay at least ${S.minSegmentsPerSide} of the same splits on each side.`,
       `Reset rate is compared the same way for sessions with at least ${S.fatigueMinAttemptsPerSide} attempts on each side, so it only counts when you do many attempts per session.`,
       "The point where things get worse the most is reported.",
-      "Pace is against each segment's own usual time, so fatigue only shows when the same segments get played at different points in a session. If every run starts fresh, a slow late segment just looks like how long that segment takes.",
+      "Each split is compared with the same split played earlier or later in that session, so fatigue only shows when you replay segments during a session. If each session is one run, a slow late segment just looks like how long that segment takes, and fatigue says there isn't enough data.",
     ],
   },
   "tilt-late-reset": {

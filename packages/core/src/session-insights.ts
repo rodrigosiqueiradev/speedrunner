@@ -1,4 +1,5 @@
 import { ANALYSIS_DEFAULTS, quantile } from "./analyze.js";
+import { recentCount } from "./recency.js";
 import { groupSessions, SESSION_DEFAULTS, type Session, type TimedAttempt } from "./sessions.js";
 import type { Run } from "./types.js";
 
@@ -9,7 +10,11 @@ import type { Run } from "./types.js";
  */
 export const SESSION_INSIGHT_SETTINGS = {
   gapMinutes: SESSION_DEFAULTS.gapMinutes,
-  /** Clean times per segment that make up the rolling "usual" time each attempt is compared with. */
+  /**
+   * The rolling "usual" time each segment time is compared with is the median of this many clean
+   * times around it, at most. Fewer when the segment has less history: half its times, at least 10
+   * (see recency.ts), so a long category with 20 times a segment still follows its improvement.
+   */
   paceWindow: 51,
   /** A segment taking more than this multiple of its usual time counts as this slow, no slower (pauses, AFK). */
   paceCap: 2,
@@ -21,10 +26,15 @@ export const SESSION_INSIGHT_SETTINGS = {
   warmupMinutes: 20,
   /** Segment times needed on each side of a split (warm-up, fatigue) for a session to count. */
   minSegmentsPerSide: 3,
-  /** Minutes-into-session buckets for the peak window and the chart. */
-  minuteBuckets: [0, 20, 40, 60, 90, 120, 180, 240],
-  /** Candidate points (minutes in) where fatigue might start. */
-  fatigueThresholds: [60, 90, 120, 150, 180, 240],
+  /**
+   * Minutes-into-session buckets for the peak window and the chart. Only the ones your sessions
+   * reach are used: buckets that start before the length of your longer sessions (see sessionReach).
+   */
+  minuteBuckets: [0, 20, 40, 60, 90, 120, 180, 240, 300, 360, 480, 600],
+  /** Candidate points (minutes in) where fatigue might start, again only up to your longer sessions. */
+  fatigueThresholds: [30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 480],
+  /** Sessions this long or shorter make up this share of your sessions; buckets and fatigue points stop there. */
+  sessionReach: 0.9,
   /** Attempts needed on each side of a fatigue threshold for a session's reset rate to count. */
   fatigueMinAttemptsPerSide: 3,
   /** A reset at or after this fraction of the route counts as a late reset. */
@@ -77,6 +87,9 @@ export interface SessionInsights {
   findings: Finding[];
   /** Pace against each session's own average, by minutes into the session. */
   byMinutesIn: PaceBucket[];
+  /** Bucket starts (minutes in) and fatigue points actually used, cut to the length of your longer sessions. */
+  minuteEdges: number[];
+  fatigueChecked: number[];
   /** Pace against your usual, by the local time of day and day of week each session started. */
   byTimeOfDay: PaceBucket[];
   byWeekday: PaceBucket[];
@@ -89,6 +102,7 @@ export interface SessionInsightOptions {
 
 /** One segment as played: when it started in its session, its time (capped) and its usual time. */
 interface SegmentPlay {
+  segment: number;
   minutesIn: number;
   time: number;
   usual: number;
@@ -127,7 +141,10 @@ export function analyzeSessions(run: Run, options: SessionInsightOptions = {}): 
     medianSessionMinutes: median(sessions.map((s) => (s.end - s.start) / 60_000)),
     medianAttemptsPerSession: median(sessions.map((s) => s.attempts.length)),
   };
-  const empty = { findings: [], byMinutesIn: [], byTimeOfDay: [], byWeekday: [] };
+  const reach = sessionReach(sessions);
+  const minuteEdges = S.minuteBuckets.filter((m, i) => i < 2 || m < reach);
+  const fatigueChecked = S.fatigueThresholds.filter((m, i) => i === 0 || m < reach);
+  const empty = { findings: [], byMinutesIn: [], byTimeOfDay: [], byWeekday: [], minuteEdges, fatigueChecked };
   if (timedAttempts === 0) {
     return {
       ...base,
@@ -149,11 +166,11 @@ export function analyzeSessions(run: Run, options: SessionInsightOptions = {}): 
   const bySession = sessions.map((s) => s.attempts.map((t) => facts.get(t.attempt.id)!));
   const startOf = (attempts: AttemptFacts[]) => localTime(attempts[0].t.start);
 
-  const peak = peakWindow(bySession);
+  const peak = peakWindow(bySession, minuteEdges);
   const findings = [
     warmUp(bySession),
     peak.finding,
-    fatigue(bySession),
+    fatigue(bySession, fatigueChecked),
     tilt(bySession, run, "late-reset"),
     tilt(bySession, run, "near-pb"),
     timeEffect(bySession, (a) => periodOf(startOf(a).hour), "time-of-day"),
@@ -164,6 +181,8 @@ export function analyzeSessions(run: Run, options: SessionInsightOptions = {}): 
     available: true,
     findings,
     byMinutesIn: peak.buckets,
+    minuteEdges,
+    fatigueChecked,
     byTimeOfDay: timeBuckets(bySession, (a) => periodOf(startOf(a).hour), PERIODS.length).map((b, i) => ({
       ...b,
       label: PERIODS[i].label,
@@ -186,10 +205,11 @@ function attemptFacts(run: Run, sessions: Session[]): Map<number, AttemptFacts> 
     if (entries.length < ANALYSIS_DEFAULTS.minSamples) return usual;
     const overall = quantile(entries.map((e) => e[1]).sort((a, b) => a - b), 0.5);
     const clean = entries.filter((e) => e[1] >= overall * ANALYSIS_DEFAULTS.outlierFloor).sort((a, b) => a[0] - b[0]);
-    const half = Math.floor(S.paceWindow / 2);
+    const size = Math.min(S.paceWindow, recentCount(clean.length) + 1);
+    const half = Math.floor(size / 2);
     clean.forEach(([id], i) => {
-      const from = Math.max(0, Math.min(i - half, clean.length - S.paceWindow));
-      const window = clean.slice(from, from + S.paceWindow).map((e) => e[1]).sort((a, b) => a - b);
+      const from = Math.max(0, Math.min(i - half, clean.length - size));
+      const window = clean.slice(from, from + size).map((e) => e[1]).sort((a, b) => a - b);
       usual.set(id, quantile(window, 0.5));
     });
     return usual;
@@ -211,7 +231,7 @@ function attemptFacts(run: Run, sessions: Session[]): Map<number, AttemptFacts> 
         const time = seg.history.get(id);
         if (time == null) continue; // skipped split: its time lands in the next segment
         const usual = usualTimes[i].get(id);
-        if (usual != null) plays.push({ minutesIn: t.minutesIn + elapsed / 60_000, time: Math.min(time, usual * S.paceCap), usual });
+        if (usual != null) plays.push({ segment: i, minutesIn: t.minutesIn + elapsed / 60_000, time: Math.min(time, usual * S.paceCap), usual });
         elapsed += time;
       }
       facts.set(id, { t, plays, pace: paceOf(plays), finished: n > 0 && reached === n, reached });
@@ -229,8 +249,9 @@ function warmUp(bySession: AttemptFacts[][]): Finding {
     const all = attempts.flatMap((f) => f.plays);
     if (all.length === 0) continue;
     const from = all[0].minutesIn;
-    const first = all.filter((p) => p.minutesIn < from + w);
-    const rest = all.filter((p) => p.minutesIn >= from + w);
+    const repeats = withinSession(all);
+    const first = repeats.filter((p) => p.minutesIn < from + w);
+    const rest = repeats.filter((p) => p.minutesIn >= from + w);
     if (first.length >= S.minSegmentsPerSide && rest.length >= S.minSegmentsPerSide) diffs.push(paceOf(first)! - paceOf(rest)!);
   }
   const base = { kind: "warm-up" as const, title: "Warm-up", sample: diffs.length };
@@ -238,7 +259,7 @@ function warmUp(bySession: AttemptFacts[][]): Finding {
     return {
       ...base,
       status: "not-enough-data",
-      message: `Needs ${S.minSessions} sessions with at least ${S.minSegmentsPerSide} splits in the first ${w} minutes and ${S.minSegmentsPerSide} after; this file has ${diffs.length}.`,
+      message: `Needs ${S.minSessions} sessions that replay at least ${S.minSegmentsPerSide} splits on each side of their first ${w} minutes; this file has ${diffs.length}.`,
     };
   }
   const ci = meanInterval(diffs, S.confidence);
@@ -249,13 +270,12 @@ function warmUp(bySession: AttemptFacts[][]): Finding {
 }
 
 /** Pace against each session's own average, by minutes in, and the window where it's clearly best. */
-function peakWindow(bySession: AttemptFacts[][]): { finding: Finding; buckets: PaceBucket[] } {
-  const edges = S.minuteBuckets;
+function peakWindow(bySession: AttemptFacts[][], edges: number[]): { finding: Finding; buckets: PaceBucket[] } {
   const bucketOf = (m: number) => edges.filter((e) => m >= e).length - 1;
   // Per session: its overall pace and its plays grouped by bucket.
   const perSession: { avg: number; groups: Map<number, SegmentPlay[]> }[] = [];
   for (const attempts of bySession) {
-    const plays = attempts.flatMap((f) => f.plays);
+    const plays = withinSession(attempts.flatMap((f) => f.plays));
     if (plays.length < 2 * S.minSegmentsPerSide) continue;
     const groups = new Map<number, SegmentPlay[]>();
     for (const p of plays) groups.set(bucketOf(p.minutesIn), [...(groups.get(bucketOf(p.minutesIn)) ?? []), p]);
@@ -290,7 +310,7 @@ function peakWindow(bySession: AttemptFacts[][]): { finding: Finding; buckets: P
         ...base,
         sample: perSession.length,
         status: "not-enough-data",
-        message: `Needs ${S.minSessions} sessions with splits in at least two stretches of a session (0-20 min, 20-40 min and so on).`,
+        message: `Needs ${S.minSessions} sessions that replay the same splits in at least two stretches of a session (0-20 min, 20-40 min and so on).`,
       },
     };
   }
@@ -324,11 +344,11 @@ function peakWindow(bySession: AttemptFacts[][]): { finding: Finding; buckets: P
  * Reset rate and pace before and after each candidate point in a session. Reset rate needs several
  * attempts on each side; pace only needs splits, so long runs with one attempt a session still count.
  */
-function fatigue(bySession: AttemptFacts[][]): Finding {
+function fatigue(bySession: AttemptFacts[][], thresholds: number[]): Finding {
   const base = { kind: "fatigue" as const, title: "Fatigue" };
   type Candidate = { threshold: number; rate: Interval | null; pace: Interval | null; before: number; after: number; n: number };
   const candidates: Candidate[] = [];
-  for (const threshold of S.fatigueThresholds) {
+  for (const threshold of thresholds) {
     const rateDiffs: number[] = [];
     const paceDiffs: number[] = [];
     let before = 0;
@@ -343,7 +363,7 @@ function fatigue(bySession: AttemptFacts[][]): Finding {
         before += rb;
         after += ra;
       }
-      const plays = attempts.flatMap((f) => f.plays);
+      const plays = withinSession(attempts.flatMap((f) => f.plays));
       const pe = plays.filter((p) => p.minutesIn < threshold);
       const pl = plays.filter((p) => p.minutesIn >= threshold);
       if (pe.length >= S.minSegmentsPerSide && pl.length >= S.minSegmentsPerSide) paceDiffs.push(paceOf(pl)! - paceOf(pe)!);
@@ -365,7 +385,7 @@ function fatigue(bySession: AttemptFacts[][]): Finding {
       ...base,
       sample: 0,
       status: "not-enough-data",
-      message: `Needs ${S.minSessions} sessions longer than ${minutesLabel(S.fatigueThresholds[0])} with splits on both sides of it.`,
+      message: `Needs ${S.minSessions} sessions longer than ${minutesLabel(thresholds[0])} that replay the same splits on both sides of it.`,
     };
   }
   // The threshold where reset rate (or else pace) gets clearly worse by the most: the change point.
@@ -494,12 +514,41 @@ function timeBuckets(bySession: AttemptFacts[][], groupOf: (attempts: AttemptFac
   });
 }
 
+/**
+ * The plays of segments you played more than once in the session, each measured against that
+ * segment's own average in the session instead of its usual time. Comparing a segment only with
+ * itself, in the same session, keeps route order out of the minutes-in findings: in a long
+ * category with one run a session, the first splits are always played first, so "early in the
+ * session" would otherwise just mean "early in the route", and the runs you reset would drag the
+ * early part down. A segment played once in a session says nothing about when you play best.
+ */
+function withinSession(plays: SegmentPlay[]): SegmentPlay[] {
+  const bySegment = new Map<number, SegmentPlay[]>();
+  for (const p of plays) bySegment.set(p.segment, [...(bySegment.get(p.segment) ?? []), p]);
+  const out: SegmentPlay[] = [];
+  for (const group of bySegment.values()) {
+    if (group.length < 2) continue;
+    const average = group.reduce((a, p) => a + p.time, 0) / group.length;
+    // Keep the usual time as the weight and shift the time so the segment's plays average out at
+    // its usual: paceOf then reads each play against the session's own average for that segment.
+    for (const p of group) out.push({ ...p, time: p.usual + (p.time - average) });
+  }
+  return out.sort((a, b) => a.minutesIn - b.minutesIn);
+}
+
 /** One value per session: its pace over every split played. Sessions, not attempts, are the unit. */
 function sessionUnits(bySession: AttemptFacts[][], groupOf: (attempts: AttemptFacts[]) => number) {
   return bySession.flatMap((attempts) => {
     const plays = attempts.flatMap((f) => f.plays);
     return plays.length === 0 ? [] : [{ group: groupOf(attempts), pace: paceOf(plays)!, segments: plays.length }];
   });
+}
+
+/** Minutes that the given share (sessionReach) of your sessions fit within: how far into a session there's data. */
+function sessionReach(sessions: Session[]): number {
+  if (sessions.length === 0) return 0;
+  const minutes = sessions.map((s) => (s.end - s.start) / 60_000).sort((a, b) => a - b);
+  return quantile(minutes, S.sessionReach);
 }
 
 // ---- small statistics helpers ----

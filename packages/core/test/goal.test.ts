@@ -83,10 +83,14 @@ describe("planGoal", () => {
 });
 
 describe("suggestGoal", () => {
-  it("picks the next round time under the PB", () => {
+  it("picks the next round time under the PB, on a step that scales with the run", () => {
     expect(suggestGoal(40 * 60_000 + 1520)).toBe(40 * 60_000);
-    expect(suggestGoal(40 * 60_000)).toBe(39 * 60_000);
-    expect(suggestGoal(93_400)).toBe(90_000);
+    // 1% of 40 minutes is 24 s, so the step is 15 s.
+    expect(suggestGoal(40 * 60_000)).toBe(39 * 60_000 + 45_000);
+    expect(suggestGoal(93_400)).toBe(93_000);
+    // A 6-hour PB steps by whole minutes, a 20-hour one by 10 minutes.
+    expect(suggestGoal(5 * 3_600_000 + 42 * 60_000 + 54_890)).toBe(5 * 3_600_000 + 42 * 60_000);
+    expect(suggestGoal(20 * 3_600_000 + 7 * 60_000)).toBe(20 * 3_600_000);
   });
 });
 

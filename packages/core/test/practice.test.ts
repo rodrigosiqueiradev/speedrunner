@@ -69,10 +69,23 @@ describe("planPractice", () => {
     expect(plan.expectedSave).toBeGreaterThan(0);
   });
 
-  it("gives all the time to practice when a full run doesn't fit", () => {
+  it("plays a stretch of the route in one go when a full run doesn't fit", () => {
     const short = planPractice(run, undefined, { sessionMinutes: 20 });
     expect(short.fullRuns).toBeNull();
-    expect(short.items.reduce((a, i) => a + i.minutes, 0)).toBe(20);
+    // 5 minutes holds S1 and S2 (about a minute each) plus a reload, but not the 5-minute S3.
+    expect(short.stretch).toMatchObject({ minutes: 5, from: 0, to: 1, runs: 2 });
+    expect(short.items.reduce((a, i) => a + i.minutes, 0)).toBe(15);
+    expect(describePlan(short)).toMatch(/5 from S1 to S2 in one go$/);
+  });
+
+  it("gives all the time to practice when not even two segments fit", () => {
+    const long = synthRun({ base: [1_000_000, 1_000_000, 1_000_000], attempts: 40, noise: (seg, id) => 30_000 * jitter(seg, id) });
+    const plan = planPractice(long, undefined, { sessionMinutes: 30 });
+    expect(plan.fullRuns).toBeNull();
+    expect(plan.stretch).toBeNull();
+    // Each rep takes about 17 minutes, so blocks are 20 minutes and always hold a whole rep.
+    expect(plan.items.every((i) => i.minutes % 20 === 0 && i.reps >= 1)).toBe(true);
+    expect(plan.items.reduce((a, i) => a + i.minutes, 0)).toBeLessThanOrEqual(30);
   });
 });
 
@@ -81,9 +94,11 @@ describe("planPractice on real files", () => {
     const plan = planPractice(load("livesplit1.6_gametime.lss"));
     expect(plan.segmentsWithoutData).toBe(0);
     expect(plan.ranking.length).toBeGreaterThan(5);
-    // A 40 minute run doesn't fit in the 15 minutes kept for full runs.
+    // A 40 minute run doesn't fit in the 15 minutes kept for playing in context, so a stretch does.
     expect(plan.fullRuns).toBeNull();
-    expect(plan.items.reduce((a, i) => a + i.minutes, 0)).toBe(60);
+    expect(plan.stretch!.to).toBeGreaterThan(plan.stretch!.from);
+    expect(plan.stretch!.runTime).toBeLessThanOrEqual(15 * 60_000);
+    expect(plan.items.reduce((a, i) => a + i.minutes, 0)).toBe(45);
   });
 
   it("leans on the assumed learning rate when history is thin", () => {

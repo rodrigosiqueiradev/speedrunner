@@ -33,7 +33,7 @@ export const RECAP_DOCS: Record<RecapDocKey, MetricDoc> = {
     short: "Time from the start of each attempt to its reset or finish, added up.",
     how: [
       "Each attempt's length is its end time minus its start time, as LiveSplit saved them.",
-      `Attempts longer than ${R.maxAttemptMs / 3_600_000} hours are left out, as a timer left running. Time between attempts doesn't count.`,
+      `An attempt that lasted more than ${R.leftRunningFactor} times the category's typical finished run is treated as a timer left running, and only the time on its splits counts. The limit follows each category's own length, so it works for a 10 minute category and a 20 hour one. Time between attempts doesn't count.`,
     ],
   },
   finished: {

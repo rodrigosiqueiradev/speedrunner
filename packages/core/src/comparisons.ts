@@ -23,8 +23,8 @@ export function realisticTargetSplits(analysis: RunAnalysis): Ms[] | null {
 }
 
 /**
- * Splits of the sum of recent golds: your best clean time in each segment over its last
- * `recentWindow` times. Splits after a segment with no recent times are left empty.
+ * Splits of the sum of recent golds: your best clean time in each segment over the latest half
+ * of its times (10 to 50, see recency.ts). Splits after a segment with no recent times are left empty.
  */
 export function recentGoldSplits(run: Run, options: AnalyzeOptions = {}): Array<Ms | null> {
   return cumulative(recentSegmentTimes(run, options).map((times) => (times.length ? Math.min(...times) : null)));

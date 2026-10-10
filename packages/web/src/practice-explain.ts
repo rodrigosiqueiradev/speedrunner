@@ -11,10 +11,11 @@ export const PRACTICE_DOCS: Record<"plan" | "expected" | "perHour" | "gap" | "re
   plan: {
     id: "practice-plan",
     label: "Practice plan",
-    short: "How a practice session is split between segments and full runs.",
+    short: "How a practice session is split between single segments and playing them in context.",
     how: [
-      `About ${pct(P.fullRunShare)} of the session is kept for full runs when one typical run (the median of your recent finishes) fits in it. Otherwise the whole session is segment practice.`,
-      `The rest is handed out in ${P.blockMinutes} minute blocks, one at a time, each to the segment whose next block is expected to save the most. Time spreads out as a segment's returns shrink.`,
+      `About ${pct(P.fullRunShare)} of the session is kept for playing segments in context: full runs when one typical run (the median of your recent finishes) fits in it.`,
+      "When a full run doesn't fit, as in long categories, that time goes to a stretch of the route in one go: the top segment and its neighbours, as many as fit. If not even two segments fit, the whole session is segment practice.",
+      `The rest is handed out in ${P.blockMinutes} minute blocks, one at a time, each to the segment whose next block is expected to save the most per minute. A segment whose rep takes longer than ${P.blockMinutes} minutes gets blocks of the next multiple of ${P.blockMinutes} that holds a whole rep. Time spreads out as a segment's returns shrink.`,
       "Segments with too few clean times to estimate are left out.",
     ],
   },

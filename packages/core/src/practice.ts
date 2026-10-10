@@ -1,4 +1,5 @@
 import { ANALYSIS_DEFAULTS, analyzeRun, quantile, type RunAnalysis } from "./analyze.js";
+import { recentSlice } from "./recency.js";
 import type { Ms, Run } from "./types.js";
 
 /**
@@ -8,11 +9,17 @@ import type { Ms, Run } from "./types.js";
 export const PRACTICE_SETTINGS = {
   /** Session length the plan is built for unless the runner picks another. */
   sessionMinutes: 60,
-  /** Practice time is handed out in blocks of this many minutes. */
+  /**
+   * Practice time is handed out in blocks of this many minutes, or the smallest multiple of it
+   * that holds one rep, so a 12 minute segment gets 15 minute blocks rather than a fraction of a rep.
+   */
   blockMinutes: 5,
   /** Time added to every practice rep for reloading a save or getting back into position. */
   repOverheadMs: 20_000,
-  /** Share of the session kept for full runs, so practised segments get tried in a real run. */
+  /**
+   * Share of the session kept for playing segments in context: full runs when one fits, otherwise
+   * a stretch of the route in one go around the top segment, so long categories get it too.
+   */
   fullRunShare: 0.25,
   /** Assumed learning rate when history is thin: this fraction of the typical time saved per doubling of reps. */
   priorLearning: 0.02,
@@ -60,6 +67,12 @@ export interface PracticePlan {
   /** Segment practice blocks, most minutes first. */
   items: PlanItem[];
   fullRuns: { minutes: number; runs: number; runTime: Ms } | null;
+  /**
+   * When a full run doesn't fit in the in-context share: consecutive segments around the top
+   * segment, played in one go from `from` to `to` (inclusive). Null when a full run fits or no
+   * stretch of two or more segments does.
+   */
+  stretch: { minutes: number; from: number; to: number; fromName: string; toName: string; runs: number; runTime: Ms } | null;
   /** Expected time off a typical run if the plan's practice pays off as the learning curves suggest. */
   expectedSave: Ms;
   /** Segments left out because they have too few clean times to estimate. */
@@ -111,43 +124,51 @@ export function planPractice(
     });
   }
 
-  // Full runs first, so the blocks fill the rest of the session.
+  // In-context play first (full runs, or else a stretch of the route), so the blocks fill the rest.
   const runTime = typicalRunTime(run, analysis);
   let fullRuns: PracticePlan["fullRuns"] = null;
+  let stretch: PracticePlan["stretch"] = null;
   let blocks = Math.floor((sessionMinutes * (1 - P.fullRunShare)) / P.blockMinutes);
-  const fullRunMinutes = sessionMinutes - blocks * P.blockMinutes;
-  if (runTime != null && fullRunMinutes * 60_000 >= runTime) {
-    fullRuns = { minutes: fullRunMinutes, runs: Math.floor((fullRunMinutes * 60_000) / runTime), runTime };
+  const contextMinutes = sessionMinutes - blocks * P.blockMinutes;
+  if (runTime != null && contextMinutes * 60_000 >= runTime) {
+    fullRuns = { minutes: contextMinutes, runs: Math.floor((contextMinutes * 60_000) / runTime), runTime };
   } else {
-    blocks = Math.floor(sessionMinutes / P.blockMinutes);
+    stretch = stretchAround(analysis, models, contextMinutes);
+    if (!stretch) blocks = Math.floor(sessionMinutes / P.blockMinutes);
   }
 
-  // Hand out blocks one at a time to whichever segment gains most from its next block.
+  // Hand out blocks one at a time to whichever segment gains most per minute from its next block.
+  // A segment's block is the smallest multiple of the block length that holds one rep.
   const blockMs = P.blockMinutes * 60_000;
+  const blockOf = (m: (typeof models)[number]) => Math.max(1, Math.ceil(m.repTime / blockMs)) * P.blockMinutes;
   const given = new Map<number, number>();
-  for (let b = 0; b < blocks; b++) {
+  let left = blocks * P.blockMinutes;
+  for (;;) {
     let best: (typeof models)[number] | null = null;
-    let bestGain = 0;
+    let bestRate = 0;
     for (const m of models) {
-      const reps = ((given.get(m.index) ?? 0) * blockMs) / m.repTime;
-      const gain = m.saveAfter(reps + blockMs / m.repTime) - m.saveAfter(reps);
-      if (gain > bestGain) {
+      const size = blockOf(m);
+      if (size > left) continue;
+      const reps = ((given.get(m.index) ?? 0) * 60_000) / m.repTime;
+      const rate = (m.saveAfter(reps + (size * 60_000) / m.repTime) - m.saveAfter(reps)) / size;
+      if (rate > bestRate) {
         best = m;
-        bestGain = gain;
+        bestRate = rate;
       }
     }
     if (!best) break;
-    given.set(best.index, (given.get(best.index) ?? 0) + 1);
+    given.set(best.index, (given.get(best.index) ?? 0) + blockOf(best));
+    left -= blockOf(best);
   }
 
   const items: PlanItem[] = models
     .filter((m) => given.has(m.index))
     .map((m) => {
-      const reps = (given.get(m.index)! * blockMs) / m.repTime;
+      const reps = (given.get(m.index)! * 60_000) / m.repTime;
       return {
         segmentIndex: m.index,
         name: m.name,
-        minutes: given.get(m.index)! * P.blockMinutes,
+        minutes: given.get(m.index)!,
         reps: Math.max(1, Math.round(reps)),
         expectedSave: m.saveAfter(reps),
       };
@@ -162,6 +183,7 @@ export function planPractice(
       .map(({ saveAfter: _, ...roi }) => roi),
     items,
     fullRuns,
+    stretch,
     expectedSave: items.reduce((a, i) => a + i.expectedSave, 0),
     segmentsWithoutData,
   };
@@ -171,6 +193,7 @@ export function planPractice(
 export function describePlan(plan: PracticePlan): string {
   const parts = plan.items.map((i) => `${i.minutes} on ${i.name}`);
   if (plan.fullRuns) parts.push(`${plan.fullRuns.minutes} full runs`);
+  if (plan.stretch) parts.push(`${plan.stretch.minutes} from ${plan.stretch.fromName} to ${plan.stretch.toName} in one go`);
   return parts.length ? `${plan.sessionMinutes} minutes: ${parts.join(", ")}` : "";
 }
 
@@ -225,13 +248,48 @@ function cleanTimes(run: Run, i: number): Ms[] {
   return raw.filter((t) => t >= floor);
 }
 
-/** Median of the recent finished runs, or the sum of typical segment times if there are none. */
+/**
+ * The longest run of consecutive segments around the top-ranked one whose typical times, plus one
+ * rep overhead, fit in `minutes`. It grows towards whichever neighbour gains more per hour. Null
+ * when not even two segments fit.
+ */
+function stretchAround(analysis: RunAnalysis, models: SegmentRoi[], minutes: number): PracticePlan["stretch"] {
+  const P = PRACTICE_SETTINGS;
+  const top = [...models].filter((m) => m.savePerHour > 0).sort((a, b) => b.savePerHour - a.savePerHour)[0];
+  const typical = analysis.segments.map((s) => s.median);
+  if (!top || minutes <= 0) return null;
+  const budget = minutes * 60_000 - P.repOverheadMs;
+  const perHour = new Map(models.map((m) => [m.index, m.savePerHour]));
+  let from = top.index;
+  let to = top.index;
+  let time = typical[top.index]!;
+  if (time > budget) return null;
+  for (;;) {
+    const options = [from - 1, to + 1].filter((i) => i >= 0 && i < typical.length && typical[i] != null && time + typical[i]! <= budget);
+    if (options.length === 0) break;
+    const next = options.sort((a, b) => (perHour.get(b) ?? 0) - (perHour.get(a) ?? 0))[0];
+    time += typical[next]!;
+    if (next < from) from = next;
+    else to = next;
+  }
+  if (from === to) return null;
+  const runTime = time + P.repOverheadMs;
+  return {
+    minutes,
+    from,
+    to,
+    fromName: analysis.segments[from].name,
+    toName: analysis.segments[to].name,
+    runs: Math.floor((minutes * 60_000) / runTime),
+    runTime,
+  };
+}
+
+/** Median of the recent finished runs (the latest half, 10 to 50), or the sum of typical segment times if there are none. */
 function typicalRunTime(run: Run, analysis: RunAnalysis): Ms | null {
-  const finished = run.attempts
-    .filter((a) => a.id > 0 && a.time != null && a.time > 0)
-    .map((a) => a.time!)
-    .slice(-ANALYSIS_DEFAULTS.recentWindow)
-    .sort((a, b) => a - b);
+  const finished = recentSlice(
+    run.attempts.filter((a) => a.id > 0 && a.time != null && a.time > 0).map((a) => a.time!),
+  ).sort((a, b) => a - b);
   if (finished.length) return quantile(finished, 0.5);
   const medians = analysis.segments.map((s) => s.median);
   return medians.every((m) => m != null) ? medians.reduce<number>((a, m) => a + m!, 0) : null;

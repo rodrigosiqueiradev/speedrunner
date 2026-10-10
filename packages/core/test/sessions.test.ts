@@ -119,14 +119,13 @@ describe("analyzeSessions", () => {
   });
 
   it("finds fatigue inside long runs with few attempts per session", () => {
-    // Ten days of one 5-hour run (30 ten-minute segments). On odd days the run starts after an hour of
-    // quick resets, so the same segments land at different times. Anything played after 2 hours is 5% slower.
+    // Ten days of a 5-hour category (30 ten-minute segments): each session has an attempt that resets
+    // after 2.5 hours and then a full run, so the first 15 segments get played twice, at different
+    // times. Anything played after 2 hours is 5% slower.
     const plan: PlannedAttempt[] = [];
     for (let s = 0; s < 10; s++) {
-      const warm = s % 2 === 1 ? 6 : 0;
-      for (let k = 0; k < warm; k++) plan.push({ start: T0 + s * DAY + k * 10 * MIN, resetAfter: 0 });
-      const offset = warm * 10;
-      plan.push({ start: T0 + s * DAY + offset * MIN, slow: (i) => (offset + i * 10 >= 120 ? 1.05 : 1) });
+      plan.push({ start: T0 + s * DAY, resetAfter: 15, slow: (i) => (i * 10 >= 120 ? 1.05 : 1) });
+      plan.push({ start: T0 + s * DAY + 150 * MIN, slow: 1.05 });
     }
     const r = analyzeSessions(plannedRun(plan, Array(30).fill(600_000)), { localTime: utc });
     const f = r.findings.find((x) => x.kind === "fatigue")!;
@@ -135,10 +134,22 @@ describe("analyzeSessions", () => {
   });
 
   it("can't see fatigue when every run plays each segment at the same time", () => {
-    // Same runs, always started fresh: segment 13 is always slow, so it's just how long segment 13 takes.
+    // One 5-hour run a session, always started fresh: segment 13 is always slow, so it's just how long
+    // segment 13 takes. Session time and route position are the same thing here, so nothing is claimed.
     const plan = Array.from({ length: 10 }, (_, s) => ({ start: T0 + s * DAY, slow: (i: number) => (i >= 12 ? 1.05 : 1) }));
-    const f = finding(plannedRun(plan, Array(30).fill(600_000)), "fatigue");
-    expect(f.status).toBe("no-effect");
+    const run = plannedRun(plan, Array(30).fill(600_000));
+    for (const kind of ["fatigue", "warm-up", "peak-window"]) expect(finding(run, kind).status).toBe("not-enough-data");
+    expect(finding(run, "fatigue").message).toMatch(/replay the same splits/);
+  });
+
+  it("only charts the stretches of a session your sessions reach", () => {
+    const short = analyzeSessions(plannedRun(daily(10, 5)), { localTime: utc });
+    expect(short.minuteEdges.at(-1)!).toBeLessThan(60);
+    const long = analyzeSessions(plannedRun(Array.from({ length: 10 }, (_, s) => ({ start: T0 + s * DAY })), Array(36).fill(600_000)), { localTime: utc });
+    // Six-hour sessions get stretches out to 5-6 hours, and fatigue is checked that late.
+    expect(long.minuteEdges).toContain(300);
+    expect(long.fatigueChecked).toContain(300);
+    expect(long.byMinutesIn.map((b) => b.label).at(-1)).toBe("5h+");
   });
 
   it("finds tilt when a late reset is followed by an early reset", () => {

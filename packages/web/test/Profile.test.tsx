@@ -45,7 +45,7 @@ describe("category score on the run page", () => {
 
     fireEvent.click(within(section).getByRole("button", { name: "Add to your profile" }));
     expect(section.textContent).toMatch(/This category is in your profile/);
-    expect(JSON.parse(localStorage.getItem("speedrunner.profile.v1")!)).toHaveLength(1);
+    expect(JSON.parse(localStorage.getItem("speedrunner.profile.v2")!)).toHaveLength(1);
   });
 });
 

@@ -1,4 +1,10 @@
-import { formatTime } from "@speedrunner/core";
+import { RECENCY_SETTINGS, formatTime } from "@speedrunner/core";
+
+/**
+ * How the app describes "recent" everywhere: the latest half of a segment's clean times, with the
+ * floor and cap from recency.ts. Counted in your own attempts, so it fits any category length.
+ */
+export const RECENT_TIMES = `the latest half of your clean times (at least ${2 * RECENCY_SETTINGS.minHalfLife}, at most ${2 * RECENCY_SETTINGS.maxHalfLife})`;
 
 /** Formats a time difference, adding "s" when it's under a minute so "0.51" doesn't read as a clock time. */
 export function formatSave(ms: number | null): string {

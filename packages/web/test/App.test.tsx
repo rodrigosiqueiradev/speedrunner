@@ -75,7 +75,7 @@ describe("App", () => {
     // The How it's calculated tab works the formula through with the loaded run.
     fireEvent.click(screen.getByRole("tab", { name: "How it's calculated" }));
     const how = screen.getByRole("region", { name: "How it's calculated" });
-    expect(how.textContent).toMatch(/40:01\.52 − .* = 39:50\.66/);
+    expect(how.textContent).toMatch(/40:01\.52 − .* = 39:49\.37/);
     expect(how.textContent).toMatch(/50 clean times/);
   });
 

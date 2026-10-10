@@ -1,4 +1,5 @@
 import { ANALYSIS_DEFAULTS, analyzeRun, type AnalyzeOptions, type RunAnalysis } from "./analyze.js";
+import { recentSlice } from "./recency.js";
 import type { Ms, Run } from "./types.js";
 
 export type GoalStatus =
@@ -56,11 +57,10 @@ export interface GoalPlan {
 
 /**
  * Recent clean segment times, oldest first, with the same filters the analysis uses:
- * skipped splits, merged segments and mis-splits are left out, and only the last
- * `recentWindow` are kept.
+ * skipped splits, merged segments and mis-splits are left out, and only the latest half of
+ * each segment's times (10 to 50, see recency.ts) are kept, or `recentWindow` if given.
  */
 export function recentSegmentTimes(run: Run, options: AnalyzeOptions = {}): Ms[][] {
-  const recentWindow = options.recentWindow ?? ANALYSIS_DEFAULTS.recentWindow;
   const minSamples = options.minSamples ?? ANALYSIS_DEFAULTS.minSamples;
   const outlierFloor = options.outlierFloor ?? ANALYSIS_DEFAULTS.outlierFloor;
   return run.segments.map((segment, i) => {
@@ -74,7 +74,8 @@ export function recentSegmentTimes(run: Run, options: AnalyzeOptions = {}): Ms[]
     const raw = clean.map(([, t]) => t);
     const sorted = [...raw].sort((a, b) => a - b);
     const floor = raw.length >= minSamples ? outlierFloor * interpolate(sorted, 0.5) : 0;
-    return raw.filter((t) => t >= floor).slice(-recentWindow);
+    const kept = raw.filter((t) => t >= floor);
+    return options.recentWindow != null ? kept.slice(-options.recentWindow) : recentSlice(kept);
   });
 }
 
@@ -181,15 +182,22 @@ export function planGoal(run: Run, goal: Ms, options: AnalyzeOptions = {}, analy
   return finish("needs-golds", towardsGold(lo), null);
 }
 
+/** Round steps a goal can sit on, smallest first. */
+const GOAL_STEPS = [1_000, 5_000, 10_000, 15_000, 30_000, 60_000, 5 * 60_000, 10 * 60_000, 15 * 60_000, 30 * 60_000];
+
 /**
- * A round goal just under the PB: the next whole minute down for long runs, the next
- * 5 seconds down for runs under two minutes.
+ * A round goal just under the PB. The step is the largest round one (1 s up to 30 min) that is
+ * at most 1% of the PB, so the goal asks for about the same share of the run at any length:
+ * 40:01.52 gives 40:00, 1:33.4 gives 1:33, and 5:42:54 gives 5:42:00.
  */
 export function suggestGoal(personalBest: Ms): Ms {
-  const step = personalBest < 120_000 ? 5_000 : 60_000;
+  const step = [...GOAL_STEPS].reverse().find((s) => s <= personalBest * GOAL_STEP_SHARE) ?? GOAL_STEPS[0];
   const below = Math.floor((personalBest - 1) / step) * step;
   return below > 0 ? below : personalBest;
 }
+
+/** The goal step is the largest round step at most this share of the PB. */
+export const GOAL_STEP_SHARE = 0.01;
 
 function cumulative(times: Ms[]): Ms[] {
   let acc = 0;

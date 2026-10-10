@@ -1,8 +1,13 @@
+import { recentSlice } from "./recency.js";
 import { cleanSegmentTimes } from "./segment-model.js";
+import { formatTime } from "./time.js";
 import type { Ms, Run } from "./types.js";
 
 export interface AnalyzeOptions {
-  /** How many of the most recent attempts per segment count towards "current form" stats. */
+  /**
+   * A fixed number of the most recent clean times per segment for "current form" stats. Leave it
+   * out to scale with the history instead: the latest half of the times, 10 to 50 (see recency.ts).
+   */
   recentWindow?: number;
   /** Segments with fewer samples than this get no realistic target or form-based advice. */
   minSamples?: number;
@@ -26,7 +31,9 @@ export interface SegmentStats {
   discardedSamples: number;
   /** True when LiveSplit's stored gold looks like a mis-split and was replaced from history. */
   suspiciousGold: boolean;
-  /** Stats over the most recent `recentWindow` clean samples. */
+  /** Clean times the form stats below are taken from: the latest half of the history, 10 to 50. */
+  recentSamples: number;
+  /** Stats over the most recent clean samples. */
   median: Ms | null;
   p25: Ms | null;
   p75: Ms | null;
@@ -73,6 +80,10 @@ export interface RunAnalysis {
 
 /** Default analysis settings. Exported so the UI and docs can quote the real numbers. */
 export const ANALYSIS_DEFAULTS = {
+  /**
+   * The most recent clean times the segment model samples from. Every other feature takes the
+   * latest half of each segment's history instead (recentCount in recency.ts), which is at most this.
+   */
   recentWindow: 50,
   minSamples: 5,
   outlierFloor: 0.6,
@@ -80,7 +91,6 @@ export const ANALYSIS_DEFAULTS = {
 } as const;
 
 export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis {
-  const recentWindow = options.recentWindow ?? ANALYSIS_DEFAULTS.recentWindow;
   const minSamples = options.minSamples ?? ANALYSIS_DEFAULTS.minSamples;
   const outlierFloor = options.outlierFloor ?? ANALYSIS_DEFAULTS.outlierFloor;
   const { segments } = run;
@@ -91,7 +101,7 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
   const stats: SegmentStats[] = segments.map((segment, i) => {
     const { times: clean, floor, discarded } = cleanSegmentTimes(run, i, { minSamples, outlierFloor });
     const all = clean.map(([, t]) => t);
-    const recent = all.slice(-recentWindow).sort((a, b) => a - b);
+    const recent = (options.recentWindow != null ? all.slice(-options.recentWindow) : recentSlice(all)).sort((a, b) => a - b);
 
     const historyGold = all.length ? Math.min(...all) : null;
     const suspiciousGold = segment.gold != null && segment.gold < floor;
@@ -113,6 +123,7 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
       pbTime,
       gold,
       samples: all.length,
+      recentSamples: recent.length,
       discardedSamples: discarded,
       suspiciousGold,
       median,
@@ -164,14 +175,52 @@ export const ADVICE_THRESHOLDS = {
   inconsistent: 0.1,
   /** Median slower than gold by more than this fraction means gold-level execution is rare. */
   goldGap: 0.08,
-  /** Reset rate above this, with enough attempts, marks a run-killer segment. */
-  resetRate: 0.15,
+  /**
+   * A segment is a run killer when runs die in it at least this many times as fast, per minute
+   * played, as in the rest of the run. Compared per minute so a long segment isn't flagged for
+   * being long, and against your own run so the rule is the same for 5 segments or 60.
+   */
+  resetHazardRatio: 1.5,
+  /** Evidence needed before calling a segment a run killer. */
   minReachedForResets: 10,
+  minResets: 3,
 };
+
+/**
+ * How fast runs die in a segment per millisecond played, assuming resets are spread evenly
+ * through it: -ln(1 - reset rate) / typical time. Null without a reset rate or typical time.
+ */
+export function resetHazard(s: Pick<SegmentStats, "resetRate" | "median">): number | null {
+  if (s.resetRate == null || !s.median) return null;
+  return -Math.log(1 - Math.min(s.resetRate, 0.999)) / s.median;
+}
+
+/**
+ * Each segment's reset hazard divided by the hazard of the rest of the run (every other segment
+ * after the first, whose resets are mostly bad starts). Infinity when runs reset here but nowhere
+ * else after the first split; null when either side is unknown.
+ */
+export function resetHazardRatios(stats: SegmentStats[]): Array<number | null> {
+  return stats.map((s) => {
+    const own = resetHazard(s);
+    if (own == null) return null;
+    let deaths = 0;
+    let time = 0;
+    for (const o of stats) {
+      if (o.index === 0 || o.index === s.index || resetHazard(o) == null) continue;
+      deaths += resetHazard(o)! * o.median!;
+      time += o.median!;
+    }
+    if (time <= 0) return null;
+    if (deaths > 0) return own / (deaths / time);
+    return own > 0 ? Infinity : 0;
+  });
+}
 
 function buildAdvice(stats: SegmentStats[]): Advice[] {
   const advice: Advice[] = [];
   const t = ADVICE_THRESHOLDS;
+  const hazardRatios = resetHazardRatios(stats);
   for (const s of stats) {
     const base = { segmentIndex: s.index, segmentName: s.name };
     if (s.pbTime != null && s.median != null && s.pbTime > s.median) {
@@ -198,13 +247,14 @@ function buildAdvice(stats: SegmentStats[]): Advice[] {
         message: `Your gold is ${secs(s.median - s.gold)} faster than your typical time. You know the fast strat; practise it until it's your default.`,
       });
     }
-    if (s.resetRate != null && s.reached >= t.minReachedForResets && s.resetRate > t.resetRate) {
+    const ratio = hazardRatios[s.index];
+    if (s.resetRate != null && s.reached >= t.minReachedForResets && s.resets >= t.minResets && ratio != null && ratio >= t.resetHazardRatio) {
       advice.push({
         ...base,
         kind: "run-killer",
         // Not a direct time save; rank it alongside the segment's realistic save.
         estimatedSave: s.realisticTimeSave ?? 0,
-        message: `${Math.round(s.resetRate * 100)}% of attempts that reach this segment reset here. Practising it in isolation should get more runs to the end.`,
+        message: `${Math.round(s.resetRate * 100)}% of attempts that reach this segment reset here, ${ratio === Infinity ? "while runs almost never reset elsewhere after the first split" : `${ratio.toFixed(1)} times as often per minute as in the rest of your run`}. Practising it in isolation should get more runs to the end.`,
       });
     }
   }
@@ -240,6 +290,7 @@ function minOrNull(a: Ms | null, b: Ms | null): Ms | null {
   return Math.min(a, b);
 }
 
+/** "12.3s" under a minute, "4:05.2" from there, so long segments read like times. */
 function secs(ms: number): string {
-  return `${(ms / 1000).toFixed(1)}s`;
+  return ms < 60_000 ? `${(ms / 1000).toFixed(1)}s` : formatTime(ms, 1);
 }

@@ -112,7 +112,7 @@ function PlanSummary({ plan }: { plan: GoalPlan }) {
       return (
         <p className="goal-text">
           Sub {goal} needs <b>{formatSave(plan.timeToCut)}</b>: {where}. That's faster than your best recent time in
-          those segments, so it means matching golds you set before your last {ANALYSIS_DEFAULTS.recentWindow} attempts.
+          those segments, so it means matching golds older than your recent attempts.
         </p>
       );
     case "reachable": {

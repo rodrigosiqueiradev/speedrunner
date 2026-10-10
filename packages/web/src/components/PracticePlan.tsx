@@ -30,7 +30,7 @@ export function PracticePlan({
     );
   }
 
-  const longest = Math.max(...plan.items.map((i) => i.minutes), plan.fullRuns?.minutes ?? 0);
+  const longest = Math.max(...plan.items.map((i) => i.minutes), plan.fullRuns?.minutes ?? 0, plan.stretch?.minutes ?? 0);
   const runTime = plan.fullRuns?.runTime;
 
   return (
@@ -83,11 +83,35 @@ export function PracticePlan({
             <span className="plan-save" />
           </li>
         )}
+        {plan.stretch && (
+          <li className="plan-row full-runs">
+            <span className="plan-minutes">{plan.stretch.minutes} min</span>
+            <span className="plan-what">
+              <span className="plan-name">
+                <button className="link-button" onClick={() => onSelect(plan.stretch!.from)}>
+                  {plan.stretch.fromName}
+                </button>{" "}
+                to{" "}
+                <button className="link-button" onClick={() => onSelect(plan.stretch!.to)}>
+                  {plan.stretch.toName}
+                </button>
+              </span>
+              <span className="plan-detail">
+                in one go, {plan.stretch.runs} {plan.stretch.runs === 1 ? "time" : "times"} at about {formatTime(plan.stretch.runTime)}
+              </span>
+            </span>
+            <span className="plan-bar" aria-hidden>
+              <span style={{ width: `${(plan.stretch.minutes / longest) * 100}%` }} />
+            </span>
+            <span className="plan-save" />
+          </li>
+        )}
       </ol>
       <p className="section-foot plan-total">
         If this practice pays off the way your past attempts suggest, it takes about{" "}
         <b>{formatSave(plan.expectedSave)}</b> off a typical run. <InfoTip doc={D.expected} />
-        {!plan.fullRuns && " A full run doesn't fit in this session, so it's all segment practice."}
+        {!plan.fullRuns && plan.stretch && " A full run doesn't fit in this session, so part of it plays a stretch of the route in one go."}
+        {!plan.fullRuns && !plan.stretch && " A full run doesn't fit in this session, so it's all segment practice."}
         {plan.segmentsWithoutData > 0 &&
           ` ${plan.segmentsWithoutData} ${plan.segmentsWithoutData === 1 ? "segment has" : "segments have"} too few clean times to plan for.`}
       </p>

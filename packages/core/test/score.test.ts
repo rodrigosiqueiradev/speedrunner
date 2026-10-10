@@ -18,7 +18,7 @@ describe("scoreRun on real files", () => {
     const s = scoreRun(load("livesplit1.6_gametime.lss"));
     expect(s.efficiency.gap!).toBeCloseTo(0.0235, 3);
     expect(Math.round(s.efficiency.score!)).toBe(76);
-    expect(Math.round(s.consistency.score!)).toBe(64);
+    expect(Math.round(s.consistency.score!)).toBe(66);
     expect(s.completion).toMatchObject({ finished: 30, reachedMiddle: 116 });
     expect(Math.round(s.completion.score!)).toBe(26);
     expect(s.improvement.change!).toBeCloseTo(0.0141, 3);
@@ -69,13 +69,16 @@ describe("scoreRun components", () => {
     expect(s.completion.rate).toBeCloseTo(0.5);
   });
 
-  it("scores improvement by comparing the last 10 finishes with the 10 before", () => {
+  it("scores improvement by comparing the latest half of the finishes with the half before, up to 10", () => {
     const faster = synthRun({ base: [60_000, 60_000, 60_000, 60_000, 60_000], attempts: 20, noise: (_, id) => (id <= 10 ? 1_200 : 0) });
     const s = scoreRun(faster);
     // 6s faster on a 306s run is about 2%, so between "no change" (50) and "3% faster" (100).
     expect(s.improvement.change!).toBeCloseTo(6_000 / 306_000, 4);
     expect(s.improvement.score!).toBeGreaterThan(80);
-    expect(scoreRun(steady(50, 19)).improvement.score).toBeNull();
+    expect(s.improvement.window).toBe(10);
+    // 9 finishes a side out of 19, and too few below 8.
+    expect(scoreRun(steady(50, 19)).improvement.window).toBe(9);
+    expect(scoreRun(steady(50, 7)).improvement.score).toBeNull();
   });
 });
 

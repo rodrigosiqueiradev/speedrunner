@@ -20,8 +20,8 @@ function partNote(s: CategoryScore, k: ComponentKey): string {
         : `${s.completion.finished} of ${s.completion.reachedMiddle} from halfway finished`;
     case "improvement":
       return s.improvement.change == null
-        ? `Needs ${SCORE_SETTINGS.improvementWindow * 2} finished runs`
-        : `Last ${SCORE_SETTINGS.improvementWindow} finishes ${pct1(Math.abs(s.improvement.change))} ${s.improvement.change >= 0 ? "faster" : "slower"}`;
+        ? `Needs ${SCORE_SETTINGS.minImprovementWindow * 2} finished runs`
+        : `Last ${s.improvement.window} finishes ${pct1(Math.abs(s.improvement.change))} ${s.improvement.change >= 0 ? "faster" : "slower"}`;
   }
 }
 
@@ -34,7 +34,9 @@ export function provisionalNote(s: CategoryScore): string {
       ? `${s.finishedAttempts} of ${P.minFinished} finished runs`
       : r === "few-segments"
         ? `${s.segmentCount} of ${P.minSegments} segments`
-        : `${parts} of ${P.minComponents} parts`,
+        : r === "few-samples"
+          ? `${s.segmentSamples ?? 0} of ${P.minSegmentSamples} clean times a segment`
+          : `${parts} of ${P.minComponents} parts`,
   );
   return `Provisional: ${reasons.join(", ")}`;
 }

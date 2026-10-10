@@ -12,11 +12,21 @@ export const SCORE_SETTINGS = {
   consistencyZeroVariability: 0.2,
   /** Recent finishes this much faster than the ones before score 100 for improvement (this much slower scores 0). */
   improvementFullChange: 0.03,
-  /** How many finished runs make up each of the two groups improvement compares. */
+  /**
+   * Improvement compares your latest finishes with the same number just before them: half of your
+   * finished runs each, at most this many. Counted in finishes, so a 6 hour category with a dozen
+   * finishes gets a score as well as a 10 minute one with hundreds.
+   */
   improvementWindow: 10,
+  /** Finished runs needed in each of the two groups. */
+  minImprovementWindow: 4,
   weights: { efficiency: 0.4, consistency: 0.25, completion: 0.2, improvement: 0.15 },
-  /** Below any of these, a category score is marked provisional and left out of the overall score. */
-  provisional: { minFinished: 20, minComponents: 3, minSegments: 5 },
+  /**
+   * Below any of these, a category score is marked provisional and left out of the overall score.
+   * Counted in your own runs and times, set low enough that a long category with few attempts can
+   * reach them: finished runs, and clean times in the typical (median) segment.
+   */
+  provisional: { minFinished: 8, minSegmentSamples: 10, minComponents: 3, minSegments: 5 },
   /** The overall score averages this many of the runner's best category scores. */
   overallTop: 5,
 } as const;
@@ -24,7 +34,7 @@ export const SCORE_SETTINGS = {
 export type ComponentKey = keyof typeof SCORE_SETTINGS.weights;
 export const COMPONENT_KEYS: ComponentKey[] = ["efficiency", "consistency", "completion", "improvement"];
 
-export type ProvisionalReason = "few-finished" | "few-components" | "few-segments";
+export type ProvisionalReason = "few-finished" | "few-samples" | "few-components" | "few-segments";
 
 export interface CategoryScore {
   game: string;
@@ -61,6 +71,8 @@ export interface CategoryScore {
   improvement: {
     score: number | null;
     finishedRuns: number;
+    /** Finished runs in each of the two groups compared, or 0 when there are too few. */
+    window: number;
     previousMedian: Ms | null;
     recentMedian: Ms | null;
     /** (previous median - recent median) / previous median: positive means getting faster. */
@@ -71,6 +83,8 @@ export interface CategoryScore {
   realisticTarget: Ms | null;
   finishedAttempts: number;
   segmentCount: number;
+  /** Clean times in a typical (median) segment: how much history each segment's stats rest on. */
+  segmentSamples: number | null;
   /** A "World Record" or "WR" comparison saved in the split file, if there is one. */
   fileReference: { name: string; time: Ms } | null;
 }
@@ -121,11 +135,11 @@ export function scoreRun(run: Run, analysis: RunAnalysis = analyzeRun(run)): Cat
     .filter((x) => x.id > 0 && x.time != null && x.time > 0)
     .sort((x, y) => x.id - y.id)
     .map((x) => x.time!);
-  const w = S.improvementWindow;
+  const w = improvementWindow(finishes.length);
   let previousMedian: Ms | null = null;
   let recentMedian: Ms | null = null;
   let change: number | null = null;
-  if (finishes.length >= 2 * w) {
+  if (w > 0) {
     previousMedian = median(finishes.slice(-2 * w, -w));
     recentMedian = median(finishes.slice(-w));
     change = (previousMedian - recentMedian) / previousMedian;
@@ -133,6 +147,7 @@ export function scoreRun(run: Run, analysis: RunAnalysis = analyzeRun(run)): Cat
   const improvement = {
     score: change == null ? null : scale(0.5 + (0.5 * change) / S.improvementFullChange),
     finishedRuns: finishes.length,
+    window: w,
     previousMedian,
     recentMedian,
     change,
@@ -150,6 +165,8 @@ export function scoreRun(run: Run, analysis: RunAnalysis = analyzeRun(run)): Cat
 
   const provisionalReasons: ProvisionalReason[] = [];
   if (a.finishedAttempts < S.provisional.minFinished) provisionalReasons.push("few-finished");
+  const segmentSamples = typicalSegmentSamples(a);
+  if ((segmentSamples ?? 0) < S.provisional.minSegmentSamples) provisionalReasons.push("few-samples");
   if (available.length < S.provisional.minComponents) provisionalReasons.push("few-components");
   if (a.segments.length < S.provisional.minSegments) provisionalReasons.push("few-segments");
 
@@ -166,6 +183,7 @@ export function scoreRun(run: Run, analysis: RunAnalysis = analyzeRun(run)): Cat
     realisticTarget: a.realisticTarget,
     finishedAttempts: a.finishedAttempts,
     segmentCount: a.segments.length,
+    segmentSamples,
     fileReference: findReference(run),
   };
 }
@@ -221,6 +239,18 @@ export function weakestComponent(score: CategoryScore): ComponentKey | null {
     if (v != null && (weakest == null || v < score[weakest].score!)) weakest = k;
   }
   return weakest;
+}
+
+/** Finished runs in each group improvement compares: half of them, up to 10, or 0 below 4 a side. */
+export function improvementWindow(finished: number): number {
+  const w = Math.min(SCORE_SETTINGS.improvementWindow, Math.floor(finished / 2));
+  return w >= SCORE_SETTINGS.minImprovementWindow ? w : 0;
+}
+
+/** Clean times in the middle segment when segments are ordered by how many they have. */
+export function typicalSegmentSamples(a: Pick<RunAnalysis, "segments">): number | null {
+  if (a.segments.length === 0) return null;
+  return median(a.segments.map((s) => s.samples));
 }
 
 function scale(x: number): number {

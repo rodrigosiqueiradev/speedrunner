@@ -1,5 +1,6 @@
 import { ANALYSIS_DEFAULTS as D } from "@speedrunner/core";
 import type { MetricDoc } from "./explain";
+import { RECENT_TIMES } from "./format";
 
 /**
  * Plain-language definitions for the goal planner and the LiveSplit comparisons, shown in the
@@ -23,7 +24,7 @@ export const GOAL_DOCS: Record<"plan" | "pace" | "balanced" | "recentGolds" | "c
     label: "Pace the goal needs",
     short: "How often you hit the plan's segment times in recent attempts, against your good-day pace.",
     how: [
-      `The pace is the share of your last ${D.recentWindow} clean times in a segment that are at or under the plan's time. The plan asks the same pace of every segment it cuts.`,
+      `The pace is the share of ${RECENT_TIMES} in a segment that are at or under the plan's time. The plan asks the same pace of every segment it cuts.`,
       `The realistic target uses a fixed pace of 1 in ${Math.round(1 / D.goodDayPercentile)}, your good-day time. A goal that needs a rarer pace says how much more often you'd need to hit those times to make it a good-day goal.`,
       "\"A typical attempt\" next to a segment means the plan's time is no faster than your usual (median) time there: the PB was just slow in that segment.",
     ],
@@ -40,9 +41,10 @@ export const GOAL_DOCS: Record<"plan" | "pace" | "balanced" | "recentGolds" | "c
   recentGolds: {
     id: "recent-golds",
     label: "Recent golds",
-    short: `Your best time in each segment over its last ${D.recentWindow} clean times.`,
+    short: "Your best time in each segment over its recent clean times.",
     how: [
-      `For each segment, the fastest of its last ${D.recentWindow} clean times, added up split by split.`,
+      `For each segment, the fastest of ${RECENT_TIMES}, added up split by split.`,
+      "Half of your history rather than a fixed number of attempts, so in a long category with few attempts a gold from months ago doesn't count as recent.",
       "Unlike the sum of best, a gold set long ago and never matched since doesn't count, so it's a fresher goal.",
     ],
   },
