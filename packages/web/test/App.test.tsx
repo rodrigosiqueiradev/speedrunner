@@ -76,7 +76,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("tab", { name: "How it's calculated" }));
     const how = screen.getByRole("region", { name: "How it's calculated" });
     expect(how.textContent).toMatch(/40:01\.52 − .* = 39:49\.37/);
-    expect(how.textContent).toMatch(/50 clean times/);
+    expect(how.textContent).toMatch(/latest half of your clean times \(at least 10, at most 50\)/);
   });
 
   it("highlights a segment picked on the route strip", async () => {

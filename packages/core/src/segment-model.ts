@@ -1,4 +1,5 @@
 import { ANALYSIS_DEFAULTS, quantile } from "./analyze.js";
+import { recencyWeights } from "./recency.js";
 import type { Ms, Run } from "./types.js";
 
 /**
@@ -254,18 +255,6 @@ export function sampleRun(model: FormModel, random: () => number, out: Float64Ar
     total += t;
   }
   return total;
-}
-
-// TODO: import halfLife and recencyWeights from ./recency.js once it lands, so every feature
-// shares one recency rule. These two match its definitions.
-function halfLife(n: number): number {
-  return Math.min(25, Math.max(5, n / 4));
-}
-
-/** Recency weights for `n` samples, oldest first: a sample's weight halves every halfLife(n) newer samples. */
-function recencyWeights(n: number): number[] {
-  const h = halfLife(n);
-  return Array.from({ length: n }, (_, k) => Math.pow(0.5, (n - 1 - k) / h));
 }
 
 /** recencyWeights as a running total scaled to end at 1, for picking a sample with one random number. */
