@@ -49,6 +49,33 @@ describe("category score on the run page", () => {
   });
 });
 
+describe("profile timing and updates", () => {
+  it("keeps the game time choice and offers to update a changed file", async () => {
+    render(<App />);
+    upload([sample, "dishonored.lss"]);
+    const section = await screen.findByRole("region", { name: "How well you run this category" });
+    fireEvent.click(screen.getByRole("button", { name: "Game time" }));
+    await waitFor(() => expect(screen.getAllByText("37:37.97").length).toBeGreaterThan(0));
+    fireEvent.click(within(section).getByRole("button", { name: "Add to your profile" }));
+    expect(section.textContent).toMatch(/This category is in your profile/);
+
+    // The same file in real time isn't what the profile holds.
+    fireEvent.click(screen.getByRole("button", { name: "Real time" }));
+    await waitFor(() => expect(section.textContent).toMatch(/Your profile has this category in game time/));
+    expect(within(section).getByRole("button", { name: "Update in your profile" })).toBeTruthy();
+
+    // Reopened from the profile, it comes back in game time.
+    fireEvent.click(screen.getByRole("link", { name: "Profile" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Analyse this run" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Game time" }).getAttribute("aria-pressed")).toBe("true"));
+    expect(screen.getByRole("region", { name: "How well you run this category" }).textContent).toMatch(/This category is in your profile/);
+
+    // A newer copy under the same name can be saved over the old one.
+    upload([sample.replace("<AttemptCount>", "<AttemptCount>1"), "dishonored.lss"]);
+    await waitFor(() => expect(screen.getByText(/Your profile has an older copy of dishonored.lss/)).toBeTruthy());
+  });
+});
+
 describe("profile", () => {
   it("scores several files and averages the firm ones", async () => {
     render(<App />);

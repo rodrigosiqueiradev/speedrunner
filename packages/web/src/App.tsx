@@ -175,7 +175,11 @@ export function App() {
 
   const addToProfile = (fileName: string, xml: string) => {
     try {
-      keepInProfile(scoreRun(parseLss(xml)), fileName, xml);
+      // A file replacing one in the profile keeps the timing method chosen for that category.
+      const run = parseLss(xml);
+      const before = profile.find((e) => e.key === categoryKey(run))?.score.timingMethod;
+      const method = before && before !== run.timingMethod && hasGameTime(xml) ? before : null;
+      keepInProfile(scoreRun(method ? parseLss(xml, { timingMethod: method }) : run), fileName, xml);
     } catch {
       setError(notSplitsAdded(fileName));
     }
@@ -192,15 +196,22 @@ export function App() {
     const file = profileFiles[key];
     if (!file) return;
     load(file.fileName, file.xml);
+    // Open it with the timing method it was scored with.
+    const method = profile.find((e) => e.key === key)?.score.timingMethod;
+    if (method && hasGameTime(file.xml)) setTiming(method);
     go("run");
   };
 
   // Profile categories whose split file is kept, so they can be opened or recapped.
   const savedRuns = profile.filter((e) => profileFiles[e.key]);
   const recapProfileFiles = useMemo(
-    () => profile.flatMap((e) => (profileFiles[e.key] ? [{ key: e.key, ...profileFiles[e.key] }] : [])),
+    () =>
+      profile.flatMap((e) =>
+        profileFiles[e.key] ? [{ key: e.key, ...profileFiles[e.key], timingMethod: e.score.timingMethod }] : [],
+      ),
     [profile, profileFiles],
   );
+  const recapOpen = useMemo(() => loaded && { ...loaded, timingMethod: timing ?? undefined }, [loaded, timing]);
 
   const selectSegment = (index: number) => {
     showTab("segments", { scroll: false });
@@ -279,7 +290,7 @@ export function App() {
           <YearInRuns
             ref={recapPicker}
             profileFiles={recapProfileFiles}
-            open={loaded}
+            open={recapOpen}
             choices={recapChoices}
             onChoicesChange={setRecapChoices}
           />
@@ -362,7 +373,10 @@ export function App() {
                 <ScoreBreakdown score={ok.score} />
                 <ProfileAction
                   inProfile={profile.find((e) => e.key === categoryKey(ok.score))}
+                  stored={profileFiles[categoryKey(ok.score)]}
+                  timingMethod={ok.run.timingMethod}
                   fileName={loaded!.fileName}
+                  xml={loaded!.xml}
                   onAdd={() => keepInProfile(ok.score, loaded!.fileName, loaded!.xml)}
                   onView={() => go("profile")}
                 />
@@ -444,12 +458,19 @@ export function App() {
 /** Adds the loaded run to the profile, or says it's already there. */
 function ProfileAction({
   inProfile,
+  stored,
+  timingMethod,
   fileName,
+  xml,
   onAdd,
   onView,
 }: {
   inProfile: ProfileEntry | undefined;
+  /** The profile's copy of this category's split file, if it's kept. */
+  stored: StoredSplit | undefined;
+  timingMethod: TimingMethod;
   fileName: string;
+  xml: string;
   onAdd: () => void;
   onView: () => void;
 }) {
@@ -458,14 +479,25 @@ function ProfileAction({
       View your profile
     </ActionLink>
   );
-  if (inProfile?.fileName === fileName) {
+  const sameFile = inProfile?.fileName === fileName;
+  // Older profiles may not have kept the file; then the name is all there is to go on.
+  const sameContents = stored ? stored.xml === xml : sameFile;
+  const sameTiming = inProfile?.score.timingMethod === timingMethod;
+  if (sameFile && sameContents && sameTiming) {
     return <p className="section-foot">This category is in your profile. {viewLink}</p>;
   }
+  const clock = (m: TimingMethod) => (m === "GameTime" ? "game time" : "real time");
   return (
     <p className="section-foot profile-action">
-      <button onClick={onAdd}>{inProfile ? "Replace in your profile" : "Add to your profile"}</button>
+      <button onClick={onAdd}>{!inProfile ? "Add to your profile" : sameFile ? "Update in your profile" : "Replace in your profile"}</button>
       {inProfile ? (
-        <span>Your profile has this category from {inProfile.fileName}.</span>
+        <span>
+          {!sameFile
+            ? `Your profile has this category from ${inProfile.fileName}.`
+            : !sameContents
+              ? `Your profile has an older copy of ${fileName}.`
+              : `Your profile has this category in ${clock(inProfile.score.timingMethod)}.`}
+        </span>
       ) : (
         <span>Saved {isDesktop ? "on this computer" : "in this browser"} only.</span>
       )}

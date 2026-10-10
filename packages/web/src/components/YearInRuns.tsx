@@ -1,4 +1,4 @@
-import { parseLss, recapYears, undatedAttempts, yearRecap, type Run } from "@speedrunner/core";
+import { hasGameTime, parseLss, recapYears, undatedAttempts, yearRecap, type Run, type TimingMethod } from "@speedrunner/core";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { localPlace } from "../platform";
 import {
@@ -40,18 +40,18 @@ export const NO_RECAP_CHOICES: RecapChoices = { added: [], removed: [] };
 
 interface Props {
   /** The split files kept with the profile, by category key. */
-  profileFiles: Array<{ key: string; fileName: string; xml: string }>;
-  /** The split file open on the run page, if any. */
-  open?: { fileName: string; xml: string } | null;
+  profileFiles: Array<{ key: string; fileName: string; xml: string; timingMethod?: TimingMethod }>;
+  /** The split file open on the run page, if any, read with the timing method chosen there. */
+  open?: { fileName: string; xml: string; timingMethod?: TimingMethod } | null;
   choices: RecapChoices;
   onChoicesChange: (next: RecapChoices) => void;
 }
 
 const keyOf = (run: Run) => `${run.game.trim().toLowerCase()}|${run.category.trim().toLowerCase()}`;
 
-const tryParse = (xml: string): Run | null => {
+const tryParse = (xml: string, timingMethod?: TimingMethod): Run | null => {
   try {
-    return parseLss(xml);
+    return parseLss(xml, timingMethod && hasGameTime(xml) ? { timingMethod } : {});
   } catch {
     return null;
   }
@@ -75,12 +75,12 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
   const profileRuns = useMemo(
     () =>
       profileFiles.flatMap((f) => {
-        const run = tryParse(f.xml);
+        const run = tryParse(f.xml, f.timingMethod);
         return run ? [{ fileName: f.fileName, run, source: "profile" as const }] : [];
       }),
     [profileFiles],
   );
-  const openRun = useMemo(() => (open ? tryParse(open.xml) : null), [open]);
+  const openRun = useMemo(() => (open ? tryParse(open.xml, open.timingMethod) : null), [open]);
 
   // One file per game and category, so attempts aren't counted twice: a file added here wins, then the
   // profile's, then the one open on the run page.
