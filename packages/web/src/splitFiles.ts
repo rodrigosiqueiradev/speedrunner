@@ -57,15 +57,24 @@ const isStoredSplit = (v: unknown): v is StoredSplit =>
 export async function loadSplitFiles(): Promise<Record<string, StoredSplit>> {
   if (typeof indexedDB === "undefined") return readFallback();
   try {
-    const [keys, values] = await Promise.all([
-      withStore("readonly", (s) => s.getAllKeys()),
-      withStore("readonly", (s) => s.getAll()),
-    ]);
-    const files: Record<string, StoredSplit> = {};
-    keys.forEach((k, i) => {
-      if (isStoredSplit(values[i])) files[String(k)] = values[i];
-    });
-    return files;
+    const db = await openDb()!;
+    try {
+      // One cursor in one transaction, so each file comes with its own key even if another
+      // window (the overlay, another tab) adds or deletes one meanwhile.
+      return await new Promise<Record<string, StoredSplit>>((resolve, reject) => {
+        const files: Record<string, StoredSplit> = {};
+        const req = db.transaction(STORE, "readonly").objectStore(STORE).openCursor();
+        req.onsuccess = () => {
+          const cursor = req.result;
+          if (!cursor) return resolve(files);
+          if (isStoredSplit(cursor.value)) files[String(cursor.key)] = cursor.value;
+          cursor.continue();
+        };
+        req.onerror = () => reject(req.error);
+      });
+    } finally {
+      db.close();
+    }
   } catch {
     return {};
   }
