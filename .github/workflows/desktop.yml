@@ -1,15 +1,10 @@
 name: Desktop app
+# Runs only on version tags or on demand (Actions > Desktop app > Run workflow), never on pushes or PRs.
 on:
   push:
-    branches: [main]
     # Pushing a version tag such as v0.2.0 builds the apps and publishes them as a release on the
     # public releases repo, so this repo and its code can stay private.
     tags: ["v*"]
-  pull_request:
-    paths:
-      - "packages/**"
-      - "package-lock.json"
-      - ".github/workflows/desktop.yml"
   workflow_dispatch:
     inputs:
       tag:

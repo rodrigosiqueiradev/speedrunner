@@ -1,4 +1,5 @@
 name: CI
+# Tests only. The desktop apps are built by desktop.yml, on version tags or on demand.
 on:
   push:
     branches: [main]
@@ -14,4 +15,3 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build
