@@ -4,6 +4,22 @@
   "workspaces": [
     "packages/*"
   ],
+  "engines": {
+    "node": "^24.15.0",
+    "npm": "^12.0.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "^24.15.0",
+      "onFail": "warn"
+    },
+    "packageManager": {
+      "name": "npm",
+      "version": "^12.0.0",
+      "onFail": "warn"
+    }
+  },
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
