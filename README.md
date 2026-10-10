@@ -51,8 +51,9 @@ node packages/web/scripts/mock-livesplit.mjs path/to/splits.lss [attempt id] [sp
 same page in a native window, with no backend: split files are still read and analysed locally, and
 the app makes no network requests, apart from the optional connection to LiveSplit on the same computer for live stats.
 
-Every push to `main` and every pull request builds portable apps, with nothing to install, and
-pushing a version tag publishes them as a release on the public
+The **Desktop app** workflow builds portable apps, with nothing to install, when a version tag is
+pushed or when it's run by hand from the Actions tab (pushes and pull requests don't build them).
+A version tag also publishes them as a release on the public
 [speedrunner-releases](https://github.com/rodrigosiqueiradev/speedrunner-releases) repo, so this
 repo can stay private. Download them from the
 [latest release](https://github.com/rodrigosiqueiradev/speedrunner-releases/releases/latest), or
@@ -75,10 +76,11 @@ read and write access to `speedrunner-releases` only.
 The apps aren't signed with a developer certificate yet, so both Windows and macOS warn on first launch:
 
 - **Windows:** on the SmartScreen prompt, choose **More info**, then **Run anyway**.
-- **macOS:** the first time, right-click the app and choose **Open**, or allow it under System
-  Settings › Privacy & Security › **Open Anyway**. If macOS says the app "is damaged and can't be
-  opened", that's the download quarantine flag on an unsigned app; clear it with
-  `xattr -cr Speedrunner.app` and open it again.
+- **macOS:** open the app once and dismiss the warning, then go to System Settings › Privacy &
+  Security and choose **Open Anyway**. (Before macOS 15 Sequoia, right-clicking the app and choosing
+  **Open** also worked; it no longer does.) If macOS says the app "is damaged and can't be opened",
+  that's the download quarantine flag on an unsigned app; clear it with `xattr -cr Speedrunner.app`
+  in Terminal and open it again.
 
 To build or run it yourself you need [Rust](https://rustup.rs) and the
 [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS:
