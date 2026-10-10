@@ -8,7 +8,7 @@ import {
   type Run,
   type TimingMethod,
 } from "@speedrunner/core";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { AdviceList } from "./components/AdviceList";
 import { FilePicker, type FilePickerHandle } from "./components/FilePicker";
@@ -19,6 +19,8 @@ import { PracticePlan } from "./components/PracticePlan";
 import { Profile } from "./components/Profile";
 import { ProfileRuns } from "./components/ProfileRuns";
 import { YearInRuns } from "./components/YearInRuns";
+import { LiveOverlay } from "./components/LiveOverlay";
+import { LivePage } from "./components/LivePage";
 import { UploadIcon } from "./components/Icons";
 import { InfoTip, revealExplanation, SHOW_PANEL } from "./components/InfoTip";
 import { RouteStrip } from "./components/RouteStrip";
@@ -39,10 +41,15 @@ interface Loaded {
   xml: string;
 }
 
-type View = "run" | "profile" | "recap";
-const VIEW_LINKS: Record<View, string> = { run: "Analyse a run", profile: "Profile", recap: "Year in runs" };
-const viewFromHash = (): View =>
-  window.location.hash === "#profile" ? "profile" : window.location.hash === "#recap" ? "recap" : "run";
+type View = "run" | "profile" | "recap" | "live" | "overlay";
+const VIEW_LINKS: Record<Exclude<View, "overlay">, string> = {
+  run: "Analyse a run",
+  profile: "Profile",
+  recap: "Year in runs",
+  live: "Live stats",
+};
+const HASH_VIEWS: Record<string, View> = { "#profile": "profile", "#recap": "recap", "#live": "live", "#live-overlay": "overlay" };
+const viewFromHash = (): View => HASH_VIEWS[window.location.hash] ?? "run";
 
 export function App() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -111,6 +118,15 @@ export function App() {
       return { error: true as const };
     }
   }, [loaded, timing]);
+
+  const backFromOverlay = useCallback(() => {
+    // A pop-up overlay closes; the desktop app's single window goes back to the live page.
+    if (window.opener) window.close();
+    else {
+      setView("live");
+      history.replaceState(null, "", "#live");
+    }
+  }, []);
 
   const go = (next: View) => {
     setError(null);
@@ -185,13 +201,15 @@ export function App() {
   const ok = result && "analysis" in result && result.analysis ? result : null;
   const a = ok?.analysis;
 
+  if (view === "overlay") return <LiveOverlay onBack={backFromOverlay} />;
+
   return (
     <>
       <header className="shell">
         <div className="shell-inner">
           <span className="brand">Speedrunner</span>
           <nav className="shell-nav" aria-label="Page">
-            {(["run", "profile", "recap"] as const)
+            {(["run", "profile", "recap", "live"] as const)
               .filter((v) => v !== view)
               .map((v) => (
                 <a
@@ -269,6 +287,17 @@ export function App() {
             open={loaded}
             choices={recapChoices}
             onChoicesChange={setRecapChoices}
+          />
+        )}
+
+        {view === "live" && (
+          <LivePage
+            loaded={loaded}
+            runs={savedRuns.map((e) => ({
+              key: e.key,
+              label: `${e.score.game || "Unknown game"} ${e.score.category}`.trim(),
+              file: profileFiles[e.key],
+            }))}
           />
         )}
 

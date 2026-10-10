@@ -19,11 +19,26 @@ npm install
 npm run dev --workspace @speedrunner/web
 ```
 
+## Live stats (prototype)
+
+The **Live stats** page follows LiveSplit's timer while you run and shows the stats you pick, in your
+order, on a small card you can open as its own window or capture in OBS. It reads the timer through
+LiveSplit's built-in server on your own computer (in LiveSplit, right-click › Control › Start
+WebSocket Server; it listens on `ws://localhost:16834/livesplit` unless you change the port). It never
+splits or resets for you.
+
+Without LiveSplit, pick **Demo** to replay your own recent attempts from the split file, or run a
+pretend LiveSplit server that replays one attempt:
+
+```sh
+node packages/web/scripts/mock-livesplit.mjs path/to/splits.lss [attempt id] [speed]
+```
+
 ## Desktop app
 
 `packages/desktop` packages the web app as a desktop app with [Tauri](https://tauri.app). It is the
 same page in a native window, with no backend: split files are still read and analysed locally, and
-the app makes no network requests.
+the app makes no network requests, apart from the optional connection to LiveSplit on the same computer for live stats.
 
 Every push to `main` and every pull request builds portable apps, with nothing to install, and
 pushing a version tag publishes them as a release on the public

@@ -1,0 +1,67 @@
+import type { LiveSession, LiveStats } from "@speedrunner/core";
+import type { FeedStatus } from "../live/feeds";
+import { STAT_BY_ID, type StatChoice } from "../live/stats";
+
+/** The live stats card: the runner's chosen stats, in their order. Also the whole overlay window. */
+export function LiveCard({
+  title,
+  stats,
+  session,
+  status,
+  choices,
+}: {
+  title: string;
+  stats: LiveStats;
+  session: LiveSession;
+  status: FeedStatus | null;
+  choices: StatChoice[];
+}) {
+  const shown = choices.filter((c) => c.shown).map((c) => STAT_BY_ID.get(c.id)!);
+  return (
+    <section className="live-card" aria-label="Live stats">
+      <header className="live-card-head">
+        <span className="live-card-title">{title}</span>
+        <StatusDot status={status} />
+      </header>
+      {shown.length === 0 ? (
+        <p className="live-card-empty">No stats chosen.</p>
+      ) : (
+        <dl className="live-rows">
+          {shown.map((def) => {
+            const v = def.view(stats, session);
+            return (
+              <div key={def.id} className="live-row" data-tone={v?.tone}>
+                <dt>{def.doc.label}</dt>
+                <dd>
+                  <span className={v?.word ? "live-value word" : "live-value"}>{v?.value ?? "–"}</span>
+                  {v?.detail && <span className="live-detail">{v.detail}</span>}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+      )}
+      {status?.kind === "offline" && <p className="live-card-note">{status.reason}</p>}
+      {status?.kind === "connected" && status.mismatch && <p className="live-card-note">{status.mismatch}</p>}
+    </section>
+  );
+}
+
+function StatusDot({ status }: { status: FeedStatus | null }) {
+  const [label, state] =
+    status == null
+      ? ["", "off"]
+      : status.kind === "demo"
+        ? ["Demo", "demo"]
+        : status.kind === "connected"
+          ? ["LiveSplit", "on"]
+          : status.kind === "connecting"
+            ? ["Connecting", "off"]
+            : ["Not connected", "error"];
+  return (
+    <span className="live-status" data-state={state}>
+      <span className="live-dot" aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
