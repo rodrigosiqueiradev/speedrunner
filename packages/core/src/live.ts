@@ -104,8 +104,11 @@ export interface LiveStats {
   golds: number;
 }
 
-/** Live stats for one timer snapshot. */
-export function liveStats(ctx: LiveContext, snap: TimerSnapshot): LiveStats {
+/**
+ * Live stats for one timer snapshot. With the session, a finished run is a PB only if it also beat
+ * the session's earlier PBs, since the file's PB is out of date after one.
+ */
+export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveSession): LiveStats {
   const n = ctx.run.segments.length;
   const running = snap.phase === "Running" || snap.phase === "Paused";
   const splits = snap.splitTimes.slice(0, Math.max(0, Math.min(n, snap.splitIndex)));
@@ -161,7 +164,7 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot): LiveStats {
   let advice: ResetAdvice | null = null;
   if (snap.phase === "Ended") {
     const final = splits[n - 1];
-    pbChance = final != null && ctx.odds ? (final < ctx.odds.target ? 1 : 0) : null;
+    pbChance = final != null && ctx.odds ? (final < ctx.odds.target && (!session?.pbs || session.lastFinishPb) ? 1 : 0) : null;
   } else if (running) {
     const at = lastSplit?.index ?? -1;
     pbChance = chanceAt(at, lastSplit?.time ?? null);
@@ -212,25 +215,43 @@ export interface LiveSession {
   pbs: number;
   /** Fastest finish this session, if any. */
   best: Ms | null;
+  /** Whether the latest finish beat both the file's PB and every earlier finish this session. */
+  lastFinishPb: boolean;
 }
 
-export const EMPTY_SESSION: LiveSession = { attempts: 0, finished: 0, pbs: 0, best: null };
+export const EMPTY_SESSION: LiveSession = { attempts: 0, finished: 0, pbs: 0, best: null, lastFinishPb: false };
 
-/** Updates the session when the timer moves from `prev` to `next`. */
+/**
+ * Updates the session when the timer moves from `prev` to `next`. A PB this session becomes the
+ * time to beat for the rest of it, so a later finish between the two isn't counted as another PB.
+ */
 export function trackSession(session: LiveSession, prev: TimerSnapshot, next: TimerSnapshot, personalBest: Ms | null): LiveSession {
   let s = session;
   const wasIdle = prev.phase === "NotRunning" || prev.phase === "Ended";
+  const wasRunning = prev.phase === "Running" || prev.phase === "Paused";
   const isRunning = next.phase === "Running" || next.phase === "Paused";
-  if (wasIdle && isRunning) s = { ...s, attempts: s.attempts + 1 };
+  // A reset and a new start between two reads of the timer: the time goes back without an undo.
+  // Undoing a split keeps the time, and a timer only runs backwards when it starts again.
+  const restarted =
+    wasRunning &&
+    isRunning &&
+    prev.currentTime != null &&
+    next.currentTime != null &&
+    next.currentTime < prev.currentTime &&
+    next.splitIndex <= prev.splitIndex;
+  if ((wasIdle && isRunning) || restarted) s = { ...s, attempts: s.attempts + 1 };
   if (prev.phase !== "Ended" && next.phase === "Ended") {
     const final = next.splitTimes[next.splitTimes.length - 1] ?? next.currentTime;
+    const toBeat = personalBest == null ? null : Math.min(personalBest, s.best ?? Infinity);
+    const pb = final != null && toBeat != null && final < toBeat;
     s = {
       ...s,
       // A run that ended before the feed saw it start still counts as an attempt.
       attempts: Math.max(s.attempts, s.finished + 1),
       finished: s.finished + 1,
-      pbs: s.pbs + (final != null && personalBest != null && final < personalBest ? 1 : 0),
+      pbs: s.pbs + (pb ? 1 : 0),
       best: final == null ? s.best : s.best == null ? final : Math.min(s.best, final),
+      lastFinishPb: pb,
     };
   }
   return s;

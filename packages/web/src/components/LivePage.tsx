@@ -330,6 +330,15 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
 
         <div className="live-preview">
           <SyncNote sync={sync} onChoose={() => picker.current?.open()} onUse={choose} />
+          {view.session.pbs > 0 && (
+            <p className="live-sync" data-state="missing" role="status">
+              <span>
+                PB this session. The stats still compare with the PB in this file: save your splits in LiveSplit, then
+                choose the file again.
+              </span>
+              <button onClick={() => picker.current?.open()}>Choose file</button>
+            </p>
+          )}
           {view.stats && (
             <LiveCard
               title={title}

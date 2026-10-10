@@ -87,6 +87,6 @@ export function useLive(xml: string | null, config: Pick<LiveConfig, "source" | 
     return () => feed?.stop();
   }, [names, demoCtx, config.source, config.url, config.speed]);
 
-  const stats = useMemo(() => (ctx ? liveStats(ctx, snap) : null), [ctx, snap]);
+  const stats = useMemo(() => (ctx ? liveStats(ctx, snap, session) : null), [ctx, snap, session]);
   return { ctx, error: !!parsed && !ctx, stats, session, status, timing: { method, fromLiveSplit, choice } };
 }

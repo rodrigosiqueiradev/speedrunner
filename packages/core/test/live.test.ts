@@ -13,6 +13,8 @@ import {
   replaySnapshot,
   replayableAttempts,
   trackSession,
+  type LiveSession,
+  type Ms,
   type Run,
   type TimerSnapshot,
 } from "../src/index.js";
@@ -118,6 +120,9 @@ describe("liveStats", () => {
     const s = liveStats(ctx, { phase: "Ended", splitIndex: pb.length, currentTime: fast.at(-1)!, splitTimes: fast });
     expect(s.pbChance).toBe(1);
     expect(s.current).toBeNull();
+    // After a faster PB earlier in the session, the same finish isn't a PB.
+    const after: LiveSession = { attempts: 2, finished: 2, pbs: 1, best: pb.at(-1)! - 5000, lastFinishPb: false };
+    expect(liveStats(ctx, { phase: "Ended", splitIndex: pb.length, currentTime: fast.at(-1)!, splitTimes: fast }, after).pbChance).toBe(0);
   });
 
   it("gives the same answers for a 10 minute and a 6 hour category", () => {
@@ -142,7 +147,29 @@ describe("trackSession", () => {
     s = trackSession(s, IDLE_SNAPSHOT, run, 100_000);
     const end: TimerSnapshot = { phase: "Ended", splitIndex: 2, currentTime: 90_000, splitTimes: [40_000, 90_000] };
     s = trackSession(s, at([40_000], 80_000), end, 100_000);
-    expect(s).toEqual({ attempts: 2, finished: 1, pbs: 1, best: 90_000 });
+    expect(s).toEqual({ attempts: 2, finished: 1, pbs: 1, best: 90_000, lastFinishPb: true });
+  });
+
+  it("compares later finishes with a PB got earlier in the session", () => {
+    const end = (t: Ms): TimerSnapshot => ({ phase: "Ended", splitIndex: 2, currentTime: t, splitTimes: [40_000, t] });
+    const finish = (s: LiveSession, t: Ms) => trackSession(trackSession(s, IDLE_SNAPSHOT, at([], 0), 100_000), at([40_000], t - 1), end(t), 100_000);
+    let s = finish(EMPTY_SESSION, 90_000);
+    s = finish(s, 95_000);
+    expect(s).toMatchObject({ finished: 2, pbs: 1, best: 90_000, lastFinishPb: false });
+    s = finish(s, 89_000);
+    expect(s).toMatchObject({ finished: 3, pbs: 2, best: 89_000, lastFinishPb: true });
+  });
+
+  it("counts a reset and start between two reads of the timer as a new attempt", () => {
+    let s = trackSession(EMPTY_SESSION, IDLE_SNAPSHOT, at([], 1_000), 100_000);
+    s = trackSession(s, at([], 1_000), at([30_000], 35_000), 100_000);
+    // Reset and started again before the next read.
+    s = trackSession(s, at([30_000], 35_000), at([], 200), 100_000);
+    expect(s.attempts).toBe(2);
+    // Undoing a split keeps the time, so it isn't a new attempt.
+    s = trackSession(s, at([], 200), at([10_000], 12_000), 100_000);
+    s = trackSession(s, at([10_000], 12_000), at([], 12_250), 100_000);
+    expect(s.attempts).toBe(2);
   });
 });
 
