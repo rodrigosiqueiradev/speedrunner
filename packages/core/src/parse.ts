@@ -89,3 +89,8 @@ function text(node: unknown): string | undefined {
   if (typeof node === "object" && "#text" in (node as any)) return String((node as any)["#text"]);
   return undefined;
 }
+
+/** True when the file has any game times, so a choice between real time and game time means something. */
+export function hasGameTime(xml: string): boolean {
+  return /<GameTime>\s*[\d-]/.test(xml);
+}

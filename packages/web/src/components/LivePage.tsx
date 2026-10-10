@@ -1,3 +1,4 @@
+import type { TimingMethod } from "@speedrunner/core";
 import { useEffect, useRef, useState } from "react";
 import { LIVE_RUN_KEY, loadLiveConfig, saveLiveConfig, saveLiveRun, type LiveConfig } from "../live/config";
 import { useSplitsSync, type SplitsSync } from "../live/useSplitsSync";
@@ -37,12 +38,17 @@ const SOURCE_DOC = {
   how: [
     "LiveSplit: Speedrunner connects to LiveSplit's built-in server on this computer and asks for the timer a few times a second. In LiveSplit, right-click › Control › Start WebSocket Server. The port is in LiveSplit's Settings (16834 unless you changed it). It only reads the timer: it never splits or resets for you, and nothing leaves your computer.",
     "Demo: replays your recent attempts from the split file, resets included, sped up so a whole run takes the time you pick. Use it to choose your stats without running.",
+    "Timing: when the split file has game times, the stats use the same clock as LiveSplit, real time or game time, since LiveSplit sends its times in the clock it compares against. Newer LiveSplit versions say which one that is and the page follows it. With older ones, pick the same one as LiveSplit (right-click › Compare Against).",
   ],
 };
 
 const SOURCES: Array<{ value: LiveConfig["source"]; label: string }> = [
   { value: "livesplit", label: "LiveSplit" },
   { value: "demo", label: "Demo" },
+];
+const TIMINGS: Array<{ value: TimingMethod; label: string }> = [
+  { value: "RealTime", label: "Real time" },
+  { value: "GameTime", label: "Game time" },
 ];
 const SPEEDS = (Object.keys(DEMO_SPEEDS) as DemoSpeed[]).map((s) => ({ value: s, label: DEMO_SPEEDS[s].label }));
 
@@ -224,6 +230,18 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
               <div className="live-speed">
                 <span className="live-speed-label">Replay speed</span>
                 <Toggle small label="Replay speed" options={SPEEDS} value={config.speed} onChange={(speed) => update({ speed })} />
+              </div>
+            )}
+            {view.timing.choice && (
+              <div className="live-speed">
+                <span className="live-speed-label">Timing</span>
+                {view.timing.fromLiveSplit ? (
+                  <span className="live-timing-note">
+                    {view.timing.method === "GameTime" ? "Game time" : "Real time"}, following LiveSplit
+                  </span>
+                ) : (
+                  <Toggle small label="Timing method" options={TIMINGS} value={config.timing} onChange={(timing) => update({ timing })} />
+                )}
               </div>
             )}
           </section>

@@ -9,6 +9,7 @@ import {
   type Replay,
   type TimerPhase,
   type TimerSnapshot,
+  type TimingMethod,
 } from "@speedrunner/core";
 
 /** Where a live feed is: shown under the stats so the runner knows why nothing moves. */
@@ -19,6 +20,8 @@ export type FeedStatus =
       mismatch: string | null;
       /** The splits file LiveSplit has open, when its server can say (newer LiveSplit versions). */
       splitsPath: string | null;
+      /** The clock LiveSplit compares against, when its server can say (newer LiveSplit versions). */
+      timingMethod: TimingMethod | null;
     }
   | { kind: "offline"; reason: string }
   | { kind: "demo"; attempt: number };
@@ -35,9 +38,9 @@ export const DEFAULT_LIVESPLIT_URL = "ws://localhost:16834/livesplit";
 const POLL_MS = 250;
 const ANSWER_TIMEOUT_MS = 3000;
 const RETRY_MS = 3000;
-/** How often to ask which splits file LiveSplit has open, while the timer isn't running. */
+/** How often to ask which splits file and timing method LiveSplit has, while the timer isn't running. */
 const SPLITS_PATH_MS = 5000;
-/** Older servers don't know getsplitspath and never answer it; give up on it after this long. */
+/** Older servers don't know getsplitspath or gettimingmethod and never answer them; give up on them after this long. */
 const OPTIONAL_TIMEOUT_MS = 1500;
 const PHASES: TimerPhase[] = ["NotRunning", "Running", "Paused", "Ended"];
 
@@ -57,6 +60,8 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
   // null: not asked yet on this connection; false: the server doesn't know the command.
   let pathSupported: boolean | null = null;
   let pathAskedAt = 0;
+  let timingMethod: TimingMethod | null = null;
+  let methodSupported: boolean | null = null;
 
   const open = () => {
     if (stopped) return;
@@ -99,15 +104,23 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
       });
 
     pathSupported = null;
+    methodSupported = null;
     const poll = async () => {
       while (!stopped && ws.readyState === WebSocket.OPEN) {
-        // Between attempts, check which splits LiveSplit has open, so the page can follow a switch.
+        // Between attempts, check which splits LiveSplit has open and which clock it compares
+        // against, so the page can follow a switch of either.
         const idle = snap.phase === "NotRunning" || snap.phase === "Ended";
-        if (pathSupported !== false && (pathSupported === null || (idle && Date.now() - pathAskedAt > SPLITS_PATH_MS))) {
-          pathAskedAt = Date.now();
+        const recheck = idle && Date.now() - pathAskedAt > SPLITS_PATH_MS;
+        if (pathSupported === null || methodSupported === null || recheck) pathAskedAt = Date.now();
+        if (pathSupported !== false && (pathSupported === null || recheck)) {
           const path = await askOptional("getsplitspath");
           pathSupported = path != null;
           if (path != null) splitsPath = path && path !== "-" ? path : null;
+        }
+        if (methodSupported !== false && (methodSupported === null || recheck)) {
+          const method = await askOptional("gettimingmethod");
+          methodSupported = method != null;
+          timingMethod = method === "GameTime" || method === "RealTime" ? method : null;
         }
         const phaseText = await ask("getcurrenttimerphase");
         const phase = PHASES.find((p) => p === phaseText) ?? "NotRunning";
@@ -127,7 +140,7 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
               : null;
         }
         snap = { phase, splitIndex: Number.isFinite(index) ? index : -1, currentTime, splitTimes };
-        onUpdate(snap, { kind: "connected", mismatch, splitsPath });
+        onUpdate(snap, { kind: "connected", mismatch, splitsPath, timingMethod });
         await new Promise((r) => setTimeout(r, POLL_MS));
       }
     };

@@ -6,7 +6,7 @@ import { putSplitFile, type StoredSplit } from "../src/splitFiles";
 
 const tp: StoredSplit = { fileName: "Twilight Princess.lss", xml: "<Run>tp</Run>" };
 const sample: StoredSplit = { fileName: "sample.lss", xml: "<Run>sample</Run>" };
-const open = (path: string | null): FeedStatus => ({ kind: "connected", mismatch: null, splitsPath: path });
+const open = (path: string | null): FeedStatus => ({ kind: "connected", mismatch: null, splitsPath: path, timingMethod: null });
 
 beforeEach(() => localStorage.clear());
 afterEach(cleanup);

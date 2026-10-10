@@ -1,3 +1,4 @@
+import type { TimingMethod } from "@speedrunner/core";
 import { putSplitFile, type StoredSplit } from "../splitFiles";
 import { DEFAULT_LIVESPLIT_URL, type DemoSpeed } from "./feeds";
 import { normalizeChoices, type StatChoice } from "./stats";
@@ -8,6 +9,8 @@ export interface LiveConfig {
   source: "livesplit" | "demo";
   url: string;
   speed: DemoSpeed;
+  /** The clock to compare with when LiveSplit can't say which one it uses, and for the demo. */
+  timing: TimingMethod;
   stats: StatChoice[];
   style: CardStyle;
 }
@@ -29,6 +32,7 @@ export function loadLiveConfig(): LiveConfig {
     source: saved.source === "livesplit" ? "livesplit" : "demo",
     url: typeof saved.url === "string" && saved.url ? saved.url : DEFAULT_LIVESPLIT_URL,
     speed: saved.speed === "real" || saved.speed === "faster" ? saved.speed : "fast",
+    timing: saved.timing === "GameTime" ? "GameTime" : "RealTime",
     stats: normalizeChoices(saved.stats),
     style: normalizeStyle(saved.style),
   };

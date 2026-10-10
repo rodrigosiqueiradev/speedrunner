@@ -1,6 +1,7 @@
 import {
   analyzeRun,
   analyzeSessions,
+  hasGameTime,
   parseLss,
   pbOdds,
   scoreRun,
@@ -470,8 +471,4 @@ function ProfileAction({
       )}
     </p>
   );
-}
-
-function hasGameTime(xml: string): boolean {
-  return /<GameTime>\s*[\d-]/.test(xml);
 }
