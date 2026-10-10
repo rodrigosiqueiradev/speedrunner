@@ -93,38 +93,52 @@ Adding a newer file for the same game and category replaces the old one.
 
 ## PB odds and the reset coach
 
-The app plays 20,000 attempts on paper to estimate how often you beat your PB at your current form. Settings come
-from `PB_ODDS_SETTINGS` in [`packages/core/src/pb-odds.ts`](../packages/core/src/pb-odds.ts); the per-segment model
-it samples from is in [`packages/core/src/segment-model.ts`](../packages/core/src/segment-model.ts) so other features
-can reuse it.
+The app plays 10,000 runs on paper from a model of how you run right now, and counts how often they beat your PB.
+Categories run from a few minutes to many hours, so nothing in it is a fixed time: every setting is a count of your own
+attempts or a ratio of your own times. Settings come from `PB_ODDS_SETTINGS` in
+[`packages/core/src/pb-odds.ts`](../packages/core/src/pb-odds.ts). The model is `buildFormModel` in
+[`packages/core/src/segment-model.ts`](../packages/core/src/segment-model.ts), so other features can sample whole runs
+from it too.
 
-**The segment model.** For each segment it keeps your last 50 clean times and two reset rates over your last 50
-attempts that reached it:
+**The form model.**
 
-- **Reset rate:** attempts that reset in the segment ÷ attempts that reached it.
-- **Mistake rate:** the same, but only for attempts that were in the faster half at the split before. Those runs were
-  going well, so their resets are mostly mistakes rather than pace resets. The first segment, and any segment with
-  fewer than 10 such attempts, uses the reset rate.
+- **Recent times count more.** A sample's weight halves every quarter of your samples, kept between 5 and 25 newer
+  samples. Each segment's typical time is its recency-weighted median.
+- **Times from finished runs.** A segment uses times from runs that reached the end once it has at least 5 of them,
+  and all clean times before that. Runs you reset are mostly bad runs, and would drag the odds down.
+- **Form of the day.** An attempt's form is the average log ratio of its segment times to typical, for attempts with
+  clean times in at least 25% of the segments. Each simulated run picks one recent form (recency-weighted) and applies
+  it to every segment, so a good day is good across the whole run. Each segment then adds its own variation: one of
+  its times, with its attempt's form taken out. Without a shared form, many segments average out and a long run's
+  finishes cluster tightly around the typical one.
+- **Improvement.** A recency-weighted straight line through form against attempt number, projected to your next
+  attempt. Half of that is taken off every simulated run. A slowdown is never projected.
 
-**A simulated attempt** picks each segment's time at random from its recent clean times, so a segment you're
-inconsistent on swings as much as it does for you. Segments are picked independently, so a bad day that slows every
-segment at once isn't modelled.
+**Mistakes.** For each segment the segment model also keeps a mistake rate: resets among your last 50 attempts that
+reached it while in the faster half at the split before. Those runs were going well, so their resets are mostly
+mistakes rather than pace resets.
 
 | Number | How it's calculated |
 | --- | --- |
-| **PB chance per attempt** | Simulated attempts that finish under your PB ÷ all of them. Each segment can end the attempt in a reset at its reset rate, so this matches how you play today, pace resets included. Shown as "1 in N". |
-| **If you finish** | The same, with resets left out. Typical finish is the middle simulated finish time; a good finish is the one you beat 1 run in 10. |
+| **If you finish** | Simulated runs under your PB ÷ all of them. Typical finish is the middle simulated finish; a good finish is the one you beat 1 run in 10. |
+| **PB chance per attempt** | If you finish × your finish rate, the share of your last 50 attempts that reached the end. Shown as "1 in N". |
 | **PB forecast** | With chance p per attempt, the chance of at least one PB in n attempts is 1 − (1 − p)ⁿ. The forecast is the n where that reaches 50% and 90%. The dates divide n by your attempts per day over the last 28 days you ran (from LiveSplit's attempt start dates) and count from today. |
-| **PB chance from a split** | Simulated rest-of-run times from the next segment on that are shorter than PB − your time at the split, ÷ all simulated attempts. Once you've decided to play on, pace resets don't apply, so these runs only end at each segment's mistake rate. "On pace" means you're at exactly your PB's time for the split. |
-| **Reset when behind by** | Fresh attempts find PBs at PB chance per attempt ÷ average attempt length (a reset costs half its segment). Playing on finds them at PB chance from here ÷ average time left. This is the deficit where the two are equal: keep going while you're less behind than this. A minus sign means you need to be ahead. A dash means playing on is never the faster way to a PB from that split. |
-| **If the run is dead** | Each segment's room to improve is its typical time minus your best recent time. When the rest of the run has at least as much room per minute as the part you'd replay after a reset, the coach says keep going for the practice; otherwise the early game is the bottleneck, so reset. |
+| **PB chance from a split** | The simulated runs at about your time at that split, weighted by how close they were (a Gaussian whose width is 30% of the spread of simulated times there), and how many of them went on to beat your PB. Being behind also says something about today's form, and that carries forward. Then × the chance of no run-ending mistake in the segments left. "On pace" means you're at exactly your PB's time for the split. |
+| **Reset if behind by** | Starting over finds PBs at PB chance per attempt ÷ your average attempt length (from LiveSplit's attempt start and end times; without them, from typical segment times and reset rates). Playing on finds them at PB chance from here ÷ the average time left. This is the deficit where the two are equal, searched within 20% of the PB's split time either way, and shown in seconds and as a share of the split time. "Never" means playing on stays faster across that range; "Always" means starting over is faster even 20% ahead. |
+| **Goal odds** | The same simulated runs, counted against the goal planner's goal instead of the PB. |
 
-**Should I reset?** Pick a split and how far behind PB pace you are. The coach says keep going when playing on finds
-a PB at least as fast as starting over; otherwise it uses "If the run is dead".
+**Should I reset?** Pick a split and how far behind PB pace you are. In **PB hunting** mode the coach says keep going
+when playing on finds a PB at least as fast as starting over. In **Practising** mode, for runners who play runs out
+anyway, it only gives the PB chance from there and the table drops the reset points.
 
-Example (Dishonored sample, real time): the PB (40:01.52) is 2:55 faster than the typical simulated finish (42:56.48),
-so none of the 20,000 attempts beat it from the start. A run that reaches Amateur Work on PB pace still PBs 7% of
-the time.
+**How well it's calibrated.** Before each of a file's recent finishes, the model was built from the history up to that
+point and the real finish placed within its predicted spread. 50% means well calibrated. On the Dishonored sample
+(about 40 minutes, 15 finishes checked) it came out at 48%; on a 6 hour Twilight Princess file (5 finishes) at 54%.
+The model before this one gave 21% and 0%: it didn't follow improvement, and long runs came out too tight.
+
+Example (Dishonored sample, real time): 10% of finished runs beat the PB (40:01.52), and 8% of recent attempts
+finished, so about 1 in 130 attempts PBs. At Try Not Falling? the coach says reset when more than 6.9s behind PB pace
+(1.1% of the split time); at Not At Fault, 56.6s (3.1%).
 
 ## Year in runs
 

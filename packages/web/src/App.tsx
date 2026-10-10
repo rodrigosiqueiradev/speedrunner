@@ -325,6 +325,7 @@ export function App() {
                 analysis={a}
                 xml={loaded!.xml}
                 fileName={loaded!.fileName}
+                odds={ok.odds}
               />
             </div>
 

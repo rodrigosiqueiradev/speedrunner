@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   analyzeRun,
   attemptsUntil,
+  buildFormModel,
   buildSegmentModel,
+  chanceOfBeating,
   describeChance,
   grindRate,
   oneIn,
@@ -12,6 +14,8 @@ import {
   pbChanceFrom,
   pbOdds,
   resetAdvice,
+  sampleRun,
+  seededRandom,
 } from "../src/index.js";
 import { synthRun } from "./synth.js";
 
@@ -52,17 +56,77 @@ describe("segment model", () => {
   });
 });
 
+/** A repeatable number in [0, 1) for a pair of integers. */
+const hash = (a: number, b: number) => {
+  let h = Math.imul(a * 374_761_393 + b * 668_265_263, 1_274_126_177) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 1_103_515_245) >>> 0;
+  return ((h ^ (h >>> 16)) >>> 0) / 4_294_967_296;
+};
+
+/** Spread (standard deviation) of simulated totals. */
+function spread(model: NonNullable<ReturnType<typeof buildFormModel>>, count = 4000): { sd: number; median: number } {
+  const random = seededRandom(1);
+  const out = new Float64Array(model.segments.length);
+  const totals = Array.from({ length: count }, () => sampleRun(model, random, out)).sort((a, b) => a - b);
+  const mean = totals.reduce((a, b) => a + b, 0) / count;
+  return { sd: Math.sqrt(totals.reduce((a, t) => a + (t - mean) ** 2, 0) / count), median: totals[count >> 1] };
+}
+
+describe("form model", () => {
+  // Ten 60s segments. Each attempt has a form of the day, ±5%, that applies to every segment.
+  const form = (id: number) => 1 + (hash(id, 0) - 0.5) * 0.1;
+  const shared = synthRun({
+    base: Array(10).fill(60_000),
+    noise: (i, id) => 60_000 * (form(id) - 1) + hash(id, i + 1) * 1000,
+    attempts: 60,
+  });
+  // The same segment times, but each segment's form comes from a different attempt, so good and bad days don't line up.
+  const shuffled = synthRun({
+    base: Array(10).fill(60_000),
+    noise: (i, id) => 60_000 * (form(((id * (i + 3)) % 60) + 1) - 1) + hash(id, i + 1) * 1000,
+    attempts: 60,
+  });
+
+  it("keeps a good day good across the whole run", () => {
+    const a = spread(buildFormModel(shared)!);
+    const b = spread(buildFormModel(shuffled)!);
+    expect(a.sd).toBeGreaterThan(b.sd * 1.5);
+  });
+
+  it("follows a runner who is improving", () => {
+    // Every attempt is 0.1% faster than the one before, 60 attempts.
+    const improving = synthRun({
+      base: [300_000, 300_000, 300_000],
+      noise: (i, id) => 300_000 * (-0.001 * id) + hash(id, i) * 3000,
+      attempts: 60,
+    });
+    const model = buildFormModel(improving)!;
+    expect(model.trend).toBeLessThan(0);
+    const latest = [...improving.segments].reduce((a, s) => a + s.history.get(60)!, 0);
+    const all = improving.attempts.map((a) => a.time!).sort((x, y) => x - y);
+    const { median } = spread(model);
+    // Closer to the latest finishes than to the middle of the whole history.
+    expect(Math.abs(median - latest)).toBeLessThan(Math.abs(median - all[30]) / 2);
+  });
+
+  it("never projects a slowdown", () => {
+    const slowing = synthRun({
+      base: [300_000, 300_000, 300_000],
+      noise: (i, id) => 300 * id + hash(id, i) * 3000,
+      attempts: 60,
+    });
+    expect(buildFormModel(slowing)!.trend).toBe(0);
+  });
+});
+
 describe("pbOdds", () => {
   const odds = pbOdds(run, { now: new Date("2026-10-09T00:00:00Z") })!;
 
-  it("matches the exact chance worked out by enumerating every combination", () => {
-    const [a, b, c] = buildSegmentModel(run);
-    let beat = 0;
-    for (const x of a.times) for (const y of b.times) for (const z of c.times) if (x + y + z < odds.personalBest) beat++;
-    const exact = beat / (a.times.length * b.times.length * c.times.length);
-    expect(odds.ifFinished).toBeCloseTo(exact, 2);
-    expect(odds.perAttempt).toBeCloseTo(exact * (1 - b.resetRate), 2);
-    expect(odds.finishRate).toBeCloseTo(1 - b.resetRate, 2);
+  it("multiplies the chance if you finish by your recent finish rate", () => {
+    expect(odds.finishRate).toBeCloseTo(0.8, 2);
+    expect(odds.perAttempt).toBeCloseTo(odds.ifFinished * odds.finishRate, 10);
+    expect(odds.ifFinished).toBeGreaterThan(0);
+    expect(odds.ifFinished).toBeLessThan(1);
   });
 
   it("gives the same answer every time", () => {
@@ -77,12 +141,60 @@ describe("pbOdds", () => {
     expect(odds.splits[0].onPace).toBe(chances[1]);
   });
 
-  it("says to keep going when ahead and stops when far behind", () => {
-    const s = odds.splits[1];
-    expect(s.resetAfter).not.toBeNull();
-    expect(resetAdvice(odds, 1, s.pbSplit! - 2000).verdict).toBe("keep-going");
-    expect(resetAdvice(odds, 1, s.pbSplit! + s.resetAfter! + 1000).verdict).not.toBe("keep-going");
-    expect(resetAdvice(odds, 1, s.pbSplit! + 60_000).message).toMatch(/no run from here/i);
+  it("says to keep going inside the reset point and to reset past it", () => {
+    const i = odds.splits.findIndex((s) => s.rule === "behind");
+    const s = odds.splits[i];
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(resetAdvice(odds, i, s.pbSplit! + s.resetAfter! - 500).verdict).toBe("keep-going");
+    expect(resetAdvice(odds, i, s.pbSplit! + s.resetAfter! + 500).verdict).toBe("reset");
+    expect(resetAdvice(odds, i, s.pbSplit! + 60_000).message).toMatch(/^Reset/);
+    expect(s.resetAfterShare).toBeCloseTo(s.resetAfter! / s.pbSplit!, 10);
+  });
+
+  it("gives the same odds and reset points, as a share of the time, at any run length", () => {
+    const scaled = (k: number) =>
+      synthRun({
+        base: [60_000 * k, 60_000 * k, 60_000 * k],
+        noise: (i, id) => ((id * 7 + i * 3) % 10) * 1000 * k,
+        resetAt: (id) => (id % 5 === 0 ? 1 : undefined),
+        attempts: 60,
+      });
+    const short = pbOdds(scaled(1))!;
+    const long = pbOdds(scaled(60))!;
+    expect(long.ifFinished).toBeCloseTo(short.ifFinished, 3);
+    expect(long.perAttempt).toBeCloseTo(short.perAttempt, 3);
+    short.splits.forEach((s, i) => {
+      expect(long.splits[i].rule).toBe(s.rule);
+      expect(long.splits[i].onPace!).toBeCloseTo(s.onPace!, 2);
+      if (s.resetAfterShare != null) expect(long.splits[i].resetAfterShare!).toBeCloseTo(s.resetAfterShare, 3);
+    });
+  });
+
+  it("gives the odds for a goal time instead of the PB", () => {
+    const goal = pbOdds(run, { target: odds.medianFinish + 1 })!;
+    expect(goal.targetIsPb).toBe(false);
+    expect(goal.target).toBe(odds.medianFinish + 1);
+    expect(goal.ifFinished).toBeGreaterThan(odds.ifFinished);
+    expect(goal.ifFinished).toBeCloseTo(0.5, 1);
+    expect(resetAdvice(goal, 0, goal.splits[0].pbSplit!).message).toMatch(/beat your goal/);
+  });
+
+  it("gives the odds for another time from the same runs", () => {
+    expect(chanceOfBeating(odds, odds.target)).toEqual({ ifFinished: odds.ifFinished, perAttempt: odds.perAttempt });
+    const goal = pbOdds(run, { target: odds.medianFinish + 1 })!;
+    expect(chanceOfBeating(odds, odds.medianFinish + 1).ifFinished).toBe(goal.ifFinished);
+  });
+
+  it("measures attempt length from LiveSplit's start and end times", () => {
+    const fmt = (t: number) => new Date(t).toISOString().replace(/^(\d+)-(\d+)-(\d+)T(\d+:\d+:\d+).*$/, "$2/$3/$1 $4");
+    const dated = {
+      ...run,
+      attempts: run.attempts.map((a) => {
+        const start = Date.UTC(2026, 0, 1) + a.id * 3_600_000;
+        return { ...a, started: fmt(start), ended: fmt(start + 150_000) };
+      }),
+    };
+    expect(pbOdds(dated)!.meanAttemptLength).toBe(150_000);
   });
 
   it("returns null without a PB", () => {
@@ -90,13 +202,12 @@ describe("pbOdds", () => {
     expect(pbOdds(noPb)).toBeNull();
   });
 
-  it("reports a PB that recent form can't reach on a real file", () => {
+  it("finds a recent PB within reach on a real file", () => {
+    // The PB is one of the latest finishes, so the current form can match it now and then.
     const o = pbOdds(load("./fixtures/livesplit-core/livesplit1.6_gametime.lss"))!;
-    expect(o.perAttempt).toBeLessThan(0.001);
-    expect(o.medianFinish).toBeGreaterThan(o.personalBest);
-    // The simulated finish rate tracks the file's: 30 of the last ~650 attempts finished.
-    expect(o.finishRate).toBeGreaterThan(0.02);
-    expect(o.finishRate).toBeLessThan(0.1);
+    expect(o.ifFinished).toBeGreaterThan(0.01);
+    expect(o.perAttempt).toBeLessThan(o.ifFinished);
+    expect(o.splits.some((s) => s.rule === "behind")).toBe(true);
   });
 });
 

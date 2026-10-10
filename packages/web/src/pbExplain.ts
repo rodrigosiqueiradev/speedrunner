@@ -1,4 +1,4 @@
-import { ANALYSIS_DEFAULTS, PB_ODDS_SETTINGS, describeChance, formatTime, oneIn, type PbOdds } from "@speedrunner/core";
+import { ANALYSIS_DEFAULTS, FORM_MODEL_SETTINGS, PB_ODDS_SETTINGS, describeChance, formatTime, oneIn, type PbOdds } from "@speedrunner/core";
 import type { MetricDoc } from "./explain";
 import { formatSave } from "./format";
 
@@ -8,32 +8,45 @@ export interface PbOddsDoc extends Omit<MetricDoc, "example"> {
 }
 
 const S = PB_ODDS_SETTINGS;
+const F = FORM_MODEL_SETTINGS;
 const sims = S.simulations.toLocaleString("en-US");
+const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-export const PB_ODDS_METRICS: Record<"perAttempt" | "ifFinished" | "forecast" | "fromSplit" | "resetAfter" | "practice" | "reset", PbOddsDoc> = {
+/** "1.1 s (1.1% of the split time)": a reset point the same way at any run length. */
+export function describeResetAfter(resetAfter: number, share: number): string {
+  const p = `${Math.abs(share * 100).toFixed(1).replace(/\.0$/, "")}%`;
+  return resetAfter < 0 ? `ahead by ${formatSave(-resetAfter)} (${p})` : `${formatSave(resetAfter)} (${p})`;
+}
+
+export const PB_ODDS_METRICS: Record<
+  "perAttempt" | "ifFinished" | "forecast" | "fromSplit" | "resetAfter" | "mode" | "reset" | "goal",
+  PbOddsDoc
+> = {
   perAttempt: {
     id: "pb-per-attempt",
     label: "PB chance per attempt",
-    short: "How often an attempt beats your PB at your current form, counting resets.",
+    short: "How often an attempt beats your PB at your current form, counting the ones you reset.",
     how: [
-      `We play ${sims} attempts on paper. Each segment's time is picked at random from your last ${ANALYSIS_DEFAULTS.recentWindow} clean times for it, so a segment you're inconsistent on swings as much as it does for you.`,
-      "In each segment the attempt can also end in a reset, as often as your recent attempts that reached that segment reset there.",
-      "PB chance per attempt = simulated attempts that finish under your PB ÷ all simulated attempts.",
-      "Segments are picked independently, so a bad day that slows every segment at once isn't modelled. Resets are counted even when they were only pace resets, which makes the odds a little cautious.",
+      "PB chance per attempt = chance a finished run beats your PB (see If you finish) × your finish rate.",
+      `Your finish rate is the share of your last ${S.recentAttempts} attempts that reached the end.`,
+      "Nothing here is a fixed time: it works the same for a 5 minute category and a 6 hour one.",
     ],
     example: (o) =>
-      `${Math.round(o.perAttempt * o.simulations).toLocaleString("en-US")} of ${o.simulations.toLocaleString("en-US")} simulated attempts beat ${formatTime(o.personalBest)}, about ${o.perAttempt > 0 ? oneIn(o.perAttempt) : `fewer than 1 in ${sims}`}.`,
+      `${describeChance(o.ifFinished)} of finished runs beat ${formatTime(o.personalBest)}, and ${pct(o.finishRate)} of your recent attempts finished, so about ${o.perAttempt > 0 ? oneIn(o.perAttempt) : "none"}.`,
   },
   ifFinished: {
     id: "pb-if-finished",
     label: "If you finish",
-    short: "How often a run played all the way to the end beats your PB.",
+    short: "How often a run played all the way to the end beats your PB, at your current form.",
     how: [
-      "The same simulation with resets left out: every attempt is played to the end.",
-      "Typical finish is the middle simulated finish time; a good finish is the one you beat 1 run in 10.",
+      `We play ${sims} runs on paper from a model of how you run now.`,
+      `Each run first picks a form of the day: how much faster or slower than usual one of your recent attempts was, across all of its segments. That applies to the whole run, so a good day is good everywhere, as it is for real. An attempt counts once it has clean times for at least ${pct(F.formCoverage)} of the segments.`,
+      `Then each segment adds its own variation, picked from your clean times for it. Times from runs you finished are used once a segment has at least ${F.minFinishedSamples}, since runs you reset are mostly bad ones.`,
+      `Recent times count more: a time's weight halves every quarter of your samples (between 5 and 25 newer ones). If your form has been improving, half of that trend is projected onto your next attempt. A slowdown never is.`,
+      "Typical finish is the middle simulated finish; a good finish is the one you beat 1 run in 10.",
     ],
     example: (o) =>
-      `${describeChance(o.ifFinished)} of finished runs beat your PB. Typical finish ${formatTime(o.medianFinish)}, good finish ${formatTime(o.goodFinish)}.`,
+      `${describeChance(o.ifFinished)} of simulated finishes beat your PB. Typical finish ${formatTime(o.medianFinish)}, good finish ${formatTime(o.goodFinish)}.${o.trend < 0 ? ` Following your improvement trims about ${(-o.trend * 100).toFixed(1)}% off every simulated run.` : ""}`,
   },
   forecast: {
     id: "pb-forecast",
@@ -50,35 +63,35 @@ export const PB_ODDS_METRICS: Record<"perAttempt" | "ifFinished" | "forecast" | 
     label: "PB chance from a split",
     short: "How often a run at this split, this far behind or ahead of PB pace, still PBs.",
     how: [
-      "Take the simulated rest-of-run times from the next segment to the end.",
-      "Once you've decided to play on, pace resets don't apply, so a run only ends on a mistake: each segment resets as often as it did for your attempts that were in the faster half at the split before it.",
-      "PB chance from here = rest-of-run times shorter than (PB − time at this split) ÷ all simulated attempts.",
+      `We look at the simulated runs that reached this split at about your time, and count how many of them went on to beat your PB. "About" is ${pct(S.nearShare)} of how spread out the simulated times at the split are, so it's the same rule early in a short run and late in a long one.`,
+      "Being behind also says something about today's form, and that carries into the rest of the run.",
+      "A run that plays on can still end in a mistake: each later segment ends it as often as it ended your attempts that were in the faster half at the split before it.",
       "On pace means you reach the split at exactly your PB's time for it.",
     ],
   },
   resetAfter: {
     id: "pb-reset-after",
-    label: "Reset when behind by",
-    short: "How far behind PB pace a run can be before a reset gets you a PB sooner.",
+    label: "Reset if behind by",
+    short: "How far behind PB pace a run can be before starting over gets you a PB sooner. Shown in seconds and as a share of the split time.",
     how: [
-      "Fresh attempts find PBs at a rate of PB chance per attempt ÷ average attempt length (counting resets, a reset costs half its segment).",
-      "Playing on finds them at PB chance from here ÷ average time left in the attempt.",
-      "Keep going while playing on is the faster of the two. The number shown is the deficit where they're equal. A minus sign means you need to be ahead.",
-      "A dash means playing on is never the faster way to a PB from this split.",
+      "Starting over finds PBs at a rate of PB chance per attempt ÷ your average attempt length, from LiveSplit's start and end times.",
+      "Playing on finds them at PB chance from here ÷ the average time left in the run.",
+      "Keep going while playing on is the faster of the two. The number shown is the deficit where they're equal; \"ahead by\" means you need to be ahead.",
+      `"Never" means playing on stays faster even ${pct(S.searchShare)} of the split time behind. "Always" means starting over is faster even that far ahead.`,
+      "Early splits are cheap to replay, so their reset points are tight; late ones cost a lot of time, so they're loose.",
     ],
     example: (o) => {
-      const s = o.splits.find((x) => x.resetAfter != null && x.resetAfter > 0);
-      return s ? `At ${s.name}, keep going unless you're more than ${formatSave(s.resetAfter)} behind PB pace.` : null;
+      const s = o.splits.find((x) => x.rule === "behind" && x.resetAfter! > 0);
+      return s ? `At ${s.name}, keep going unless you're more than ${describeResetAfter(s.resetAfter!, s.resetAfterShare!)} behind PB pace.` : null;
     },
   },
-  practice: {
-    id: "pb-practice",
-    label: "Practice value",
-    short: "When the run can't PB, whether the rest of it is still worth playing for practice.",
+  mode: {
+    id: "pb-mode",
+    label: "PB hunting or practising",
+    short: "PB hunting shows when to reset; practising only shows your odds from a split and never says reset.",
     how: [
-      "Each segment's room to improve is your typical time minus your best recent time.",
-      "We compare room to improve per minute in the rest of the run with the part you'd replay after a reset.",
-      `If the rest of the run has at least ${S.practiceBias === 1 ? "as much" : `${S.practiceBias} times as much`}, the coach says keep going for the practice. Otherwise the early game is the bottleneck, so reset and get more reps there.`,
+      "PB hunting gives the reset points that get you a PB in the least time played.",
+      "In a long category that can mean resetting hours in for a small deficit. If you play runs to the end for the practice, pick Practising.",
     ],
   },
   reset: {
@@ -87,8 +100,17 @@ export const PB_ODDS_METRICS: Record<"perAttempt" | "ifFinished" | "forecast" | 
     short: "Pick a split and how far behind PB pace you are to get your PB chance from there and whether to play on.",
     how: [
       "Your PB chance from that split is worked out as in PB chance from a split, with the time you type instead of PB pace.",
-      "Keep going when playing on finds a PB at least as fast as starting over (see Reset when behind by).",
-      "Otherwise the run is dead for a PB, and the advice follows Practice value: keep going for practice when the rest of the run is where you have the most to gain, reset when the early game is.",
+      "When PB hunting, keep going when playing on finds a PB at least as fast as starting over (see Reset if behind by).",
+    ],
+  },
+  goal: {
+    id: "pb-goal-odds",
+    label: "Goal odds",
+    short: "How often a run at your current form beats the goal.",
+    how: [
+      "The same simulated runs as your PB odds, counted against the goal instead.",
+      "Per attempt multiplies that by your recent finish rate.",
+      `It uses your form today, so it rises as you improve; the plan above says where the time has to come from. Segments with fewer than ${ANALYSIS_DEFAULTS.minSamples} clean times make it rough.`,
     ],
   },
 };

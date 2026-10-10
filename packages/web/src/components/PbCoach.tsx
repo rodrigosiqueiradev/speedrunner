@@ -1,7 +1,7 @@
-import { ANALYSIS_DEFAULTS, describeChance, formatTime, oneIn, resetAdvice, type PbOdds } from "@speedrunner/core";
+import { ANALYSIS_DEFAULTS, describeChance, formatTime, oneIn, pbChanceFrom, resetAdvice, type PbOdds } from "@speedrunner/core";
 import { useId, useState } from "react";
 import { formatSave } from "../format";
-import { PB_ODDS_METRICS as M, type PbOddsDoc } from "../pbExplain";
+import { describeResetAfter, PB_ODDS_METRICS as M, type PbOddsDoc } from "../pbExplain";
 import { InfoTip } from "./InfoTip";
 
 /** PB odds per attempt and a forecast of how many attempts a PB takes. */
@@ -17,8 +17,8 @@ export function PbOddsSummary({ odds }: { odds: PbOdds }) {
           value={unreachable ? "< 0.01%" : oneIn(odds.perAttempt)}
           note={
             unreachable
-              ? `None of ${sims} simulated attempts beat your PB at your current form`
-              : `${describeChance(odds.perAttempt)} of attempts, counting resets`
+              ? `None of ${sims} simulated runs beat your PB at your current form`
+              : `${describeChance(odds.perAttempt)} of attempts, counting the ones you reset`
           }
           lead
         />
@@ -56,12 +56,32 @@ export function PbOddsSummary({ odds }: { odds: PbOdds }) {
   );
 }
 
-/** A "should I reset?" calculator, and the odds and reset point at every split behind a button. */
+type Mode = "hunting" | "practising";
+
+/**
+ * A "should I reset?" calculator, and the odds and reset point at every split behind a button.
+ * Practising mode drops the reset advice for runners who play runs out whatever happens.
+ */
 export function ResetCoach({ odds }: { odds: PbOdds }) {
   const [showSplits, setShowSplits] = useState(false);
+  const [mode, setMode] = useState<Mode>("hunting");
+  const hunting = mode === "hunting";
   return (
     <>
-      <ResetCalculator odds={odds} />
+      <div className="plan-controls">
+        <span className="plan-controls-label">
+          <span id="reset-mode">I'm</span> <InfoTip doc={M.mode} />
+        </span>
+        <div className="toggle small" role="group" aria-labelledby="reset-mode">
+          <button aria-pressed={hunting} onClick={() => setMode("hunting")}>
+            PB hunting
+          </button>
+          <button aria-pressed={!hunting} onClick={() => setMode("practising")}>
+            Practising
+          </button>
+        </div>
+      </div>
+      <ResetCalculator odds={odds} mode={mode} />
       <p className="section-foot">
         <button className="link-button text-link" aria-expanded={showSplits} onClick={() => setShowSplits((v) => !v)}>
           {showSplits ? "Hide the odds at each split" : `Show the odds at each of the ${odds.splits.length} splits`}
@@ -74,8 +94,7 @@ export function ResetCoach({ odds }: { odds: PbOdds }) {
               <tr>
                 <th scope="col">Split</th>
                 <ColumnHead doc={M.fromSplit} label="PB chance on pace" />
-                <ColumnHead doc={M.resetAfter} />
-                <ColumnHead doc={M.practice} label="If the run is dead" />
+                {hunting && <ColumnHead doc={M.resetAfter} />}
               </tr>
             </thead>
             <tbody>
@@ -83,8 +102,17 @@ export function ResetCoach({ odds }: { odds: PbOdds }) {
                 <tr key={s.index}>
                   <th scope="row">{s.name}</th>
                   <td>{s.onPace == null ? "-" : describeChance(s.onPace)}</td>
-                  <td>{s.resetAfter == null ? "-" : s.resetAfter < 0 ? `ahead by ${formatSave(-s.resetAfter)}` : formatSave(s.resetAfter)}</td>
-                  <td className="text-cell">{s.practiceLate ? "Keep going for practice" : "Reset"}</td>
+                  {hunting && (
+                    <td>
+                      {s.rule === "behind"
+                        ? describeResetAfter(s.resetAfter!, s.resetAfterShare!)
+                        : s.rule === "never"
+                          ? "Never"
+                          : s.rule === "always"
+                            ? "Always"
+                            : "-"}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -95,17 +123,23 @@ export function ResetCoach({ odds }: { odds: PbOdds }) {
   );
 }
 
-/** Pick a split and how far off PB pace you are; get the odds and what to do. */
-function ResetCalculator({ odds }: { odds: PbOdds }) {
+/** Pick a split and how far off PB pace you are; get the odds and, when PB hunting, what to do. */
+function ResetCalculator({ odds, mode }: { odds: PbOdds; mode: Mode }) {
   const splits = odds.splits.filter((s) => s.pbSplit != null);
   const [split, setSplit] = useState(splits[Math.floor(splits.length / 2)]?.index ?? 0);
   const [behind, setBehind] = useState("0");
   const id = useId();
   if (splits.length === 0) return null;
   const s = odds.splits[split];
-  const seconds = Number(behind.replace(",", "."));
+  const seconds = Number(behind.replace(",", ".").replace("−", "-"));
   const valid = behind.trim() !== "" && Number.isFinite(seconds);
-  const advice = valid ? resetAdvice(odds, split, s.pbSplit! + Math.round(seconds * 1000)) : null;
+  const time = s.pbSplit! + Math.round(seconds * 1000);
+  const advice = valid && mode === "hunting" ? resetAdvice(odds, split, time) : null;
+  const message = !valid
+    ? "Type how many seconds behind PB pace you are."
+    : advice
+      ? advice.message
+      : `${describeChance(pbChanceFrom(odds, split, time))} of runs like this one still PB.`;
   return (
     <div className="reset-coach">
       <div className="reset-inputs">
@@ -134,7 +168,7 @@ function ResetCalculator({ odds }: { odds: PbOdds }) {
         Use a minus sign if you're ahead, for example −3.5.
       </p>
       <p className={`reset-verdict ${advice?.verdict ?? ""}`} role="status">
-        {advice ? advice.message : "Type how many seconds behind PB pace you are."}
+        {message}
       </p>
     </div>
   );

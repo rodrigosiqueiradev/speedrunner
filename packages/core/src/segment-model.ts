@@ -133,3 +133,184 @@ export function seededRandom(seed: number): () => number {
 export function sampleSegment(model: SegmentModel, random: () => number): Ms {
   return model.times[Math.floor(random() * model.times.length)];
 }
+
+/**
+ * Settings for the form model. Everything is a share of your own samples or a ratio of your own
+ * times, never a fixed number of seconds, so the same settings fit a 5 minute and a 6 hour category.
+ * Recent samples count more, by the shared recency rule (see recencyWeights).
+ */
+export const FORM_MODEL_SETTINGS = {
+  /** Segment times from finished runs are used once a segment has at least this many; otherwise all clean times. */
+  minFinishedSamples: 5,
+  /** An attempt's form only counts if it has clean times for at least this share of the segments. */
+  formCoverage: 0.25,
+  /** Share of your recent improvement trend projected onto the next attempt. Slowdowns are never projected. */
+  trendShare: 0.5,
+  /** Fewer attempts with a form than this and the model uses every attempt's form and no trend. */
+  minFormAttempts: 5,
+} as const;
+
+export interface FormSegment {
+  index: number;
+  name: string;
+  /** Your recency-weighted median time for the segment. */
+  typical: Ms;
+  /** Each sample's log ratio to `typical`, after taking out its attempt's form. Oldest first. */
+  residuals: Float64Array;
+  /** Cumulative recency weights for `residuals`, ending at 1. */
+  weights: Float64Array;
+  /** True when the samples come only from runs that reached the end. */
+  fromFinishedRuns: boolean;
+  samples: number;
+}
+
+/**
+ * How you run right now, as a model you can sample whole runs from. Each simulated run draws one
+ * "form of the day" (a log ratio to your typical pace, from your recent attempts) that applies to
+ * every segment, plus each segment's own variation. Good days are good across the whole run, as
+ * they are for real, instead of averaging out over many segments.
+ */
+export interface FormModel {
+  segments: FormSegment[];
+  /** Recent attempts' forms (mean log ratio to typical), oldest first. */
+  forms: Float64Array;
+  formWeights: Float64Array;
+  /** Log ratio added to every simulated run to follow your improvement. Zero or negative. */
+  trend: number;
+}
+
+/** Builds the form model for a run, or null when a segment has no time at all. */
+export function buildFormModel(run: Run, options: Pick<SegmentModelOptions, "minSamples" | "outlierFloor"> = {}): FormModel | null {
+  const S = FORM_MODEL_SETTINGS;
+  const n = run.segments.length;
+  if (n === 0) return null;
+  // How far each attempt got: the number of segments it has any history for.
+  const reached = new Map<number, number>();
+  run.segments.forEach((segment, i) => {
+    for (const id of segment.history.keys()) reached.set(id, Math.max(reached.get(id) ?? 0, i + 1));
+  });
+
+  const samples: Array<{ times: Array<[number, Ms]>; finished: boolean }> = [];
+  for (let i = 0; i < n; i++) {
+    const all = cleanSegmentTimes(run, i, options).times;
+    const finished = all.filter(([id]) => reached.get(id) === n);
+    if (finished.length >= S.minFinishedSamples) samples.push({ times: finished, finished: true });
+    else if (all.length > 0) samples.push({ times: all, finished: false });
+    else {
+      const pb = pbSegmentTime(run, i);
+      if (pb == null) return null;
+      samples.push({ times: [[0, pb]], finished: false });
+    }
+  }
+
+  const typical = samples.map(({ times }) => weightedMedian(times.map(([, t]) => t), recencyWeights(times.length)));
+
+  // Each attempt's form: the mean log ratio of its segment times to typical.
+  const ratios = new Map<number, number[]>();
+  samples.forEach(({ times }, i) => {
+    for (const [id, t] of times) {
+      if (id <= 0) continue;
+      const list = ratios.get(id) ?? [];
+      list.push(Math.log(t / typical[i]));
+      ratios.set(id, list);
+    }
+  });
+  const minSegments = Math.max(1, Math.ceil(n * S.formCoverage));
+  const byId = [...ratios].sort((a, b) => a[0] - b[0]);
+  let formAttempts = byId.filter(([, r]) => r.length >= minSegments);
+  if (formAttempts.length < S.minFormAttempts) formAttempts = byId;
+  const formOf = new Map(formAttempts.map(([id, r]) => [id, r.reduce((a, x) => a + x, 0) / r.length]));
+  const forms = Float64Array.from(formAttempts.map(([id]) => formOf.get(id)!));
+  const formWeights = cumulativeRecency(forms.length);
+
+  const segments: FormSegment[] = samples.map(({ times, finished }, i) => ({
+    index: i,
+    name: run.segments[i].name,
+    typical: typical[i],
+    residuals: Float64Array.from(times.map(([id, t]) => Math.log(t / typical[i]) - (formOf.get(id) ?? 0))),
+    weights: cumulativeRecency(times.length),
+    fromFinishedRuns: finished,
+    samples: times.length,
+  }));
+
+  return {
+    segments,
+    forms: forms.length ? forms : Float64Array.of(0),
+    formWeights: forms.length ? formWeights : Float64Array.of(1),
+    trend: formAttempts.length >= S.minFormAttempts ? improvementTrend(formAttempts.map(([id]) => id), forms, formWeights, run) : 0,
+  };
+}
+
+/**
+ * Draws one simulated run into `out` (one time per segment) and returns its total.
+ * `random` should be a seeded generator such as seededRandom.
+ */
+export function sampleRun(model: FormModel, random: () => number, out: Float64Array): Ms {
+  const form = model.forms[pickWeighted(model.formWeights, random())] + model.trend;
+  let total = 0;
+  for (const s of model.segments) {
+    const t = s.typical * Math.exp(form + s.residuals[pickWeighted(s.weights, random())]);
+    out[s.index] = t;
+    total += t;
+  }
+  return total;
+}
+
+// TODO: import halfLife and recencyWeights from ./recency.js once it lands, so every feature
+// shares one recency rule. These two match its definitions.
+function halfLife(n: number): number {
+  return Math.min(25, Math.max(5, n / 4));
+}
+
+/** Recency weights for `n` samples, oldest first: a sample's weight halves every halfLife(n) newer samples. */
+function recencyWeights(n: number): number[] {
+  const h = halfLife(n);
+  return Array.from({ length: n }, (_, k) => Math.pow(0.5, (n - 1 - k) / h));
+}
+
+/** recencyWeights as a running total scaled to end at 1, for picking a sample with one random number. */
+function cumulativeRecency(count: number): Float64Array {
+  const weights = recencyWeights(count);
+  const total = weights.reduce((a, b) => a + b, 0);
+  const out = new Float64Array(count);
+  let acc = 0;
+  weights.forEach((w, k) => (out[k] = acc += w / total));
+  if (count) out[count - 1] = 1;
+  return out;
+}
+
+/** Index of the first cumulative weight at or above u. */
+function pickWeighted(cumulative: Float64Array, u: number): number {
+  let lo = 0;
+  let hi = cumulative.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (cumulative[mid] < u) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+function weightedMedian(values: number[], weights: number[]): number {
+  const items = values.map((v, i) => [v, weights[i]] as const).sort((a, b) => a[0] - b[0]);
+  const half = weights.reduce((a, b) => a + b, 0) / 2;
+  let acc = 0;
+  for (const [v, w] of items) if ((acc += w) >= half) return v;
+  return items[items.length - 1][0];
+}
+
+/** Weighted straight-line fit of form against attempt number, projected to the next attempt. */
+function improvementTrend(ids: number[], forms: Float64Array, cumulative: Float64Array, run: Run): number {
+  const w = Array.from(cumulative, (c, i) => c - (i ? cumulative[i - 1] : 0));
+  const mx = ids.reduce((a, x, i) => a + w[i] * x, 0);
+  const my = forms.reduce((a, y, i) => a + w[i] * y, 0);
+  let sxy = 0;
+  let sxx = 0;
+  ids.forEach((x, i) => {
+    sxy += w[i] * (x - mx) * (forms[i] - my);
+    sxx += w[i] * (x - mx) ** 2;
+  });
+  if (sxx === 0) return 0;
+  const next = Math.max(...run.attempts.map((a) => a.id), ...ids) + 1;
+  return Math.min(0, (sxy / sxx) * (next - mx)) * FORM_MODEL_SETTINGS.trendShare;
+}

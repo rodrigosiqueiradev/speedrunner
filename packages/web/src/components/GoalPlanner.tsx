@@ -1,16 +1,20 @@
 import {
   addComparisons,
   analyzeRun,
+  chanceOfBeating,
   COMPARISON_NAMES,
+  describeChance,
   formatTime,
   parseLss,
   planGoal,
   realisticTargetSplits,
   recentGoldSplits,
   suggestGoal,
+  oneIn,
   ANALYSIS_DEFAULTS,
   type ComparisonToWrite,
   type GoalPlan,
+  type PbOdds,
   type Run,
   type RunAnalysis,
   type TimingMethod,
@@ -20,6 +24,7 @@ import { copyName, saveTextFile } from "../download";
 import { formatSave, parseTypedTime } from "../format";
 import { METRICS, type MetricDoc } from "../explain";
 import { GOAL_DOCS } from "../goal-explain";
+import { PB_ODDS_METRICS } from "../pbExplain";
 import { isDesktop } from "../platform";
 import { InfoTip } from "./InfoTip";
 
@@ -28,10 +33,12 @@ interface Props {
   analysis: RunAnalysis;
   xml: string;
   fileName: string;
+  /** PB odds for the run, to say how often a run at current form beats the goal. */
+  odds?: PbOdds | null;
 }
 
 /** "What does sub-X take?" plus saving a copy of the splits with comparisons for LiveSplit. */
-export function GoalPlanner({ run, analysis, xml, fileName }: Props) {
+export function GoalPlanner({ run, analysis, xml, fileName, odds }: Props) {
   const pb = analysis.personalBest;
   const [typed, setTyped] = useState(() => (pb != null ? formatTime(suggestGoal(pb), 0) : ""));
   const goal = parseTypedTime(typed);
@@ -63,6 +70,7 @@ export function GoalPlanner({ run, analysis, xml, fileName }: Props) {
             </span>
           </form>
           {plan && <PlanSummary plan={plan} />}
+          {plan && odds && plan.status !== "no-data" && plan.status !== "already" && <GoalOdds odds={odds} goal={plan.goal} />}
         </div>
         {plan && plan.status !== "out-of-reach" && plan.segments.some((s) => s.cut > 0) && <PlanTable plan={plan} />}
       </section>
@@ -125,6 +133,23 @@ function PlanSummary({ plan }: { plan: GoalPlan }) {
       );
     }
   }
+}
+
+/** How often a run at current form beats the goal, from the PB odds' simulated runs. */
+function GoalOdds({ odds, goal }: { odds: PbOdds; goal: number }) {
+  const { ifFinished, perAttempt } = chanceOfBeating(odds, goal);
+  return (
+    <p className="goal-text">
+      {ifFinished > 0 ? (
+        <>
+          At your current form, <b>{describeChance(ifFinished)}</b> of finished runs beat it{perAttempt > 0 ? `, about ${oneIn(perAttempt)} attempts` : ""}.
+        </>
+      ) : (
+        <>None of {odds.simulations.toLocaleString("en-US")} simulated runs at your current form beat it yet.</>
+      )}{" "}
+      <InfoTip doc={PB_ODDS_METRICS.goal} />
+    </p>
+  );
 }
 
 function PlanTable({ plan }: { plan: GoalPlan }) {

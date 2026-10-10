@@ -1,42 +1,63 @@
-import { quantile } from "./analyze.js";
-import { buildSegmentModel, sampleSegment, seededRandom, type SegmentModel, type SegmentModelOptions } from "./segment-model.js";
 import { parseLiveSplitDate } from "./sessions.js";
+import {
+  buildFormModel,
+  buildSegmentModel,
+  sampleRun,
+  seededRandom,
+  type SegmentModelOptions,
+} from "./segment-model.js";
 import type { Ms, Run } from "./types.js";
 
-/** Settings for PB odds and reset advice. Exported so the UI and docs can quote the real numbers. */
+/**
+ * Settings for PB odds and reset advice. Exported so the UI and docs can quote the real numbers.
+ * None of them is a fixed time: they are counts of your own attempts or shares of your own spread,
+ * so they fit a 5 minute category and a 6 hour one alike.
+ */
 export const PB_ODDS_SETTINGS = {
-  /** Simulated attempts. More is smoother but slower; 20,000 resolves odds down to about 1 in 10,000. */
-  simulations: 20_000,
+  /** Simulated runs. More is smoother but slower; 10,000 resolves odds down to about 1 in 5,000. */
+  simulations: 10_000,
   /** Fixed seed so the same file always gives the same odds. */
   seed: 20_261_009,
   /** The grind rate is the attempts per day over this many days before your latest attempt. */
   grindWindowDays: 28,
+  /** Your finish rate and attempt length come from this many of your latest attempts. */
+  recentAttempts: 50,
   /**
-   * When a run can't PB any more, keep going for practice if the rest of the run holds at least
-   * this many times as much room to improve per minute as the part you'd replay after a reset.
+   * Odds from a split look at simulated runs that were near your time there. "Near" is this share
+   * of how spread out the simulated times at that split are.
    */
-  practiceBias: 1,
+  nearShare: 0.3,
+  /** Reset points are searched for within this share of the PB's time at the split, ahead or behind. */
+  searchShare: 0.2,
 } as const;
 
-export type ResetVerdict = "keep-going" | "keep-going-practice" | "reset";
+export type ResetVerdict = "keep-going" | "reset";
+
+/**
+ * "behind": reset when further behind than `resetAfter`. "never": playing on stays the faster way
+ * to a PB across the whole search range. "always": starting over is faster even well ahead of PB pace.
+ */
+export type ResetRule = "behind" | "never" | "always";
 
 export interface SplitOdds {
   index: number;
   name: string;
   /** Your PB's time at this split, or null if the PB skipped it. */
   pbSplit: Ms | null;
-  /** PB chance if you reach this split exactly on PB pace. */
+  /** Chance of beating the target if you reach this split exactly on PB pace. */
   onPace: number | null;
+  rule: ResetRule | null;
   /**
-   * How far behind PB pace you can be at this split before resetting gets you a PB sooner than
-   * playing on. Negative means you need to be ahead. Null when playing on from here is never
-   * the faster way to a PB (or there is no PB chance at all).
+   * With rule "behind": how far behind PB pace you can be at this split before starting over finds a
+   * PB sooner than playing on. Negative means you need to be ahead.
    */
   resetAfter: Ms | null;
-  /** The rest of the run has more room to improve per minute than the part before this split. */
-  practiceLate: boolean;
-  /** Average time left in an attempt from here, counting runs that end in a reset. */
+  /** `resetAfter` as a share of the PB's time at this split, so it reads the same at any run length. */
+  resetAfterShare: number | null;
+  /** Average time left in a simulated run from this split. */
   meanRemaining: Ms;
+  /** Chance a run that plays on from here reaches the end without a run-ending mistake. */
+  survival: number;
 }
 
 export interface PbForecast {
@@ -52,31 +73,39 @@ export interface PbForecast {
 
 export interface PbOdds {
   personalBest: Ms;
+  /** The time the odds are for: your PB unless a goal was given. */
+  target: Ms;
+  targetIsPb: boolean;
   simulations: number;
-  /** Chance one attempt beats your PB, counting attempts that end in a reset. */
+  /** Chance one attempt beats the target: the chance if you finish × your recent finish rate. */
   perAttempt: number;
-  /** Chance a run played to the end beats your PB. */
+  /** Chance a run played to the end beats the target. */
   ifFinished: number;
-  /** Share of simulated attempts that reach the end without a reset. */
+  /** Share of your recent attempts that finished. */
   finishRate: number;
-  /** Average simulated attempt length, counting resets. */
+  /** Your average attempt length, from attempt start and end times where the file has them. */
   meanAttemptLength: Ms;
-  /** Your median finish time in the simulation, and the time you'd beat 1 run in 10. */
+  /** Your middle simulated finish time, and the time you'd beat 1 run in 10. */
   medianFinish: Ms;
   goodFinish: Ms;
-  /** Segments with too few recent clean times for the odds to be firm. */
+  /** Log ratio the improvement trend takes off every simulated run (0 when there's no trend). */
+  trend: number;
+  /** Segments with too few clean times for the odds to be firm. */
   thinSegments: string[];
   /** One entry per split before the last. */
   splits: SplitOdds[];
   forecast: PbForecast | null;
-  /**
-   * For each split, the sorted time it takes simulated runs to finish from there, only
-   * counting runs that didn't reset. Used to answer "what are my odds from here?".
-   */
-  remaining: Float64Array[];
+  /** Simulated runs' times at each split, run by run: cumulative[run * segments + split]. */
+  cumulative: Float64Array;
+  /** Per split, how close a simulated run's time must be to count as "near" yours. */
+  nearWidth: Float64Array;
+  /** Per split, the chance of reaching the end with no run-ending mistake (see SplitOdds.survival). */
+  survival: Float64Array;
 }
 
 export interface PbOddsOptions extends SegmentModelOptions {
+  /** A goal time to give the odds for instead of the PB. */
+  target?: Ms;
   simulations?: number;
   seed?: number;
   /** "Today", for the forecast dates. Defaults to now. */
@@ -84,151 +113,205 @@ export interface PbOddsOptions extends SegmentModelOptions {
 }
 
 /**
- * Simulates thousands of attempts by sampling each segment from your recent clean times, and
- * works out how often they beat your PB, from the start and from every split.
- * Returns null when the run has no PB to beat.
+ * Simulates thousands of runs from a model of your current form (see buildFormModel) and works out
+ * how often they beat your PB or a goal, from the start and from every split. Returns null when there
+ * is no PB or goal to beat.
  */
 export function pbOdds(run: Run, options: PbOddsOptions = {}): PbOdds | null {
+  const S = PB_ODDS_SETTINGS;
   const personalBest = [...run.segments].reverse().find((s) => s.pbSplit != null)?.pbSplit ?? null;
   const n = run.segments.length;
-  if (personalBest == null || n === 0) return null;
-  const models = buildSegmentModel(run, options);
-  if (models.some((m) => m.times.length === 0)) return null;
+  const target = options.target ?? personalBest;
+  if (personalBest == null || target == null || n === 0) return null;
+  const form = buildFormModel(run, options);
+  if (!form) return null;
+  const segmentModels = buildSegmentModel(run, options);
 
-  const sims = options.simulations ?? PB_ODDS_SETTINGS.simulations;
-  const random = seededRandom(options.seed ?? PB_ODDS_SETTINGS.seed);
-
-  // remaining[j]: finishing times from the start of segment j for runs that didn't reset in j..n-1.
-  // A fresh attempt (j = 0) resets as often as your attempts do. A run you've decided to play on
-  // from a split only ends on a mistake, so later segments use the mistake rate instead.
-  const remaining: number[][] = Array.from({ length: n }, () => []);
-  const lengthFrom = new Float64Array(n);
-  const finishes = new Float64Array(sims);
-  let beatIfFinished = 0;
+  const sims = options.simulations ?? S.simulations;
+  const random = seededRandom(options.seed ?? S.seed);
+  const cumulative = new Float64Array(sims * n);
+  const totals = new Float64Array(sims);
   const times = new Float64Array(n);
-  const rolls = new Float64Array(n);
-
+  let beat = 0;
   for (let s = 0; s < sims; s++) {
-    for (let j = 0; j < n; j++) {
-      times[j] = sampleSegment(models[j], random);
-      rolls[j] = random();
-    }
-    // Walk backwards so each segment j sees the run from j to the end.
-    let total = 0;
-    let length = 0;
-    let alive = true;
-    for (let j = n - 1; j >= 1; j--) {
-      total += times[j];
-      // A reset happens somewhere inside the segment; count half of it.
-      if (rolls[j] < models[j].mistakeRate) [alive, length] = [false, times[j] / 2];
-      else length += times[j];
-      lengthFrom[j] += length;
-      if (alive) remaining[j].push(total);
-    }
-    total += times[0];
-    let freshLength = 0;
-    let freshAlive = true;
-    for (let j = 0; j < n && freshAlive; j++) {
-      if (rolls[j] < models[j].resetRate) [freshAlive, freshLength] = [false, freshLength + times[j] / 2];
-      else freshLength += times[j];
-    }
-    lengthFrom[0] += freshLength;
-    if (freshAlive) remaining[0].push(total);
-    finishes[s] = total;
-    if (total < personalBest) beatIfFinished++;
+    const total = sampleRun(form, random, times);
+    let acc = 0;
+    for (let j = 0; j < n; j++) cumulative[s * n + j] = acc += times[j];
+    totals[s] = total;
+    if (total < target) beat++;
   }
 
-  const sorted = remaining.map((r) => Float64Array.from(r).sort());
-  const perAttempt = countBelow(sorted[0], personalBest) / sims;
-  const meanAttemptLength = lengthFrom[0] / sims;
-  // PBs per millisecond of play when every attempt is played until it finishes or resets.
+  const ifFinished = beat / sims;
+  const recent = run.attempts.filter((a) => a.id > 0).slice(-S.recentAttempts);
+  const lastSegment = run.segments[n - 1];
+  // Without attempt history, fall back to the per-segment reset rates.
+  const finishRate = recent.length
+    ? recent.filter((a) => lastSegment.history.get(a.id) != null || a.time != null).length / recent.length
+    : segmentModels.reduce((p, m) => p * (1 - m.resetRate), 1);
+  const perAttempt = ifFinished * finishRate;
+  const meanAttemptLength = attemptLength(recent) ?? modelledAttemptLength(form.segments.map((s) => s.typical), segmentModels);
+  // Targets beaten per millisecond of play when every attempt is played until it finishes or resets.
   const freshRate = perAttempt / meanAttemptLength;
 
-  const room = models.map(roomToImprove);
-  const typical = models.map((m) => quantile([...m.times].sort((a, b) => a - b), 0.5));
-  const density = (from: number, to: number) => {
-    const t = sum(typical, from, to);
-    return t > 0 ? sum(room, from, to) / t : 0;
+  // Survival from split i to the end: no run-ending mistake in any later segment.
+  const survival = new Float64Array(n);
+  survival[n - 1] = 1;
+  for (let i = n - 2; i >= 0; i--) survival[i] = survival[i + 1] * (1 - segmentModels[i + 1].mistakeRate);
+
+  const nearWidth = new Float64Array(n);
+  const odds: PbOdds = {
+    personalBest,
+    target,
+    targetIsPb: options.target == null,
+    simulations: sims,
+    perAttempt,
+    ifFinished,
+    finishRate,
+    meanAttemptLength,
+    medianFinish: 0,
+    goodFinish: 0,
+    trend: form.trend,
+    thinSegments: segmentModels.filter((m) => m.thin).map((m) => m.name),
+    splits: [],
+    forecast: forecast(run, perAttempt, options.now ?? new Date()),
+    cumulative,
+    nearWidth,
+    survival,
   };
 
-  const splits: SplitOdds[] = run.segments.slice(0, -1).map((segment, i) => {
-    const rest = sorted[i + 1];
-    const meanRemaining = lengthFrom[i + 1] / sims;
+  odds.splits = run.segments.slice(0, -1).map((segment, i) => {
+    let sum = 0;
+    let sumSq = 0;
+    let remaining = 0;
+    for (let s = 0; s < sims; s++) {
+      const t = cumulative[s * n + i];
+      sum += t;
+      sumSq += t * t;
+      remaining += totals[s] - t;
+    }
+    const mean = sum / sims;
+    const sd = Math.sqrt(Math.max(0, sumSq / sims - mean * mean));
+    nearWidth[i] = Math.max(S.nearShare * sd, mean * 1e-4, 1);
+    const meanRemaining = remaining / sims;
     const pbSplit = segment.pbSplit;
+    const base = { index: i, name: segment.name, pbSplit, meanRemaining, survival: survival[i] };
+    if (pbSplit == null) return { ...base, onPace: null, rule: null, resetAfter: null, resetAfterShare: null };
+
+    // Keep going while chance from here ÷ time left ≥ the rate fresh attempts beat the target.
+    const needed = freshRate * meanRemaining;
+    const chanceAt = (deficit: number) => pbChanceFrom(odds, i, pbSplit + deficit);
+    const range = S.searchShare * pbSplit;
+    let rule: ResetRule;
     let resetAfter: Ms | null = null;
-    if (pbSplit != null && perAttempt > 0) {
-      // Keep going while chance from here ÷ time left ≥ the rate fresh attempts find PBs.
-      const needed = Math.ceil(freshRate * meanRemaining * sims);
-      const left = personalBest - pbSplit;
-      // More than the surviving runs means even a perfect position here isn't worth playing on for.
-      resetAfter = needed <= 0 || needed > rest.length ? null : left - rest[needed - 1];
+    if (chanceAt(range) >= needed && (chanceAt(range) > 0 || needed === 0)) rule = "never";
+    else if (chanceAt(-range) < needed || chanceAt(-range) === 0) rule = "always";
+    else {
+      rule = "behind";
+      let lo = -range;
+      let hi = range;
+      for (let k = 0; k < 40 && hi - lo > 1; k++) {
+        const mid = (lo + hi) / 2;
+        if (chanceAt(mid) >= needed && chanceAt(mid) > 0) lo = mid;
+        else hi = mid;
+      }
+      resetAfter = Math.round(lo);
     }
     return {
-      index: i,
-      name: segment.name,
-      pbSplit,
-      onPace: pbSplit == null ? null : countBelow(rest, personalBest - pbSplit) / sims,
+      ...base,
+      onPace: chanceAt(0),
+      rule,
       resetAfter,
-      practiceLate: density(i + 1, n) >= density(0, i + 1) * PB_ODDS_SETTINGS.practiceBias,
-      meanRemaining,
+      resetAfterShare: resetAfter == null ? null : resetAfter / pbSplit,
     };
   });
 
-  const finishSorted = Float64Array.from(finishes).sort();
-  return {
-    personalBest,
-    simulations: sims,
-    perAttempt,
-    ifFinished: beatIfFinished / sims,
-    finishRate: sorted[0].length / sims,
-    meanAttemptLength,
-    medianFinish: Math.round(finishSorted[Math.floor(sims / 2)]),
-    goodFinish: Math.round(finishSorted[Math.floor(sims / 10)]),
-    thinSegments: models.filter((m) => m.thin).map((m) => m.name),
-    splits,
-    forecast: forecast(run, perAttempt, options.now ?? new Date()),
-    remaining: sorted,
-  };
+  const sorted = Float64Array.from(totals).sort();
+  odds.medianFinish = Math.round(sorted[Math.floor(sims / 2)]);
+  odds.goodFinish = Math.round(sorted[Math.floor(sims / 10)]);
+  return odds;
 }
 
-/** PB chance for a run that is at `split` with `timeAtSplit` on the clock. */
+/**
+ * Chance of beating the target for a run that is at `split` with `timeAtSplit` on the clock. It
+ * looks at the simulated runs that were near that time at that split (weighted by how near), so
+ * being behind also says something about today's form, then counts how many of them still beat
+ * the target, and allows for a run-ending mistake later on.
+ */
 export function pbChanceFrom(odds: PbOdds, split: number, timeAtSplit: Ms): number {
-  return countBelow(odds.remaining[split + 1], odds.personalBest - timeAtSplit) / odds.simulations;
+  const n = odds.survival.length;
+  const sims = odds.simulations;
+  const width = odds.nearWidth[split];
+  const c = odds.cumulative;
+  // Weights are relative to the nearest run, so a time far outside the simulated range still
+  // leans on the closest runs instead of dividing by zero.
+  let nearest = Infinity;
+  for (let s = 0; s < sims; s++) nearest = Math.min(nearest, Math.abs(c[s * n + split] - timeAtSplit));
+  let weight = 0;
+  let hit = 0;
+  for (let s = 0; s < sims; s++) {
+    const at = c[s * n + split];
+    const z1 = (at - timeAtSplit) / width;
+    const z0 = nearest / width;
+    const w = Math.exp(-0.5 * (z1 * z1 - z0 * z0));
+    weight += w;
+    if (timeAtSplit + (c[s * n + n - 1] - at) < odds.target) hit += w;
+  }
+  return weight > 0 ? (hit / weight) * odds.survival[split] : 0;
+}
+
+/**
+ * Odds of beating some other time (a goal, say) from the same simulated runs, without simulating
+ * again: the chance if you finish, and per attempt at your recent finish rate.
+ */
+export function chanceOfBeating(odds: PbOdds, time: Ms): { ifFinished: number; perAttempt: number } {
+  const n = odds.survival.length;
+  let beat = 0;
+  for (let s = 0; s < odds.simulations; s++) if (odds.cumulative[s * n + n - 1] < time) beat++;
+  const ifFinished = beat / odds.simulations;
+  return { ifFinished, perAttempt: ifFinished * odds.finishRate };
 }
 
 export interface ResetAdvice {
   verdict: ResetVerdict;
-  /** PB chance from here. */
+  /** Chance of beating the target from here. */
   chance: number;
   message: string;
 }
 
 /**
- * Whether to keep going or reset at `split` with `timeAtSplit` on the clock. Keeps going when
- * playing on finds PBs at least as fast as fresh attempts do. Otherwise keeps going for practice
- * when the rest of the run is where you have the most room to improve, and resets when the
- * early game is.
+ * Whether to keep going or reset at `split` with `timeAtSplit` on the clock: keep going when playing
+ * on beats the target at least as fast (per hour of play) as starting over does.
  */
 export function resetAdvice(odds: PbOdds, split: number, timeAtSplit: Ms): ResetAdvice {
   const s = odds.splits[split];
   const chance = pbChanceFrom(odds, split, timeAtSplit);
   const freshRate = odds.perAttempt / odds.meanAttemptLength;
-  const pbPart = chance > 0 ? `${describeChance(chance)} of runs from here still PB` : "no run from here beat your PB";
+  const what = odds.targetIsPb ? "PB" : "beat your goal";
+  const part = chance > 0 ? `${describeChance(chance)} of runs like this one still ${what}` : `no run like this one went on to ${what}`;
   if (chance > 0 && chance / s.meanRemaining >= freshRate) {
-    return { verdict: "keep-going", chance, message: `Keep going: ${pbPart}, better than starting over.` };
+    return { verdict: "keep-going", chance, message: `Keep going: ${part}, better than starting over.` };
   }
-  if (s.practiceLate) {
-    return {
-      verdict: "keep-going-practice",
-      chance,
-      message: `${capitalize(pbPart)}, so a reset would find a PB sooner. But the rest of the run is where you have the most to gain, so keep going for the practice.`,
-    };
-  }
-  return {
-    verdict: "reset",
-    chance,
-    message: `Reset: ${pbPart}, and the early game is where you have the most to gain.`,
-  };
+  return { verdict: "reset", chance, message: `Reset: ${part}, and starting over gets you there sooner.` };
+}
+
+/** Average length of the attempts that have start and end times, or null if none do. */
+function attemptLength(attempts: Run["attempts"]): Ms | null {
+  const lengths = attempts
+    .map((a) => (parseLiveSplitDate(a.ended) ?? NaN) - (parseLiveSplitDate(a.started) ?? NaN))
+    .filter((d) => d > 0);
+  return lengths.length ? lengths.reduce((a, b) => a + b, 0) / lengths.length : null;
+}
+
+/** Expected attempt length from typical segment times and reset rates; a reset costs half its segment. */
+function modelledAttemptLength(typical: Ms[], models: ReturnType<typeof buildSegmentModel>): Ms {
+  let alive = 1;
+  let length = 0;
+  typical.forEach((t, i) => {
+    const r = models[i].resetRate;
+    length += alive * t * (1 - r / 2);
+    alive *= 1 - r;
+  });
+  return Math.max(1, length);
 }
 
 /** "3%", "0.4%", "under 0.01%": a chance written the way a runner would say it. */
@@ -281,34 +364,6 @@ export function grindRate(run: Run): number | null {
   return count / Math.max(1, (latest - windowStart) / day);
 }
 
-/** How much a segment typically gives away: median minus your best recent time. */
-function roomToImprove(m: SegmentModel): number {
-  const sorted = [...m.times].sort((a, b) => a - b);
-  return quantile(sorted, 0.5) - sorted[0];
-}
-
-/** Number of values in an ascending array strictly below `limit`. */
-function countBelow(sorted: Float64Array, limit: number): number {
-  let lo = 0;
-  let hi = sorted.length;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (sorted[mid] < limit) lo = mid + 1;
-    else hi = mid;
-  }
-  return lo;
-}
-
-function sum(xs: number[], from: number, to: number): number {
-  let total = 0;
-  for (let i = from; i < to; i++) total += xs[i];
-  return total;
-}
-
 function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 86_400_000);
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }

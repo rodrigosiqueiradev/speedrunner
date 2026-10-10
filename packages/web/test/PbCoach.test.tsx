@@ -11,35 +11,54 @@ const odds = pbOdds(parseLss(sample))!;
 afterEach(cleanup);
 
 describe("PB odds and reset coach", () => {
-  it("says when the PB is out of reach at current form", () => {
+  it("gives the odds per attempt and if you finish", () => {
     render(<PbOddsSummary odds={odds} />);
     const table = screen.getByRole("table", { name: "PB odds" });
-    expect(table.textContent).toMatch(/None of 20,000 simulated attempts/);
+    expect(table.textContent).toMatch(/1 in \d+/);
+    expect(table.textContent).toMatch(/counting the ones you reset/);
     expect(table.textContent).toMatch(/Typical finish 4\d:\d\d\.\d\d/);
+  });
+
+  it("says when the PB is out of reach at current form", () => {
+    const run = parseLss(sample);
+    const last = run.segments.at(-1)!;
+    const fast = { ...run, segments: run.segments.map((s) => (s === last ? { ...s, pbSplit: 30 * 60_000 } : s)) };
+    render(<PbOddsSummary odds={pbOdds(fast)!} />);
+    expect(screen.getByRole("table", { name: "PB odds" }).textContent).toMatch(/None of 10,000 simulated runs/);
     expect(screen.getByText(/faster than your typical finish today/)).toBeTruthy();
   });
 
-  it("gives odds and advice for a split and a deficit", () => {
+  it("says keep going inside a split's reset point and reset past it", () => {
     render(<ResetCoach odds={odds} />);
-    const split = odds.splits.find((s) => (s.onPace ?? 0) > 0.01)!;
+    const split = odds.splits.find((s) => s.rule === "behind" && s.resetAfter! > 5000)!;
     fireEvent.change(screen.getByLabelText("At split"), { target: { value: String(split.index) } });
     fireEvent.change(screen.getByLabelText("Seconds behind PB"), { target: { value: "-5" } });
-    expect(screen.getByRole("status").textContent).toMatch(/^Keep going: .*% of runs from here still PB/);
+    expect(screen.getByRole("status").textContent).toMatch(/^Keep going: .*% of runs like this one still PB/);
 
-    fireEvent.change(screen.getByLabelText("Seconds behind PB"), { target: { value: "120" } });
-    expect(screen.getByRole("status").textContent).toMatch(/No run from here beat your PB/);
+    fireEvent.change(screen.getByLabelText("Seconds behind PB"), { target: { value: String(split.resetAfter! / 1000 + 5) } });
+    expect(screen.getByRole("status").textContent).toMatch(/^Reset: /);
 
     fireEvent.change(screen.getByLabelText("Seconds behind PB"), { target: { value: "" } });
     expect(screen.getByRole("status").textContent).toMatch(/Type how many seconds/);
   });
 
-  it("lists every split with its on-pace odds once asked", () => {
+  it("only gives the odds, never a reset, when practising", () => {
+    render(<ResetCoach odds={odds} />);
+    fireEvent.click(screen.getByRole("button", { name: "Practising" }));
+    fireEvent.change(screen.getByLabelText("Seconds behind PB"), { target: { value: "120" } });
+    expect(screen.getByRole("status").textContent).toMatch(/^.+% of runs like this one still PB\.$/);
+    fireEvent.click(screen.getByRole("button", { name: /Show the odds/ }));
+    expect(screen.queryByRole("button", { name: "How is Reset if behind by calculated?" })).toBeNull();
+  });
+
+  it("lists every split with its on-pace odds and reset point once asked", () => {
     render(<ResetCoach odds={odds} />);
     expect(screen.queryByRole("table")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: `Show the odds at each of the ${odds.splits.length} splits` }));
     const rows = within(screen.getByRole("table")).getAllByRole("row");
     expect(rows).toHaveLength(odds.splits.length + 1);
-    for (const label of ["PB chance from a split", "Reset when behind by", "Practice value"]) {
+    expect(screen.getByRole("table").textContent).toMatch(/\ds \(\d+(\.\d)?%\)/);
+    for (const label of ["PB chance from a split", "Reset if behind by", "PB hunting or practising"]) {
       expect(screen.getByRole("button", { name: `How is ${label} calculated?` })).toBeTruthy();
     }
   });
@@ -48,7 +67,7 @@ describe("PB odds and reset coach", () => {
     const run = parseLss(sample);
     // Pretend the PB is the typical finish so it's well within reach.
     const last = run.segments.at(-1)!;
-    const slower = { ...run, segments: run.segments.map((s) => (s === last ? { ...s, pbSplit: odds.goodFinish } : s)) };
+    const slower = { ...run, segments: run.segments.map((s) => (s === last ? { ...s, pbSplit: odds.medianFinish } : s)) };
     const reachable = pbOdds(slower, { now: new Date("2026-10-09T00:00:00Z") })!;
     render(<PbOddsSummary odds={reachable} />);
     const table = screen.getByRole("table", { name: "PB odds" });
