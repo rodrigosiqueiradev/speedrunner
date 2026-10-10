@@ -19,7 +19,7 @@ export interface SegmentModel {
   /**
    * The same, among only the faster half of attempts at the previous split. Those runs were still
    * going well, so their resets are mostly mistakes rather than pace resets. Falls back to
-   * `resetRate` for the first segment or when too few attempts are known.
+   * `resetRate` for the first segment or when too few attempts are known, and is never above it.
    */
   mistakeRate: number;
 }
@@ -93,9 +93,11 @@ export function buildSegmentModel(run: Run, options: SegmentModelOptions = {}): 
       times,
       thin: times.length < minSamples,
       resetRate,
+      // Mistakes end slow and fast runs alike, so every run's reset rate already counts them: a higher
+      // rate among a handful of good runs (one reset in five, late in a long run) is chance, not a deadlier segment.
       mistakeRate:
         good && good.compared >= 2 * minSamples
-          ? good.ids.filter((id) => !segment.history.has(id)).length / good.ids.length
+          ? Math.min(resetRate, good.ids.filter((id) => !segment.history.has(id)).length / good.ids.length)
           : resetRate,
     };
   });

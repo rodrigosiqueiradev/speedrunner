@@ -55,6 +55,19 @@ describe("segment model", () => {
     expect(second.resetRate).toBeGreaterThan(0.2);
     expect(second.mistakeRate).toBe(0);
   });
+
+  it("never rates mistakes above the reset rate of every run", () => {
+    // One reset in segment 2, on a fast run: 1 in 20 fast runs, but 1 in 40 of all runs.
+    const lucky = synthRun({
+      base: [60_000, 60_000],
+      noise: (i, id) => (i === 0 ? (id % 2 ? 0 : 5000) + (id % 7) * 100 : (id % 5) * 100),
+      resetAt: (id) => (id === 39 ? 1 : undefined),
+      attempts: 40,
+    });
+    const [, second] = buildSegmentModel(lucky);
+    expect(second.resetRate).toBeCloseTo(1 / 40, 5);
+    expect(second.mistakeRate).toBe(second.resetRate);
+  });
 });
 
 /** A repeatable number in [0, 1) for a pair of integers. */

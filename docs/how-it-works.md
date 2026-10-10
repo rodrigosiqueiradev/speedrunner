@@ -125,7 +125,9 @@ from it too.
 
 **Mistakes.** For each segment the segment model also keeps a mistake rate: resets among your last 50 attempts that
 reached it while in the faster half at the split before. Those runs were going well, so their resets are mostly
-mistakes rather than pace resets.
+mistakes rather than pace resets. It's never higher than the segment's reset rate among all runs: a mistake can end a
+slow run as easily as a fast one, so that rate already counts every mistake. Late in a long category only a handful
+of good runs get that far, and one reset among five of them would otherwise read as a 20% chance of dying there.
 
 | Number | How it's calculated |
 | --- | --- |
