@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 
 const sample = readFileSync(resolve(__dirname, "../public/sample.lss"), "utf8");
@@ -100,5 +100,28 @@ describe("App", () => {
     const file = new File(["hello"], "notes.txt");
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [file] } });
     await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/isn't a LiveSplit/));
+  });
+
+  it("opens ?sample on the run page only, once, without adding it to the profile", async () => {
+    localStorage.clear();
+    const fetchSample = vi.fn(async () => new Response(sample));
+    vi.stubGlobal("fetch", fetchSample);
+    history.replaceState(null, "", "/?sample#profile");
+    render(<App />);
+    await screen.findByRole("heading", { name: "Your runner profile" });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(fetchSample).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem("speedrunner.profile.v3") ?? "[]")).toEqual([]);
+
+    fireEvent.click(screen.getByRole("link", { name: "Analyse a run" }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Dishonored/ })).toBeTruthy());
+    expect(window.location.search).toBe("");
+
+    // Going elsewhere and back doesn't open it again or touch the profile.
+    fireEvent.click(screen.getByRole("link", { name: "Profile" }));
+    fireEvent.click(screen.getByRole("link", { name: "Analyse a run" }));
+    expect(fetchSample).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(localStorage.getItem("speedrunner.profile.v3") ?? "[]")).toEqual([]);
+    vi.unstubAllGlobals();
   });
 });

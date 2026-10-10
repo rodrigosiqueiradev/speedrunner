@@ -305,7 +305,7 @@ export function App() {
           </Landing>
         )}
 
-        <FilePicker ref={picker} onLoad={load} onError={setError} compact={!!ok} />
+        <FilePicker ref={picker} onLoad={load} onError={setError} compact={!!ok} sampleFromUrl />
 
         {!ok && savedRuns.length > 0 && <ProfileRuns entries={savedRuns} onOpen={openFromProfile} />}
 

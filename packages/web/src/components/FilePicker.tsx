@@ -12,13 +12,18 @@ interface Props {
   title?: string;
   /** Hide the sample run button. */
   noSample?: boolean;
+  /** Open the sample run when the page was opened with "?sample" (the run page only). */
+  sampleFromUrl?: boolean;
 }
 
 export interface FilePickerHandle {
   open: () => void;
 }
 
-export const FilePicker = forwardRef<FilePickerHandle, Props>(function FilePicker({ onLoad, onError, compact, multiple, title, noSample }, ref) {
+export const FilePicker = forwardRef<FilePickerHandle, Props>(function FilePicker(
+  { onLoad, onError, compact, multiple, title, noSample, sampleFromUrl },
+  ref,
+) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   useImperativeHandle(ref, () => ({ open: () => input.current?.click() }));
@@ -37,9 +42,10 @@ export const FilePicker = forwardRef<FilePickerHandle, Props>(function FilePicke
     onLoad("Sample run: Dishonored Any%", await res.text());
   };
 
-  // "?sample" in the URL opens the sample run directly, so the demo can be linked to.
+  // "?sample" in the URL opens the sample run directly, so the demo can be linked to. It's taken
+  // out of the URL once used, so it opens the sample once and never reaches the other pages.
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("sample")) void loadSample();
+    if (sampleFromUrl && takeSampleFromUrl()) void loadSample();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -89,3 +95,13 @@ export const FilePicker = forwardRef<FilePickerHandle, Props>(function FilePicke
     </div>
   );
 });
+
+/** True when the URL asks for the sample run; removes the request so it isn't acted on again. */
+function takeSampleFromUrl(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("sample")) return false;
+  params.delete("sample");
+  const search = params.toString();
+  history.replaceState(history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`);
+  return true;
+}
