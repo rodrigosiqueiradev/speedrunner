@@ -1,7 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "The main window only needs Tauri's core defaults; the app calls no native commands.",
-  "windows": ["main"],
-  "permissions": ["core:default"]
+  "description": "Tauri's core defaults, plus what the borderless live overlay needs: the main window opens it, and it moves and closes itself without a title bar.",
+  "windows": ["main", "overlay"],
+  "permissions": [
+    "core:default",
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-set-focus",
+    "core:window:allow-start-dragging",
+    "core:window:allow-close"
+  ]
 }

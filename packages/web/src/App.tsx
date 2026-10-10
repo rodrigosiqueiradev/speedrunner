@@ -33,6 +33,7 @@ import { SessionInsights } from "./components/SessionInsights";
 import { Summary } from "./components/Summary";
 import { categoryName, notSplitsAdded } from "./format";
 import { PB_ODDS_METRICS } from "./pbExplain";
+import { closeThisWindow, isOverlayWindow } from "./desktopWindows";
 import { isDesktop } from "./platform";
 import { categoryKey, loadProfile, saveProfile, upsertEntry, type ProfileEntry } from "./profile";
 import { deleteSplitFile, loadSplitFiles, putSplitFile, type StoredSplit } from "./splitFiles";
@@ -127,8 +128,9 @@ export function App() {
   }, [loaded, timing]);
 
   const backFromOverlay = useCallback(() => {
-    // A pop-up overlay closes; the desktop app's single window goes back to the live page.
-    if (window.opener) window.close();
+    // A pop-up or desktop overlay window closes; a main window showing the overlay goes back to the live page.
+    if (isOverlayWindow) void closeThisWindow();
+    else if (window.opener) window.close();
     else {
       setView("live");
       history.replaceState(null, "", "#live");

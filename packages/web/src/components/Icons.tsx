@@ -60,3 +60,9 @@ export const TrendDownIcon = ({ label }: { label: string }) => (
     <path d="M5 8.5 1 2h8z" fill="currentColor" />
   </svg>
 );
+
+export const CloseIcon = () => (
+  <svg {...base}>
+    <path d="M4 4l8 8M12 4l-8 8" />
+  </svg>
+);

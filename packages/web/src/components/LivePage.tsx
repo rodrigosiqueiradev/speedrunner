@@ -13,6 +13,7 @@ import {
   type CardStyle,
 } from "../live/style";
 import { useLive } from "../live/useLive";
+import { openOverlayWindow } from "../desktopWindows";
 import { isDesktop } from "../platform";
 import { loadSplitFiles, type StoredSplit } from "../splitFiles";
 import { TextButton, Toggle } from "./Controls";
@@ -119,8 +120,8 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
 
   const openOverlay = () => {
     const url = `${window.location.pathname}${window.location.search}#live-overlay`;
-    // The desktop app has one window, so the overlay takes it over; resize it to fit next to LiveSplit.
-    if (isDesktop) window.location.hash = "live-overlay";
+    // The desktop app opens its own borderless window; a browser opens a pop-up.
+    if (isDesktop) void openOverlayWindow();
     else window.open(url, "speedrunner-live", "popup,width=360,height=560");
   };
 
@@ -325,7 +326,7 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
             <button onClick={openOverlay}>Open as overlay</button>
             <span>
               {isDesktop
-                ? "Fills this window with the card. Press Esc to come back."
+                ? "A borderless window to keep next to LiveSplit or capture in OBS. Drag it anywhere to move it, and press Esc in it to close it."
                 : "A small window to keep next to LiveSplit or capture in OBS. Press Esc in it to close it."}
             </span>
           </p>

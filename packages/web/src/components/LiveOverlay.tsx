@@ -3,7 +3,9 @@ import { LIVE_CONFIG_EVENT, LIVE_RUN_KEY, isLiveConfigKey, loadLiveConfig, saveL
 import { useSplitsSync } from "../live/useSplitsSync";
 import { useLive } from "../live/useLive";
 import { loadSplitFiles, type StoredSplit } from "../splitFiles";
+import { closeThisWindow, dragThisWindow, isOverlayWindow } from "../desktopWindows";
 import { ActionLink } from "./Controls";
+import { CloseIcon } from "./Icons";
 import { LiveCard, liveTitle } from "./LiveCard";
 
 /**
@@ -43,7 +45,24 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
   });
 
   return (
-    <div className="live-overlay" style={{ background: config.style.background }}>
+    <div
+      className="live-overlay"
+      data-window={isOverlayWindow ? "borderless" : undefined}
+      style={{ background: config.style.background }}
+      // The desktop overlay has no title bar: dragging anywhere but a link or button moves it.
+      onMouseDown={
+        isOverlayWindow
+          ? (e) => {
+              if (e.button === 0 && !(e.target as Element).closest("a, button")) void dragThisWindow();
+            }
+          : undefined
+      }
+    >
+      {isOverlayWindow && (
+        <button className="live-overlay-close" aria-label="Close overlay" title="Close (Esc)" onClick={() => void closeThisWindow()}>
+          <CloseIcon />
+        </button>
+      )}
       {file === null && (
         <p className="live-card-empty">
           Choose a split file on the{" "}
@@ -53,7 +72,7 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
           page first.
         </p>
       )}
-      <p className="live-overlay-hint">Esc to go back</p>
+      <p className="live-overlay-hint">{isOverlayWindow ? "Drag to move · Esc to close" : "Esc to go back"}</p>
       {run && view.stats && (
         <LiveCard
           title={liveTitle(run)}
