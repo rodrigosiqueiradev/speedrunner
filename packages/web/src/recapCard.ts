@@ -1,4 +1,4 @@
-import { formatTime, type YearRecap } from "@speedrunner/core";
+import { formatTime, pbImprovement, type YearRecap } from "@speedrunner/core";
 import { formatSave } from "./format";
 import type { RecapDocKey } from "./recap-explain";
 
@@ -69,7 +69,9 @@ export function cardHighlights(r: YearRecap): CardHighlight[] {
       label: pb.before == null ? "First finish" : "Biggest PB",
       title: categoryName(pb),
       detail:
-        pb.before == null ? `PB ${formatTime(pb.after)}` : `${formatTime(pb.before)} to ${formatTime(pb.after)}, −${formatSave(pb.before - pb.after)}`,
+        pb.before == null
+          ? `PB ${formatTime(pb.after)}`
+          : `${formatTime(pb.before)} to ${formatTime(pb.after)}, −${formatSave(pb.before - pb.after)} (${share(pbImprovement(pb))})`,
     });
   }
   if (r.bestGold) {
@@ -77,7 +79,7 @@ export function cardHighlights(r: YearRecap): CardHighlight[] {
       key: "bestGold",
       label: "Best gold",
       title: r.bestGold.segment,
-      detail: `${formatTime(r.bestGold.time)}, −${formatSave(r.bestGold.saved)} on the old best · ${categoryName(r.bestGold)}`,
+      detail: `${formatTime(r.bestGold.time)}, −${formatSave(r.bestGold.saved)} (${share(r.bestGold.fraction)}) on the old best · ${categoryName(r.bestGold)}`,
       gold: true,
     });
   }
@@ -87,10 +89,16 @@ export function cardHighlights(r: YearRecap): CardHighlight[] {
       key: "mostImproved",
       label: "Most improved",
       title: m.segment,
-      detail: `Typical time ${formatTime(m.early, 1)} to ${formatTime(m.late, 1)}, ${Math.round(m.fraction * 100)}% faster · ${categoryName(m)}`,
+      detail: `Typical time ${formatTime(m.early, 1)} to ${formatTime(m.late, 1)}, ${share(m.fraction)} faster · ${categoryName(m)}`,
     });
   }
   return out;
+}
+
+/** "12%", or "1.5%" under 10%: a share of a time, the way the card shows it. */
+function share(x: number): string {
+  const p = x * 100;
+  return `${p >= 10 ? Math.round(p) : +p.toFixed(1)}%`;
 }
 
 /** "Dishonored Any%" or "Dishonored Any% and 2 more". */

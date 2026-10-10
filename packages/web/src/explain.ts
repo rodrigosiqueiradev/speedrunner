@@ -144,6 +144,7 @@ export const METRICS: Record<string, MetricDoc> = {
     how: [
       "Attempts that reached this segment (finished the previous one) but have no time recorded for it, divided by all attempts that reached it.",
       "A high reset rate on the first segment is normal: that is where most runners reset bad starts.",
+      "It counts every reset, including runs you reset for being behind pace. Runs die here only looks at runs that were going well.",
     ],
   },
 };
@@ -166,7 +167,7 @@ export const ADVICE_RULES: Array<{ tag: string; when: string; worth: string }> =
   },
   {
     tag: "Runs die here",
-    when: `Runs reset here at least ${T.resetHazardRatio} times as often per minute as in the rest of the run (after the first split), with at least ${T.minResets} resets and ${T.minReachedForResets} attempts that reached it. Per minute, so a long segment isn't flagged for being long.`,
+    when: `Runs that were going well (in your faster half at the split before) reset here at least ${T.resetHazardRatio} times as often per minute as in the rest of the run, with at least ${T.minResets} such resets and ${T.minReachedForResets} such runs reaching it. Runs reset for being behind pace don't count, and neither does the first segment, where resets are mostly bad starts. Per minute, so a long segment isn't flagged for being long.`,
     worth: "The segment's good-day save.",
   },
 ];
@@ -234,15 +235,16 @@ export const SCORE_METRICS: Record<"category" | ComponentKey | "provisional" | "
   completion: {
     id: "completion",
     label: "Completion",
-    short: "Of the attempts that reached the middle of the run, the share that finished.",
+    short: "Of the runs that reached the middle of the run going well, the share that finished.",
     how: [
       "Resetting after a bad start is normal, so early resets don't count. Only attempts that reached the middle segment are counted.",
-      "Completion = 100 × finished attempts ÷ attempts that reached the middle segment.",
+      "Of those, only runs going well count: the faster half of their times at the split before the middle segment. Resetting a run that's behind pace is often the right call (the reset coach says so too), and short categories do it far more than long ones, so it isn't held against you.",
+      "Completion = 100 × good runs that finished ÷ good runs that reached the middle segment.",
     ],
     example: (s) =>
       s.completion.rate == null
         ? null
-        : `${s.completion.finished} of ${s.completion.reachedMiddle} attempts that reached ${s.completion.middleSegmentName} finished (${pct(s.completion.rate)}) → ${Math.round(s.completion.score!)}.`,
+        : `${s.completion.finished} of the ${s.completion.goodRuns} runs that reached ${s.completion.middleSegmentName} in your faster half finished (${pct(s.completion.rate)}) → ${Math.round(s.completion.score!)}.`,
   },
   improvement: {
     id: "improvement",

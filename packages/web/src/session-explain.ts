@@ -1,4 +1,4 @@
-import { SESSION_INSIGHT_SETTINGS as S, type FindingKind } from "@speedrunner/core";
+import { SESSION_DEFAULTS, SESSION_INSIGHT_SETTINGS as S, type FindingKind } from "@speedrunner/core";
 import type { MetricDoc } from "./explain";
 
 /**
@@ -16,6 +16,7 @@ export const SESSION_DOCS: Record<"sessions" | "pace" | "clear" | "playing" | "t
     how: [
       "LiveSplit 1.6 and later save when every attempt started and ended. Attempts are sorted by start time and grouped into sessions.",
       `A break of more than ${S.gapMinutes} minutes between one attempt's end and the next one's start starts a new session.`,
+      `An attempt that lasted more than ${SESSION_DEFAULTS.leftRunningFactor} times the category's typical finished run is a timer left running: it ends when its splits do, so a timer left open overnight doesn't join two days into one session.`,
       `Session insights need at least ${S.minSessions} sessions.`,
     ],
   },

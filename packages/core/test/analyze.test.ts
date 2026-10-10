@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { analyzeRun, parseLss, quantile } from "../src/index.js";
+import { analyzeRun, parseLss, quantile, type Run } from "../src/index.js";
 import { synthRun } from "./synth.js";
 
 const small = parseLss(readFileSync(new URL("./fixtures/small.lss", import.meta.url), "utf8"));
@@ -58,6 +58,27 @@ describe("advice", () => {
     expect(a.segments[2].resetRate).toBeCloseTo(33 / 100, 1);
     expect(a.realisticTarget!).toBeLessThanOrEqual(a.personalBest!);
     expect(a.realisticTarget!).toBeGreaterThanOrEqual(a.sumOfBest!);
+  });
+
+  it("only calls a segment a run killer when runs going well die there", () => {
+    const shape = (resetSlowOnly: boolean) =>
+      synthRun({
+        base: [30_000, 60_000, 45_000, 50_000],
+        attempts: 120,
+        noise: (seg, id) => rand(seg, id) * 800 + (seg === 1 && id % 2 ? 4_000 : 0),
+        // A fifth of the attempts reset at the start (bad starts). Of the rest, half are 4 s behind by
+        // split 2; either those all reset in S3, or a third of all runs do, good and bad alike.
+        resetAt: (id) => (id % 5 === 0 ? 0 : (resetSlowOnly ? id % 2 === 1 : id % 3 === 0) ? 2 : undefined),
+      });
+    const killers = (run: Run) => analyzeRun(run).advice.filter((x) => x.kind === "run-killer").map((x) => x.segmentName);
+    // Resetting runs that are behind pace is a choice, not a deadly segment; nor are bad starts.
+    const paceResets = analyzeRun(shape(true));
+    expect(paceResets.segments[2].resetRate!).toBeGreaterThanOrEqual(0.5);
+    expect(paceResets.segments[2].goodRunResetRate).toBe(0);
+    expect(paceResets.segments[0].goodRunResetRate).toBeNull();
+    expect(killers(shape(true))).toEqual([]);
+    // Good runs dying there is.
+    expect(killers(shape(false))).toEqual(["S3"]);
   });
 
   it("orders advice by estimated time save", () => {

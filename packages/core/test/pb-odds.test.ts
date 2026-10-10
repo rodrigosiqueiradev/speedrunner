@@ -11,6 +11,7 @@ import {
   oneIn,
   parseLiveSplitDate,
   parseLss,
+  PB_ODDS_SETTINGS,
   pbChanceFrom,
   pbOdds,
   resetAdvice,
@@ -195,6 +196,16 @@ describe("pbOdds", () => {
       }),
     };
     expect(pbOdds(dated)!.meanAttemptLength).toBe(150_000);
+    // A timer left running for 10 hours on a reset attempt counts only for the time on its splits,
+    // so one forgotten timer doesn't make every attempt look longer and every reset point looser.
+    const id = [...dated.attempts].reverse().find((a) => a.time == null)!.id;
+    const onSplits = run.segments.reduce((t, s) => t + (s.history.get(id) ?? 0), 0);
+    const forgotten = {
+      ...dated,
+      attempts: dated.attempts.map((a) => (a.id === id ? { ...a, ended: fmt(Date.UTC(2026, 0, 1) + id * 3_600_000 + 36_000_000) } : a)),
+    };
+    const recent = forgotten.attempts.slice(-PB_ODDS_SETTINGS.recentAttempts);
+    expect(pbOdds(forgotten)!.meanAttemptLength).toBeCloseTo(150_000 + (onSplits - 150_000) / recent.length, 0);
   });
 
   it("returns null without a PB", () => {

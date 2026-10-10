@@ -21,6 +21,21 @@ export function parseTypedTime(text: string): number | null {
   return ms > 0 ? Math.round(ms) : null;
 }
 
+/** "12.5", "120", "2:30" or "−1:05.5" as milliseconds behind PB pace (negative is ahead), or null if it isn't a time. */
+export function parseBehind(text: string): number | null {
+  const t = text.trim().replace(/^[−–]/, "-").replace(",", ".");
+  const sign = t.startsWith("-") ? -1 : 1;
+  const body = t.replace(/^[-+]/, "");
+  if (/^[-+]/.test(body)) return null;
+  if (body.includes(":")) {
+    if (/^[0:.]+$/.test(body)) return 0;
+    const ms = parseTypedTime(body);
+    return ms == null ? null : sign * ms;
+  }
+  const seconds = Number(body);
+  return body !== "" && Number.isFinite(seconds) ? sign * Math.round(seconds * 1000) : null;
+}
+
 /** A 0-100 score as a whole number, or "-". */
 export function formatScore(x: number | null): string {
   return x == null ? "-" : String(Math.round(x));

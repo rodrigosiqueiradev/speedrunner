@@ -40,12 +40,12 @@ describe("category score on the run page", () => {
     render(<App />);
     upload([sample, "dishonored.lss"]);
     const section = await screen.findByRole("region", { name: "How well you run this category" });
-    expect(section.textContent).toMatch(/63\/100/);
-    expect(section.textContent).toMatch(/Biggest drag: completion/);
+    expect(section.textContent).toMatch(/72\/100/);
+    expect(section.textContent).toMatch(/Biggest drag: consistency/);
 
     fireEvent.click(within(section).getByRole("button", { name: "Add to your profile" }));
     expect(section.textContent).toMatch(/This category is in your profile/);
-    expect(JSON.parse(localStorage.getItem("speedrunner.profile.v2")!)).toHaveLength(1);
+    expect(JSON.parse(localStorage.getItem("speedrunner.profile.v3")!)).toHaveLength(1);
   });
 });
 
@@ -61,7 +61,7 @@ describe("profile", () => {
 
     const scores = screen.getByRole("table", { name: "Profile scores" });
     // Kirby has no finished runs in its history, so it's provisional and left out of the overall score.
-    expect(scores.textContent).toMatch(/Overall score.*63/);
+    expect(scores.textContent).toMatch(/Overall score.*72/);
     expect(screen.getByText("provisional")).toBeTruthy();
 
     // Kirby's file has a World Record comparison, so its pace shows without typing anything.

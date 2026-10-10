@@ -1,6 +1,7 @@
 import { ANALYSIS_DEFAULTS, quantile } from "./analyze.js";
 import { recentCount } from "./recency.js";
-import { groupSessions, SESSION_DEFAULTS, type Session, type TimedAttempt } from "./sessions.js";
+import { cleanSegmentTimes } from "./segment-model.js";
+import { runSessions, SESSION_DEFAULTS, type Session, type TimedAttempt } from "./sessions.js";
 import type { Run } from "./types.js";
 
 /**
@@ -133,7 +134,7 @@ const PERIODS = [
 export function analyzeSessions(run: Run, options: SessionInsightOptions = {}): SessionInsights {
   const localTime =
     options.localTime ?? ((ms: number) => ({ hour: new Date(ms).getHours(), weekday: new Date(ms).getDay() }));
-  const sessions = groupSessions(run.attempts, { gapMinutes: S.gapMinutes });
+  const sessions = runSessions(run, { gapMinutes: S.gapMinutes });
   const timedAttempts = sessions.reduce((n, s) => n + s.attempts.length, 0);
   const base = {
     sessions: sessions.length,
@@ -198,17 +199,16 @@ export function analyzeSessions(run: Run, options: SessionInsightOptions = {}): 
  */
 function attemptFacts(run: Run, sessions: Session[]): Map<number, AttemptFacts> {
   const n = run.segments.length;
-  // Usual time for each (segment, attempt) clean time.
-  const usualTimes = run.segments.map((seg) => {
+  // Usual time for each (segment, attempt) clean time. A time after a skipped split covers two
+  // segments, so it has no usual time and isn't compared, but still moves the clock on.
+  const usualTimes = run.segments.map((_, i) => {
     const usual = new Map<number, number>();
-    const entries = [...seg.history.entries()].filter((e): e is [number, number] => e[1] != null && e[1] > 0);
-    if (entries.length < ANALYSIS_DEFAULTS.minSamples) return usual;
-    const overall = quantile(entries.map((e) => e[1]).sort((a, b) => a - b), 0.5);
-    const clean = entries.filter((e) => e[1] >= overall * ANALYSIS_DEFAULTS.outlierFloor).sort((a, b) => a[0] - b[0]);
+    const clean = cleanSegmentTimes(run, i).times;
+    if (clean.length < ANALYSIS_DEFAULTS.minSamples) return usual;
     const size = Math.min(S.paceWindow, recentCount(clean.length) + 1);
     const half = Math.floor(size / 2);
-    clean.forEach(([id], i) => {
-      const from = Math.max(0, Math.min(i - half, clean.length - size));
+    clean.forEach(([id], k) => {
+      const from = Math.max(0, Math.min(k - half, clean.length - size));
       const window = clean.slice(from, from + size).map((e) => e[1]).sort((a, b) => a - b);
       usual.set(id, quantile(window, 0.5));
     });

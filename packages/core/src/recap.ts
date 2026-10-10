@@ -1,5 +1,5 @@
 import { ANALYSIS_DEFAULTS } from "./analyze.js";
-import { parseLiveSplitDate } from "./sessions.js";
+import { attemptLimit, parseLiveSplitDate, playedMs, SESSION_DEFAULTS } from "./sessions.js";
 import type { Ms, Run } from "./types.js";
 
 /**
@@ -16,14 +16,9 @@ export interface RecapOptions {
 }
 
 export const RECAP_SETTINGS = {
-  /**
-   * An attempt that lasted more than this many times the category's typical finished run is
-   * treated as LiveSplit left running: only the time on its splits counts as play. The limit
-   * follows the category, so a 10 minute category and a 20 hour one are judged the same way.
-   */
-  leftRunningFactor: 3,
-  /** The limit for a category with no finished run or segment history to judge by. */
-  maxAttemptMs: 12 * 60 * 60 * 1000,
+  /** A timer left running counts only for the time on its splits (shared with sessions and PB odds, see attemptLimit). */
+  leftRunningFactor: SESSION_DEFAULTS.leftRunningFactor,
+  maxAttemptMs: SESSION_DEFAULTS.maxAttemptMs,
   /** A segment needs this many clean times early and late in the year to be "most improved". */
   minImprovementSamples: 5,
   /** A new best segment only counts as a gold once the segment has this many earlier clean times. */
@@ -51,6 +46,8 @@ export interface RecapGold {
   /** The best clean time for this segment before this one. */
   previous: Ms;
   saved: Ms;
+  /** saved / previous. */
+  fraction: number;
   date: Date;
 }
 
@@ -92,13 +89,17 @@ export interface YearRecap {
   monthly: number[];
   daysPlayed: number;
   longestStreak: RecapStreak | null;
-  /** Personal bests set this year, per category, most improved first. */
+  /** Personal bests set this year, per category, biggest share of the old PB cut first. */
   pbs: RecapPb[];
   pbCount: number;
   /** Golds (best segments) set this year, once a segment has a few earlier times to beat. */
   goldCount: number;
-  /** The gold that beat the previous best by the most. */
+  /**
+   * The gold that beat the previous best by the biggest share of it. Shares, not seconds, so a
+   * 6 hour category's long segments don't always beat a 10 minute category's short ones.
+   */
   bestGold: RecapGold | null;
+  /** The segment whose typical time dropped by the biggest share. */
   mostImproved: RecapImprovement | null;
   /** Categories played this year, most attempts first. */
   categories: RecapCategory[];
@@ -185,7 +186,7 @@ export function yearRecap(runs: Run[], year: number, options: RecapOptions = {})
       days.add(cal.day(start));
       const end = attemptDate(a.ended);
       const length = end ? end.getTime() - start.getTime() : 0;
-      if (length > 0) cat.playMs += length <= limit ? length : timeOnSplits(run, a.id);
+      if (length > 0) cat.playMs += playedMs(run, a, length, limit);
     }
     if (cat.attempts === 0) continue;
     categories.push(cat);
@@ -238,7 +239,8 @@ export function yearRecap(runs: Run[], year: number, options: RecapOptions = {})
           if (segBest != null && time < segBest && seen >= RECAP_SETTINGS.minGoldHistory) {
             goldCount++;
             const saved = segBest - time;
-            if (!bestGold || saved > bestGold.saved) {
+            const fraction = saved / segBest;
+            if (!bestGold || fraction > bestGold.fraction) {
               bestGold = {
                 game: run.game,
                 category: run.category,
@@ -246,6 +248,7 @@ export function yearRecap(runs: Run[], year: number, options: RecapOptions = {})
                 time,
                 previous: segBest,
                 saved,
+                fraction,
                 date: d!,
               };
             }
@@ -260,13 +263,13 @@ export function yearRecap(runs: Run[], year: number, options: RecapOptions = {})
       const early = median(yearTimes.slice(0, n).sort((a, b) => a - b));
       const late = median(yearTimes.slice(-n).sort((a, b) => a - b));
       const saved = early - late;
-      if (saved > 0 && (!mostImproved || saved > mostImproved.saved)) {
+      if (saved > 0 && (!mostImproved || saved / early > mostImproved.fraction)) {
         mostImproved = { game: run.game, category: run.category, segment: segment.name, early, late, saved, fraction: saved / early };
       }
     });
   }
 
-  pbs.sort((a, b) => improvementOf(b) - improvementOf(a));
+  pbs.sort((a, b) => pbImprovement(b) - pbImprovement(a));
   categories.sort((a, b) => b.attempts - a.attempts);
 
   return {
@@ -287,31 +290,11 @@ export function yearRecap(runs: Run[], year: number, options: RecapOptions = {})
 }
 
 /**
- * How long an attempt at this category can last before it counts as a timer left running:
- * leftRunningFactor times the median finished run, or the PB, or the 12 hour fallback.
+ * Share of a category's PB cut this year, so categories of any length compare fairly; a first ever
+ * finish ranks after any real improvement.
  */
-export function attemptLimit(run: Run): Ms {
-  const finished = run.attempts.filter((a) => a.id > 0 && a.time != null && a.time > 0).map((a) => a.time!);
-  const pb = [...run.segments].reverse().find((s) => s.pbSplit != null)?.pbSplit ?? null;
-  const typical = finished.length ? median(finished.sort((a, b) => a - b)) : pb;
-  return typical != null && typical > 0 ? RECAP_SETTINGS.leftRunningFactor * typical : RECAP_SETTINGS.maxAttemptMs;
-}
-
-/** The time an attempt spent on recorded splits: its final time if it finished, else its segment times added up. */
-function timeOnSplits(run: Run, id: number): Ms {
-  const attempt = run.attempts.find((a) => a.id === id);
-  if (attempt?.time != null && attempt.time > 0) return attempt.time;
-  let total = 0;
-  for (const segment of run.segments) {
-    const t = segment.history.get(id);
-    if (t != null && t > 0) total += t;
-  }
-  return total;
-}
-
-/** Time cut from a category's PB this year; a first ever finish ranks after any real improvement. */
-function improvementOf(pb: RecapPb): number {
-  return pb.before == null ? -1 : pb.before - pb.after;
+export function pbImprovement(pb: RecapPb): number {
+  return pb.before == null ? -1 : (pb.before - pb.after) / pb.before;
 }
 
 function longestStreak(days: string[]): RecapStreak | null {

@@ -32,21 +32,25 @@ describe("PB odds and reset coach", () => {
     render(<ResetCoach odds={odds} />);
     const split = odds.splits.find((s) => s.rule === "behind" && s.resetAfter! > 5000)!;
     fireEvent.change(screen.getByLabelText("At split"), { target: { value: String(split.index) } });
-    fireEvent.change(screen.getByLabelText("Seconds behind PB"), { target: { value: "-5" } });
+    fireEvent.change(screen.getByLabelText("Time behind PB"), { target: { value: "-5" } });
     expect(screen.getByRole("status").textContent).toMatch(/^Keep going: .*% of runs like this one still PB/);
 
-    fireEvent.change(screen.getByLabelText("Seconds behind PB"), { target: { value: String(split.resetAfter! / 1000 + 5) } });
+    fireEvent.change(screen.getByLabelText("Time behind PB"), { target: { value: String(split.resetAfter! / 1000 + 5) } });
     expect(screen.getByRole("status").textContent).toMatch(/^Reset: /);
 
-    fireEvent.change(screen.getByLabelText("Seconds behind PB"), { target: { value: "" } });
-    expect(screen.getByRole("status").textContent).toMatch(/Type how many seconds/);
+    fireEvent.change(screen.getByLabelText("Time behind PB"), { target: { value: "" } });
+    expect(screen.getByRole("status").textContent).toMatch(/Type how far behind PB pace/);
   });
 
   it("only gives the odds, never a reset, when practising", () => {
     render(<ResetCoach odds={odds} />);
     fireEvent.click(screen.getByRole("button", { name: "Practising" }));
-    fireEvent.change(screen.getByLabelText("Seconds behind PB"), { target: { value: "120" } });
-    expect(screen.getByRole("status").textContent).toMatch(/^.+% of runs like this one still PB\.$/);
+    fireEvent.change(screen.getByLabelText("Time behind PB"), { target: { value: "150" } });
+    const status = screen.getByRole("status").textContent;
+    expect(status).toMatch(/^.+% of runs like this one still PB\.$/);
+    // Long runs can type minutes and seconds instead.
+    fireEvent.change(screen.getByLabelText("Time behind PB"), { target: { value: "2:30" } });
+    expect(screen.getByRole("status").textContent).toBe(status);
     fireEvent.click(screen.getByRole("button", { name: /Show the odds/ }));
     expect(screen.queryByRole("button", { name: "How is Reset if behind by calculated?" })).toBeNull();
   });

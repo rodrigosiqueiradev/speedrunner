@@ -53,7 +53,7 @@ Example (Dishonored sample, real time): PB 40:01.52 − 12.15s of good-day saves
 | **Save to gold** | PB segment − gold, never below zero. The most this segment can ever give back. |
 | **Good-day save** | PB segment − your good-day time (25th percentile of your recent clean times, the time you beat 1 attempt in 4), never below zero. Zero means your PB already had a good version of this segment. |
 | **Variability** | (75th percentile − 25th percentile) ÷ median, over your recent clean times. 10% on a 2 minute segment means the middle half of your attempts spans about 12 seconds. |
-| **Reset rate** | Attempts that reached the segment but have no time for it ÷ attempts that reached it. A high rate on the first segment is normal. |
+| **Reset rate** | Attempts that reached the segment but have no time for it ÷ attempts that reached it. A high rate on the first segment is normal. It counts every reset, including runs you reset for being behind pace. |
 
 ## Practice advice
 
@@ -64,7 +64,7 @@ Every segment is checked against four rules. Advice is grouped by segment and ra
 | **Slow in PB** | The PB segment was slower than your typical time. | PB segment − good-day time. |
 | **Inconsistent** | Variability is above 10%. | Half the gap between your 25th and 75th percentile. |
 | **Gold is rare** | Your typical time is more than 8% slower than your gold. | The smaller of save to gold and typical − gold. |
-| **Runs die here** | Runs reset here at least 1.5× as often per minute as in the rest of the run (every other segment after the first), with at least 3 resets and 10 attempts that reached it. The rate per minute is −ln(1 − reset rate) ÷ typical time, so a long segment isn't flagged for being long, and a 15% reset rate means something different in a 5 segment run and a 60 segment one. | The segment's good-day save. |
+| **Runs die here** | Runs that were going well reset here at least 1.5× as often per minute as in the rest of the run (every other segment after the first), with at least 3 such resets and 10 such runs reaching it. "Going well" means in the faster half of your times at the split before, so resetting a run that was already behind pace (a choice, not a deadly segment) doesn't count. The first segment has no split before it and its resets are mostly bad starts, so it is never flagged. The rate per minute is −ln(1 − good-run reset rate) ÷ typical time, so a long segment isn't flagged for being long, and a 15% reset rate means something different in a 5 segment run and a 60 segment one. | The segment's good-day save. |
 
 ## Category score
 
@@ -77,7 +77,7 @@ the same scale. It doesn't compare you with other runners. Settings come from `S
 | --- | --- | --- |
 | **Efficiency** | 40% | Gap = (PB − sum of best) ÷ sum of best. Score = 100 × (1 − gap ÷ 10%): 100 when the PB equals the sum of best, 0 at a 10% gap or more. |
 | **Consistency** | 25% | Segment variabilities averaged with each segment's typical time as its weight. Score = 100 × (1 − variability ÷ 20%), so 10% (where Inconsistent advice starts) scores 50. Segments with fewer than 5 clean times are left out. |
-| **Completion** | 20% | Finished attempts ÷ attempts that reached the middle segment, × 100. Early resets don't count. |
+| **Completion** | 20% | Of the attempts that reached the middle segment going well (the faster half of their times at the split before it), the share that finished, × 100. Early resets don't count, and neither do runs reset for being behind pace: the reset coach often recommends those, and short categories do it far more than long ones. |
 | **Improvement** | 15% | Your finishes split into two equal groups, the latest and the ones just before, half of your finishes each and at most 10. Change = (median of the earlier group − median of the latest) ÷ earlier median. Score = 50 + 50 × change ÷ 3%: no change is 50, 3% faster is 100, 3% slower is 0. Needs 8 finished runs. |
 
 Every part is clamped to 0–100. A part that can't be worked out is left out and the other weights are scaled up to
@@ -88,7 +88,8 @@ segment, fewer than 5 segments, or fewer than 3 parts could be worked out. These
 with a few dozen attempts can reach them.
 
 Example (Dishonored sample, real time): efficiency 76 (2.4% gap) × 40% + consistency 66 (6.7% variability) × 25% +
-completion 26 (30 of 116 attempts from halfway finished) × 20% + improvement 74 (1.4% faster) × 15% = 63.
+completion 68 (27 of the 40 good runs from halfway finished) × 20% + improvement 74 (1.4% faster) × 15% = 72. Of the
+116 attempts that reached the middle, only 30 finished, but most of the rest were reset for being behind pace.
 
 ### Profile
 
@@ -132,10 +133,11 @@ mistakes rather than pace resets.
 | **PB chance per attempt** | If you finish × your finish rate, the share of your last 50 attempts that reached the end. Shown as "1 in N". |
 | **PB forecast** | With chance p per attempt, the chance of at least one PB in n attempts is 1 − (1 − p)ⁿ. The forecast is the n where that reaches 50% and 90%. The dates divide n by your attempts per day over the last 28 days you ran (from LiveSplit's attempt start dates) and count from today. |
 | **PB chance from a split** | The simulated runs at about your time at that split, weighted by how close they were (a Gaussian whose width is 30% of the spread of simulated times there), and how many of them went on to beat your PB. Being behind also says something about today's form, and that carries forward. Then × the chance of no run-ending mistake in the segments left. "On pace" means you're at exactly your PB's time for the split. |
-| **Reset if behind by** | Starting over finds PBs at PB chance per attempt ÷ your average attempt length (from LiveSplit's attempt start and end times; without them, from typical segment times and reset rates). Playing on finds them at PB chance from here ÷ the average time left. This is the deficit where the two are equal, searched within 20% of the PB's split time either way, and shown in seconds and as a share of the split time. "Never" means playing on stays faster across that range; "Always" means starting over is faster even 20% ahead. |
+| **Reset if behind by** | Starting over finds PBs at PB chance per attempt ÷ your average attempt length (from LiveSplit's start and end times of your last 50 attempts, with a timer left running counted only for the time on its splits, as in Year in runs; without dates, from typical segment times and reset rates). Playing on finds them at PB chance from here ÷ the average time left. This is the deficit where the two are equal, searched within 20% of the PB's split time either way, and shown in seconds and as a share of the split time. "Never" means playing on stays faster across that range; "Always" means starting over is faster even 20% ahead. |
 | **Goal odds** | The same simulated runs, counted against the goal planner's goal instead of the PB. |
 
-**Should I reset?** Pick a split and how far behind PB pace you are. In **PB hunting** mode the coach says keep going
+**Should I reset?** Pick a split and how far behind PB pace you are, in seconds or as minutes and seconds (2:30) for
+long runs. In **PB hunting** mode the coach says keep going
 when playing on finds a PB at least as fast as starting over. In **Practising** mode, for runners who play runs out
 anyway, it only gives the PB chance from there and the table drops the reset points.
 
@@ -160,11 +162,13 @@ is uploaded; the PNG is only shared if you share it. Settings come from `RECAP_S
   finished run is treated as a timer left running, and only the time on its splits counts. The limit follows each
   category's own length (12 hours for a category with no finishes or PB to judge by).
 - **Personal bests:** finished runs faster than every earlier finish in that category. The biggest PB is the category
-  whose best time dropped the most over the year.
+  whose best time dropped by the biggest share of itself over the year.
 - **Golds:** clean segment times faster than all earlier clean times of that segment, once it has at least 5. The best
-  gold is the one that beat the old best by the most.
-- **Most improved:** the segment whose median over its last 10 clean times of the year is the most seconds faster than
+  gold is the one that beat the old best by the biggest share of it.
+- **Most improved:** the segment whose median over its last 10 clean times of the year is the biggest share faster than
   over its first 10 (or each half of the year's times, when it has fewer than 20). Needs 10 clean times in the year.
+- The three highlights compare shares, not seconds, because the recap mixes categories: in seconds, a 6 hour
+  category's long segments would win every time over a 10 minute category's short ones.
 - **Longest streak:** the most days in a row with at least one attempt.
 
 Adding two files for the same game and category keeps only the newer one, so attempts aren't counted twice.
@@ -231,11 +235,14 @@ Settings come from `SESSION_INSIGHT_SETTINGS` in
 on its own is in [`packages/core/src/sessions.ts`](../packages/core/src/sessions.ts) for other features to reuse.
 
 - **Sessions.** LiveSplit 1.6 and later save when every attempt started and ended (in UTC). A break of more than
-  30 minutes starts a new session. Files without attempt dates, or with fewer than 8 sessions, get no insights.
+  30 minutes starts a new session. An attempt that lasted more than 3 times the category's typical finished run is a
+  timer left running and ends when its splits do (the Year in runs rule), so a timer left open overnight doesn't join
+  two days into one session. Files without attempt dates, or with fewer than 8 sessions, get no insights.
 - **Pace.** Each clean segment time is compared with your usual time for that segment: the median of the clean
   times around that attempt, half of the segment's history (at least 10, at most 50). Using nearby attempts keeps
   months of improvement from looking like a session effect, however many attempts you have. A
-  segment counts as at most 2× its usual time, so a pause doesn't swamp the rest.
+  segment counts as at most 2× its usual time, so a pause doesn't swamp the rest. A time after a skipped split
+  covers two segments, so it isn't compared.
 - **When a split was played.** Each split is placed at the time it was played within its session, not when its
   attempt started, so one long run (a 5-hour Twilight Princess run, say) spreads across the whole session.
 - **Same split, same session.** Warm-up, peak window and fatigue compare a split only with the same split played at

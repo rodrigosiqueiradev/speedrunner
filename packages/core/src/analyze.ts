@@ -1,5 +1,5 @@
 import { recentSlice } from "./recency.js";
-import { cleanSegmentTimes } from "./segment-model.js";
+import { attemptSplitTimes, cleanSegmentTimes, fasterHalf } from "./segment-model.js";
 import { formatTime } from "./time.js";
 import type { Ms, Run } from "./types.js";
 
@@ -47,6 +47,14 @@ export interface SegmentStats {
   reached: number;
   resets: number;
   resetRate: number | null;
+  /**
+   * The same for runs that started this segment going well: in the faster half of times at the split
+   * before. Their resets are mostly mistakes here rather than resets for being behind pace. Null for
+   * the first segment, which has no split before it (its resets are mostly bad starts).
+   */
+  goodRunsReached: number | null;
+  goodRunResets: number | null;
+  goodRunResetRate: number | null;
 }
 
 export type AdviceKind = "weak-in-pb" | "inconsistent" | "gold-is-rare" | "run-killer";
@@ -97,6 +105,7 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
   const realAttemptIds = run.attempts.map((a) => a.id).filter((id) => id > 0);
 
   const pbTimes = segmentTimesOfPb(run);
+  const splitTimes = attemptSplitTimes(run);
 
   const stats: SegmentStats[] = segments.map((segment, i) => {
     const { times: clean, floor, discarded } = cleanSegmentTimes(run, i, { minSamples, outlierFloor });
@@ -116,6 +125,8 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
     const reachedIds = i === 0 ? realAttemptIds : realAttemptIds.filter((id) => segments[i - 1].history.has(id));
     const reached = reachedIds.length;
     const resets = reachedIds.filter((id) => !segment.history.has(id)).length;
+    const good = i === 0 ? null : fasterHalf(splitTimes[i - 1], reachedIds).ids;
+    const goodResets = good ? good.filter((id) => !segment.history.has(id)).length : null;
 
     return {
       index: i,
@@ -135,6 +146,9 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
       reached,
       resets,
       resetRate: reached > 0 ? resets / reached : null,
+      goodRunsReached: good ? good.length : null,
+      goodRunResets: goodResets,
+      goodRunResetRate: good && good.length > 0 ? goodResets! / good.length : null,
     };
   });
 
@@ -176,29 +190,32 @@ export const ADVICE_THRESHOLDS = {
   /** Median slower than gold by more than this fraction means gold-level execution is rare. */
   goldGap: 0.08,
   /**
-   * A segment is a run killer when runs die in it at least this many times as fast, per minute
-   * played, as in the rest of the run. Compared per minute so a long segment isn't flagged for
-   * being long, and against your own run so the rule is the same for 5 segments or 60.
+   * A segment is a run killer when runs that were going well die in it at least this many times as
+   * fast, per minute played, as in the rest of the run. Compared per minute so a long segment isn't
+   * flagged for being long, and against your own run so the rule is the same for 5 segments or 60.
+   * Only runs in the faster half at the split before count, so resetting a run that was already
+   * behind doesn't make a segment look deadly.
    */
   resetHazardRatio: 1.5,
-  /** Evidence needed before calling a segment a run killer. */
+  /** Evidence needed before calling a segment a run killer: good runs that reached it, and their resets. */
   minReachedForResets: 10,
   minResets: 3,
 };
 
 /**
- * How fast runs die in a segment per millisecond played, assuming resets are spread evenly
- * through it: -ln(1 - reset rate) / typical time. Null without a reset rate or typical time.
+ * How fast runs that were going well die in a segment per millisecond played, assuming resets are
+ * spread evenly through it: -ln(1 - good-run reset rate) / typical time. Null without that rate
+ * (as for the first segment) or a typical time.
  */
-export function resetHazard(s: Pick<SegmentStats, "resetRate" | "median">): number | null {
-  if (s.resetRate == null || !s.median) return null;
-  return -Math.log(1 - Math.min(s.resetRate, 0.999)) / s.median;
+export function resetHazard(s: Pick<SegmentStats, "goodRunResetRate" | "median">): number | null {
+  if (s.goodRunResetRate == null || !s.median) return null;
+  return -Math.log(1 - Math.min(s.goodRunResetRate, 0.999)) / s.median;
 }
 
 /**
  * Each segment's reset hazard divided by the hazard of the rest of the run (every other segment
- * after the first, whose resets are mostly bad starts). Infinity when runs reset here but nowhere
- * else after the first split; null when either side is unknown.
+ * after the first). Infinity when good runs reset here but nowhere else; null when either side is
+ * unknown.
  */
 export function resetHazardRatios(stats: SegmentStats[]): Array<number | null> {
   return stats.map((s) => {
@@ -248,13 +265,19 @@ function buildAdvice(stats: SegmentStats[]): Advice[] {
       });
     }
     const ratio = hazardRatios[s.index];
-    if (s.resetRate != null && s.reached >= t.minReachedForResets && s.resets >= t.minResets && ratio != null && ratio >= t.resetHazardRatio) {
+    if (
+      s.goodRunResetRate != null &&
+      s.goodRunsReached! >= t.minReachedForResets &&
+      s.goodRunResets! >= t.minResets &&
+      ratio != null &&
+      ratio >= t.resetHazardRatio
+    ) {
       advice.push({
         ...base,
         kind: "run-killer",
         // Not a direct time save; rank it alongside the segment's realistic save.
         estimatedSave: s.realisticTimeSave ?? 0,
-        message: `${Math.round(s.resetRate * 100)}% of attempts that reach this segment reset here, ${ratio === Infinity ? "while runs almost never reset elsewhere after the first split" : `${ratio.toFixed(1)} times as often per minute as in the rest of your run`}. Practising it in isolation should get more runs to the end.`,
+        message: `${Math.round(s.goodRunResetRate * 100)}% of runs that reach this segment going well (in your faster half at the split before) reset here, ${ratio === Infinity ? "while good runs almost never reset elsewhere after the first split" : `${ratio.toFixed(1)} times as often per minute as in the rest of your run`}. Practising it in isolation should get more good runs to the end.`,
       });
     }
   }

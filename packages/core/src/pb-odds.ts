@@ -1,4 +1,4 @@
-import { parseLiveSplitDate } from "./sessions.js";
+import { attemptLimit, parseLiveSplitDate, playedMs } from "./sessions.js";
 import {
   buildFormModel,
   buildSegmentModel,
@@ -149,7 +149,7 @@ export function pbOdds(run: Run, options: PbOddsOptions = {}): PbOdds | null {
     ? recent.filter((a) => lastSegment.history.get(a.id) != null || a.time != null).length / recent.length
     : segmentModels.reduce((p, m) => p * (1 - m.resetRate), 1);
   const perAttempt = ifFinished * finishRate;
-  const meanAttemptLength = attemptLength(recent) ?? modelledAttemptLength(form.segments.map((s) => s.typical), segmentModels);
+  const meanAttemptLength = attemptLength(run, recent) ?? modelledAttemptLength(form.segments.map((s) => s.typical), segmentModels);
   // Targets beaten per millisecond of play when every attempt is played until it finishes or resets.
   const freshRate = perAttempt / meanAttemptLength;
 
@@ -294,11 +294,16 @@ export function resetAdvice(odds: PbOdds, split: number, timeAtSplit: Ms): Reset
   return { verdict: "reset", chance, message: `Reset: ${part}, and starting over gets you there sooner.` };
 }
 
-/** Average length of the attempts that have start and end times, or null if none do. */
-function attemptLength(attempts: Run["attempts"]): Ms | null {
-  const lengths = attempts
-    .map((a) => (parseLiveSplitDate(a.ended) ?? NaN) - (parseLiveSplitDate(a.started) ?? NaN))
-    .filter((d) => d > 0);
+/**
+ * Average length of the attempts that have start and end times, or null if none do. A timer left
+ * running counts only for the time on its splits, by the same rule as hours played.
+ */
+function attemptLength(run: Run, attempts: Run["attempts"]): Ms | null {
+  const limit = attemptLimit(run);
+  const lengths = attempts.flatMap((a) => {
+    const length = (parseLiveSplitDate(a.ended) ?? NaN) - (parseLiveSplitDate(a.started) ?? NaN);
+    return length > 0 ? [playedMs(run, a, length, limit)] : [];
+  });
   return lengths.length ? lengths.reduce((a, b) => a + b, 0) / lengths.length : null;
 }
 

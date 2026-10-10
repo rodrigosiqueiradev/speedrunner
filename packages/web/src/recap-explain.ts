@@ -70,25 +70,29 @@ export const RECAP_DOCS: Record<RecapDocKey, MetricDoc> = {
   biggestPb: {
     id: "recap-biggest-pb",
     label: "Biggest PB",
-    short: "The category whose best time dropped the most this year.",
+    short: "The category whose best time dropped by the biggest share this year.",
     how: [
-      "For each category, the best time at the end of the year minus the best time at the start of it.",
+      "For each category, the best time at the start of the year minus the best time at the end of it, as a share of the start.",
+      "Shares, not seconds, so a 10 minute category and a 6 hour one compare fairly: 30 seconds off 10 minutes beats 2 minutes off 6 hours.",
       "If no category had a PB before this year, the card shows your first finish instead.",
     ],
   },
   bestGold: {
     id: "recap-best-gold",
     label: "Best gold",
-    short: "The gold this year that beat the segment's old best by the most time.",
-    how: ["Among this year's golds, the one with the largest gap to the best clean time that segment had before it."],
+    short: "The gold this year that beat the segment's old best by the biggest share.",
+    how: [
+      "Among this year's golds, the one with the largest gap to the best clean time that segment had before it, as a share of that old best.",
+      "Shares, not seconds, so a long segment doesn't win just for being long.",
+    ],
   },
   mostImproved: {
     id: "recap-most-improved",
     label: "Most improved",
-    short: `The segment whose typical time this year dropped the most, from its first ${R.improvementWindow} clean times to its last ${R.improvementWindow}.`,
+    short: `The segment whose typical time this year dropped by the biggest share, from its first ${R.improvementWindow} clean times to its last ${R.improvementWindow}.`,
     how: [
       `Typical time is the median. A segment's first ${R.improvementWindow} clean times of the year are compared with its last ${R.improvementWindow}, or each half of its times when it has fewer than ${R.improvementWindow * 2}.`,
-      `It needs at least ${R.minImprovementSamples * 2} clean times in the year. The segment that saved the most seconds is shown.`,
+      `It needs at least ${R.minImprovementSamples * 2} clean times in the year. The segment that saved the biggest share of its typical time is shown, so long segments and long categories don't win just for being long.`,
     ],
   },
 };

@@ -19,13 +19,15 @@ describe("scoreRun on real files", () => {
     expect(s.efficiency.gap!).toBeCloseTo(0.0235, 3);
     expect(Math.round(s.efficiency.score!)).toBe(76);
     expect(Math.round(s.consistency.score!)).toBe(66);
-    expect(s.completion).toMatchObject({ finished: 30, reachedMiddle: 116 });
-    expect(Math.round(s.completion.score!)).toBe(26);
+    // 116 attempts reached Tr4p Haus, 30 finished; most of the rest were reset for being behind.
+    // Of the 40 in the faster half at the split before it, 27 finished.
+    expect(s.completion).toMatchObject({ reachedMiddle: 116, goodRuns: 40, finished: 27 });
+    expect(Math.round(s.completion.score!)).toBe(68);
     expect(s.improvement.change!).toBeCloseTo(0.0141, 3);
     expect(Math.round(s.improvement.score!)).toBe(74);
-    expect(s.score).toBe(63);
+    expect(s.score).toBe(72);
     expect(s.provisional).toBe(false);
-    expect(weakestComponent(s)).toBe("completion");
+    expect(weakestComponent(s)).toBe("consistency");
   });
 
   it("reads a World Record comparison and marks a file without finishes as provisional", () => {
@@ -67,6 +69,26 @@ describe("scoreRun components", () => {
     const s = scoreRun(run);
     expect(s.completion.reachedMiddle).toBe(30);
     expect(s.completion.rate).toBeCloseTo(0.5);
+  });
+
+  it("doesn't count runs reset for being behind pace against completion", () => {
+    // Every run that's slow by the middle is reset after it, as the reset coach would say; good runs all finish.
+    const paced = synthRun({
+      base: [30_000, 60_000, 45_000, 50_000, 40_000],
+      attempts: 60,
+      noise: (seg, id) => (seg === 0 ? (id % 2) * 3_000 : 0),
+      resetAt: (id) => (id % 2 === 1 ? 3 : undefined),
+    });
+    const s = scoreRun(paced);
+    expect(s.completion).toMatchObject({ reachedMiddle: 60, goodRuns: 30, finished: 30, rate: 1 });
+    // Runs on the same pace that die after the middle still count against it.
+    const choking = synthRun({
+      base: [30_000, 60_000, 45_000, 50_000, 40_000],
+      attempts: 60,
+      noise: () => 0,
+      resetAt: (id) => (id % 2 === 1 ? 3 : undefined),
+    });
+    expect(scoreRun(choking).completion.rate).toBeCloseTo(0.5);
   });
 
   it("scores improvement by comparing the latest half of the finishes with the half before, up to 10", () => {

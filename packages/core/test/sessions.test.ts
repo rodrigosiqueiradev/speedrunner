@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { analyzeSessions, groupSessions, parseLiveSplitDate, parseLss, type Run } from "../src/index.js";
+import { analyzeSessions, groupSessions, parseLiveSplitDate, parseLss, runSessions, type Run } from "../src/index.js";
 
 const utc = (ms: number) => ({ hour: new Date(ms).getUTCHours(), weekday: new Date(ms).getUTCDay() });
 
@@ -71,6 +71,17 @@ describe("groupSessions", () => {
     expect(sessions.map((s) => s.attempts.map((a) => a.attempt.id))).toEqual([[0, 10, 44], [90]]);
     expect(sessions[0].attempts[2].minutesIn).toBe(44);
     expect(sessions[1].attempts[0].indexInSession).toBe(0);
+  });
+
+  it("doesn't let a timer left running overnight join two days into one session", () => {
+    // Five 6-minute runs one evening; the last timer stays open until 9:00 the next morning, then two more runs.
+    const plan = [0, 8, 16, 24, 32].map((m) => ({ start: T0 + m * MIN }));
+    const run = plannedRun([...plan, { start: T0 + 15 * 60 * MIN + 5 * MIN }, { start: T0 + 15 * 60 * MIN + 13 * MIN }]);
+    run.attempts[4] = { ...run.attempts[4], ended: stamp(T0 + 15 * 60 * MIN) };
+    expect(groupSessions(run.attempts)).toHaveLength(1);
+    const sessions = runSessions(run);
+    expect(sessions.map((s) => s.attempts.length)).toEqual([5, 2]);
+    expect(sessions[1].attempts[0].minutesIn).toBe(0);
   });
 });
 
@@ -172,11 +183,29 @@ describe("analyzeSessions", () => {
     expect(f.message).toMatch(/You run 4\.\d% (slower in sessions you start in the morning|faster in sessions you start in the evening)/);
   });
 
+  it("doesn't read a skipped split as a slow segment", () => {
+    // Morning and evening sessions at the same pace, but every morning attempt skips split 2, so
+    // LiveSplit saves S2 and S3 as one time on S3. That time covers two segments, not a slow one.
+    const plan: PlannedAttempt[] = [];
+    for (let s = 0; s < 20; s++) {
+      const start = T0 + s * DAY - (s % 2 === 0 ? 9 * 60 * MIN : 0);
+      for (let i = 0; i < 5; i++) plan.push({ start: start + i * 8 * MIN });
+    }
+    const run = plannedRun(plan);
+    run.attempts.forEach((a, k) => {
+      if (Math.floor(k / 5) % 2 !== 0) return;
+      run.segments[2].history.set(a.id, run.segments[1].history.get(a.id)! + run.segments[2].history.get(a.id)!);
+      run.segments[1].history.set(a.id, null);
+    });
+    expect(finding(run, "time-of-day").status).toBe("no-effect");
+  });
+
   it("stays honest on a real file", () => {
     const xml = readFileSync(resolve(__dirname, "fixtures/livesplit-core/livesplit1.6_gametime.lss"), "utf8");
     const r = analyzeSessions(parseLss(xml), { localTime: utc });
     expect(r.available).toBe(true);
-    expect(r.sessions).toBe(185);
+    // 185 by start and end times alone; three timers left open overnight no longer join two days.
+    expect(r.sessions).toBe(188);
     expect(r.findings).toHaveLength(7);
     // Few runs get late in this file, so tilt can't be judged yet.
     expect(r.findings.find((f) => f.kind === "tilt-near-pb")!.status).toBe("not-enough-data");

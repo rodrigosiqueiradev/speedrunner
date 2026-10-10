@@ -1,4 +1,13 @@
-import { ANALYSIS_DEFAULTS, FORM_MODEL_SETTINGS, PB_ODDS_SETTINGS, describeChance, formatTime, oneIn, type PbOdds } from "@speedrunner/core";
+import {
+  ANALYSIS_DEFAULTS,
+  FORM_MODEL_SETTINGS,
+  PB_ODDS_SETTINGS,
+  SESSION_DEFAULTS,
+  describeChance,
+  formatTime,
+  oneIn,
+  type PbOdds,
+} from "@speedrunner/core";
 import type { MetricDoc } from "./explain";
 import { formatSave } from "./format";
 
@@ -74,7 +83,7 @@ export const PB_ODDS_METRICS: Record<
     label: "Reset if behind by",
     short: "How far behind PB pace a run can be before starting over gets you a PB sooner. Shown in seconds and as a share of the split time.",
     how: [
-      "Starting over finds PBs at a rate of PB chance per attempt ÷ your average attempt length, from LiveSplit's start and end times.",
+      `Starting over finds PBs at a rate of PB chance per attempt ÷ your average attempt length, from LiveSplit's start and end times of your last ${S.recentAttempts} attempts. An attempt longer than ${SESSION_DEFAULTS.leftRunningFactor} times your typical finished run is a timer left running and counts only for the time on its splits.`,
       "Playing on finds them at PB chance from here ÷ the average time left in the run.",
       "Keep going while playing on is the faster of the two. The number shown is the deficit where they're equal; \"ahead by\" means you need to be ahead.",
       `"Never" means playing on stays faster even ${pct(S.searchShare)} of the split time behind. "Always" means starting over is faster even that far ahead.`,

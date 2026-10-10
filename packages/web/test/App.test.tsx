@@ -43,7 +43,7 @@ describe("App", () => {
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
     fireEvent.click(await screen.findByRole("tab", { name: "Sessions" }));
     const section = screen.getByRole("region", { name: "How your sessions go" });
-    expect(section.textContent).toMatch(/185 sessions\s*from 1,788 attempts/);
+    expect(section.textContent).toMatch(/188 sessions\s*from 1,788 attempts/);
     expect(section.textContent).toMatch(/After a near-PB\s*Not enough data/);
     // Checks that found nothing fold under one line.
     expect(section.querySelector("details.quiet-findings summary")?.textContent).toMatch(/need more sessions/);

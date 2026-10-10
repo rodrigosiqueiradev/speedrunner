@@ -1,13 +1,26 @@
-import type { Attempt, Run } from "./types.js";
+import type { Attempt, Ms, Run } from "./types.js";
 
 /** Default session settings. Exported so the UI and docs can quote the real numbers. */
 export const SESSION_DEFAULTS = {
   /** A break longer than this between two attempts starts a new session. */
   gapMinutes: 30,
+  /**
+   * An attempt that lasted more than this many times the category's typical finished run is
+   * treated as LiveSplit left running: only the time on its splits counts as play. The limit
+   * follows the category, so a 10 minute category and a 20 hour one are judged the same way.
+   */
+  leftRunningFactor: 3,
+  /** The limit for a category with no finished run or PB to judge by. */
+  maxAttemptMs: 12 * 60 * 60 * 1000,
 } as const;
 
 export interface SessionOptions {
   gapMinutes?: number;
+  /**
+   * How much of an attempt's length (end minus start) was play. Defaults to all of it; runSessions
+   * leaves out a timer left running (see playedMs), so it doesn't stretch a session overnight.
+   */
+  playedMs?: (attempt: Attempt, length: Ms) => Ms;
 }
 
 /** An attempt with its timestamps resolved and its place in a session. */
@@ -43,7 +56,8 @@ export function groupSessions(attempts: Attempt[], options: SessionOptions = {})
       const start = parseLiveSplitDate(attempt.started);
       if (start == null) return null;
       const end = parseLiveSplitDate(attempt.ended);
-      return { attempt, start, end: end != null && end >= start ? end : start };
+      const length = end != null && end >= start ? end - start : 0;
+      return { attempt, start, end: start + (options.playedMs && length > 0 ? options.playedMs(attempt, length) : length) };
     })
     .filter((t): t is { attempt: Attempt; start: number; end: number } => t != null)
     .sort((a, b) => a.start - b.start || a.attempt.id - b.attempt.id);
@@ -66,9 +80,39 @@ export function groupSessions(attempts: Attempt[], options: SessionOptions = {})
   return sessions;
 }
 
-/** Convenience: sessions for a parsed run. */
+/** Sessions for a parsed run. A timer left running only counts for the time on its splits. */
 export function runSessions(run: Run, options: SessionOptions = {}): Session[] {
-  return groupSessions(run.attempts, options);
+  const limit = attemptLimit(run);
+  return groupSessions(run.attempts, { playedMs: (a, length) => playedMs(run, a, length, limit), ...options });
+}
+
+/**
+ * How long an attempt at this category can last before it counts as a timer left running:
+ * leftRunningFactor times the median finished run, or the PB, or the 12 hour fallback.
+ */
+export function attemptLimit(run: Run): Ms {
+  const finished = run.attempts
+    .filter((a) => a.id > 0 && a.time != null && a.time > 0)
+    .map((a) => a.time!)
+    .sort((a, b) => a - b);
+  const pb = [...run.segments].reverse().find((s) => s.pbSplit != null)?.pbSplit ?? null;
+  const typical = finished.length ? (finished[Math.floor((finished.length - 1) / 2)] + finished[Math.ceil((finished.length - 1) / 2)]) / 2 : pb;
+  return typical != null && typical > 0 ? SESSION_DEFAULTS.leftRunningFactor * typical : SESSION_DEFAULTS.maxAttemptMs;
+}
+
+/**
+ * The part of an attempt's `length` (end minus start) that was play: all of it up to `limit`
+ * (see attemptLimit); past it, the timer was left running, so only the time on its splits.
+ */
+export function playedMs(run: Run, attempt: Attempt, length: Ms, limit: Ms): Ms {
+  if (length <= limit) return length;
+  if (attempt.time != null && attempt.time > 0) return attempt.time;
+  let total = 0;
+  for (const segment of run.segments) {
+    const t = segment.history.get(attempt.id);
+    if (t != null && t > 0) total += t;
+  }
+  return total;
 }
 
 /**

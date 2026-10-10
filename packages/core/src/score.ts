@@ -1,4 +1,5 @@
 import { analyzeRun, quantile, type RunAnalysis } from "./analyze.js";
+import { attemptSplitTimes, fasterHalf } from "./segment-model.js";
 import type { Ms, Run, TimingMethod } from "./types.js";
 
 /**
@@ -64,7 +65,14 @@ export interface CategoryScore {
     /** The segment an attempt has to reach to count; the middle one. */
     middleSegment: number;
     middleSegmentName: string | null;
+    /** Attempts that started the middle segment. */
     reachedMiddle: number;
+    /**
+     * Of those, the ones going well: in the faster half of times at the split before the middle
+     * segment. Runs reset for being behind pace aren't held against you.
+     */
+    goodRuns: number;
+    /** Good runs that went on to finish. */
     finished: number;
     rate: number | null;
   };
@@ -121,13 +129,21 @@ export function scoreRun(run: Run, analysis: RunAnalysis = analyzeRun(run)): Cat
   // A file with no segment history can't tell us how many attempts reached anywhere.
   const hasHistory = run.segments.some((s) => s.history.size > 0);
   const reachedMiddle = hasHistory && middle ? middle.reached : 0;
-  const rate = reachedMiddle > 0 ? Math.min(1, a.finishedAttempts / reachedMiddle) : null;
+  // Only runs still going well at the middle count, so resetting a run that's behind pace (which the
+  // reset coach recommends, and short categories do far more often) doesn't cost completion.
+  const ids = run.attempts.map((x) => x.id).filter((id) => id > 0);
+  const atMiddle = middleSegment === 0 ? ids : ids.filter((id) => run.segments[middleSegment - 1].history.has(id));
+  const goodRuns = !hasHistory || !middle ? [] : middleSegment === 0 ? atMiddle : fasterHalf(attemptSplitTimes(run)[middleSegment - 1], atMiddle).ids;
+  const lastSegment = run.segments.at(-1);
+  const finishedGood = goodRuns.filter((id) => lastSegment?.history.get(id) != null).length;
+  const rate = goodRuns.length > 0 ? finishedGood / goodRuns.length : null;
   const completion = {
     score: rate == null ? null : scale(rate),
     middleSegment,
     middleSegmentName: middle?.name ?? null,
     reachedMiddle,
-    finished: a.finishedAttempts,
+    goodRuns: goodRuns.length,
+    finished: finishedGood,
     rate,
   };
 

@@ -17,7 +17,7 @@ function partNote(s: CategoryScore, k: ComponentKey): string {
     case "completion":
       return s.completion.rate == null
         ? "Needs attempt history"
-        : `${s.completion.finished} of ${s.completion.reachedMiddle} from halfway finished`;
+        : `${s.completion.finished} of ${s.completion.goodRuns} good runs from halfway finished`;
     case "improvement":
       return s.improvement.change == null
         ? `Needs ${SCORE_SETTINGS.minImprovementWindow * 2} finished runs`

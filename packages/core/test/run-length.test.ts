@@ -124,28 +124,42 @@ describe("a long category with few attempts", () => {
   });
 
   it("flags where runs die per minute, not per segment", () => {
-    // Every segment resets at the same rate per minute, but one is ten times longer: not a run killer.
-    const even = synthRun({
-      base: [60_000, 60_000, 600_000, 60_000, 60_000],
-      attempts: 400,
-      noise: (seg, id) => 500 * jitter(seg, id),
-      // About 2% of runs die per minute played after the first split.
-      resetAt: (id) => {
-        const r = (jitter(99, id) + 1) / 2;
-        return r < 0.02 ? 1 : r < 0.04 ? 2 : r < 0.24 ? 3 : r < 0.26 ? 4 : undefined;
-      },
-    });
-    expect(analyzeRun(even).advice.filter((x) => x.kind === "run-killer").map((x) => x.segmentName)).not.toContain("S3");
+    // A uniform draw in [0, 1) for each attempt, independent of its pace.
+    const draw = (id: number) => {
+      const x = Math.sin(id * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    const killers = (long: number) =>
+      analyzeRun(
+        synthRun({
+          base: [60_000, 60_000, long, 60_000, 60_000],
+          attempts: 1000,
+          noise: (seg, id) => 500 * jitter(seg, id),
+          // About 2% of runs die per minute played after the first split, and S3 takes ten times as many
+          // runs as one of the 1 minute segments.
+          resetAt: (id) => {
+            const r = draw(id);
+            return r < 0.02 ? 1 : r < 0.2 ? 2 : r < 0.22 ? 3 : r < 0.24 ? 4 : undefined;
+          },
+        }),
+      )
+        .advice.filter((x) => x.kind === "run-killer")
+        .map((x) => x.segmentName);
+    // Ten minutes long, so that is the same rate per minute: not a run killer.
+    expect(killers(600_000)).not.toContain("S3");
+    // One minute long, it kills runs ten times as fast as the rest.
+    expect(killers(60_000)).toContain("S3");
   });
 });
 
 describe("year in runs", () => {
+  const stamp = (ms: number) => {
+    const d = new Date(ms);
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${p(d.getUTCMonth() + 1)}/${p(d.getUTCDate())}/${d.getUTCFullYear()} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
+  };
+
   it("judges a timer left running by the category's own length", () => {
-    const stamp = (ms: number) => {
-      const d = new Date(ms);
-      const p = (n: number) => String(n).padStart(2, "0");
-      return `${p(d.getUTCMonth() + 1)}/${p(d.getUTCDate())}/${d.getUTCFullYear()} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
-    };
     const T0 = Date.UTC(2026, 2, 1, 10);
     // One finished 6-hour run that took 7 hours with breaks, in a 6-hour category: it all counts.
     const sixHours = synthRun({ base: Array(6).fill(3_600_000), attempts: 3, noise: () => 0 });
@@ -156,5 +170,29 @@ describe("year in runs", () => {
     const tenMinutes = scaled(sixHours, 1 / 36);
     tenMinutes.attempts = sixHours.attempts.map((a, i) => ({ ...a, time: tenMinutes.attempts[i].time }));
     expect(yearRecap([tenMinutes], 2026, { timeZone: "utc" }).playMs).toBe(3 * 600_000);
+  });
+
+  it("ranks highlights by share, so a long category doesn't win for being long", () => {
+    // The same runner improving in a 10 minute category (by about 10%) and a 6 hour one (by under 2%).
+    // In seconds the 6 hour category saves more everywhere; as a share of the time, the short one does.
+    const category = (name: string, base: number[], step: number): Run => {
+      const run = synthRun({ base, attempts: 30, noise: (_, id) => -id * step });
+      return {
+        ...run,
+        category: name,
+        // The first 5 attempts are from December, so there's an old PB to beat.
+        attempts: run.attempts.map((a) => {
+          const at = Date.UTC(2025, 11, 27) + a.id * 86_400_000;
+          return { ...a, started: stamp(at), ended: stamp(at + (a.time ?? 0)) };
+        }),
+      };
+    };
+    const short = category("10 minutes", Array(5).fill(120_000), 400);
+    const long = category("6 hours", Array(6).fill(3_600_000), 2_000);
+    const r = yearRecap([long, short], 2026, { timeZone: "utc" });
+    expect(r.pbs.map((p) => p.category)).toEqual(["10 minutes", "6 hours"]);
+    expect(r.pbs[1].before! - r.pbs[1].after).toBeGreaterThan(r.pbs[0].before! - r.pbs[0].after);
+    expect(r.bestGold!.category).toBe("10 minutes");
+    expect(r.mostImproved!.category).toBe("10 minutes");
   });
 });

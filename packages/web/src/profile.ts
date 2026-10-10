@@ -11,7 +11,7 @@ export interface ProfileEntry {
 }
 
 /** Bump when the score's shape or formulas change, so old saved scores aren't shown as current. */
-const STORAGE_KEY = "speedrunner.profile.v2";
+const STORAGE_KEY = "speedrunner.profile.v3";
 
 export function categoryKey(s: Pick<CategoryScore, "game" | "category">): string {
   return `${s.game.trim().toLowerCase()}|${s.category.trim().toLowerCase()}`;

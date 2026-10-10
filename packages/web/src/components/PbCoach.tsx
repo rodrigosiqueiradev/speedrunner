@@ -1,6 +1,6 @@
 import { ANALYSIS_DEFAULTS, describeChance, formatTime, oneIn, pbChanceFrom, resetAdvice, type PbOdds } from "@speedrunner/core";
 import { useId, useState } from "react";
-import { formatSave } from "../format";
+import { formatSave, parseBehind } from "../format";
 import { describeResetAfter, PB_ODDS_METRICS as M, type PbOddsDoc } from "../pbExplain";
 import { InfoTip } from "./InfoTip";
 
@@ -131,12 +131,12 @@ function ResetCalculator({ odds, mode }: { odds: PbOdds; mode: Mode }) {
   const id = useId();
   if (splits.length === 0) return null;
   const s = odds.splits[split];
-  const seconds = Number(behind.replace(",", ".").replace("−", "-"));
-  const valid = behind.trim() !== "" && Number.isFinite(seconds);
-  const time = s.pbSplit! + Math.round(seconds * 1000);
+  const offset = parseBehind(behind);
+  const valid = offset != null;
+  const time = s.pbSplit! + (offset ?? 0);
   const advice = valid && mode === "hunting" ? resetAdvice(odds, split, time) : null;
   const message = !valid
-    ? "Type how many seconds behind PB pace you are."
+    ? "Type how far behind PB pace you are, in seconds or minutes and seconds."
     : advice
       ? advice.message
       : `${describeChance(pbChanceFrom(odds, split, time))} of runs like this one still PB.`;
@@ -154,7 +154,7 @@ function ResetCalculator({ odds, mode }: { odds: PbOdds; mode: Mode }) {
           </select>
         </label>
         <label htmlFor={`${id}-behind`}>
-          Seconds behind PB
+          Time behind PB
           <input
             id={`${id}-behind`}
             inputMode="decimal"
@@ -165,7 +165,7 @@ function ResetCalculator({ odds, mode }: { odds: PbOdds; mode: Mode }) {
         </label>
       </div>
       <p id={`${id}-hint`} className="reset-hint">
-        Use a minus sign if you're ahead, for example −3.5.
+        Seconds, or minutes and seconds like 2:30 for a long run. Use a minus sign if you're ahead, for example −3.5.
       </p>
       <p className={`reset-verdict ${advice?.verdict ?? ""}`} role="status">
         {message}

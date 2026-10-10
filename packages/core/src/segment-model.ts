@@ -70,6 +70,7 @@ export function buildSegmentModel(run: Run, options: SegmentModelOptions = {}): 
     .map((a) => a.id)
     .filter((id) => id > 0)
     .sort((a, b) => a - b);
+  const splitTimes = attemptSplitTimes(run);
 
   return segments.map((segment, i) => {
     let times = cleanSegmentTimes(run, i, options)
@@ -85,28 +86,55 @@ export function buildSegmentModel(run: Run, options: SegmentModelOptions = {}): 
     );
     const resets = reached.filter((id) => !segment.history.has(id)).length;
     const resetRate = reached.length ? resets / reached.length : 0;
+    const good = i === 0 ? null : fasterHalf(splitTimes[i - 1], reached);
     return {
       index: i,
       name: segment.name,
       times,
       thin: times.length < minSamples,
       resetRate,
-      mistakeRate: i === 0 ? resetRate : fasterHalfResetRate(run, i, reached, minSamples) ?? resetRate,
+      mistakeRate:
+        good && good.compared >= 2 * minSamples
+          ? good.ids.filter((id) => !segment.history.has(id)).length / good.ids.length
+          : resetRate,
     };
   });
 }
 
-/** Reset rate in segment i among the attempts that were in the faster half at split i - 1. */
-function fasterHalfResetRate(run: Run, i: number, reached: number[], minSamples: number): number | null {
-  const atSplit: Array<[id: number, time: Ms]> = [];
-  for (const id of reached) {
-    const times = run.segments.slice(0, i).map((s) => s.history.get(id));
-    if (times.every((t) => t != null)) atSplit.push([id, times.reduce<number>((a, t) => a + t!, 0)]);
+/**
+ * Each attempt's time at every split it reached with every split before it recorded:
+ * `splitTimes[j].get(id)` is attempt `id`'s time at split j. A skipped split leaves the attempt out from there on.
+ */
+export function attemptSplitTimes(run: Run): Array<Map<number, Ms>> {
+  const out: Array<Map<number, Ms>> = [];
+  let previous = new Map<number, Ms>();
+  run.segments.forEach((segment, j) => {
+    const current = new Map<number, Ms>();
+    for (const [id, t] of segment.history) {
+      if (t == null) continue;
+      const before = j === 0 ? 0 : previous.get(id);
+      if (before != null) current.set(id, before + t);
+    }
+    out.push(current);
+    previous = current;
+  });
+  return out;
+}
+
+/**
+ * The attempts among `ids` that were going well at a split: in the faster half of their times there
+ * (`atSplit` is one entry of attemptSplitTimes). Their resets after it are mostly mistakes rather than
+ * resets for being behind pace. `compared` is how many of `ids` had a time at the split.
+ */
+export function fasterHalf(atSplit: Map<number, Ms>, ids: number[]): { compared: number; ids: number[] } {
+  const timed: Array<[id: number, time: Ms]> = [];
+  for (const id of ids) {
+    const t = atSplit.get(id);
+    if (t != null) timed.push([id, t]);
   }
-  if (atSplit.length < 2 * minSamples) return null;
-  const median = quantile(atSplit.map(([, t]) => t).sort((a, b) => a - b), 0.5);
-  const faster = atSplit.filter(([, t]) => t <= median);
-  return faster.filter(([id]) => !run.segments[i].history.has(id)).length / faster.length;
+  if (timed.length === 0) return { compared: 0, ids: [] };
+  const median = quantile(timed.map(([, t]) => t).sort((a, b) => a - b), 0.5);
+  return { compared: timed.length, ids: timed.filter(([, t]) => t <= median).map(([id]) => id) };
 }
 
 /** This segment's duration in the PB, or null if the PB skipped a split around it. */
