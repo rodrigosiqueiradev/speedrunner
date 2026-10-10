@@ -36,7 +36,7 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
   const run = view.ctx?.run;
 
   return (
-    <div className="live-overlay">
+    <div className="live-overlay" style={{ background: config.style.background }}>
       {file === null && (
         <p className="live-card-empty">
           Choose a split file on the{" "}
@@ -54,6 +54,7 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
           session={view.session}
           status={view.status}
           choices={config.stats}
+          look={config.style}
         />
       )}
     </div>

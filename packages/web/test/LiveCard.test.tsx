@@ -50,3 +50,30 @@ describe("live stats card", () => {
     expect(normalizeChoices(null)).toEqual(DEFAULT_CHOICES);
   });
 });
+
+describe("card style", () => {
+  it("falls back to the standard look for anything missing or malformed", async () => {
+    const { DEFAULT_STYLE, normalizeStyle } = await import("../src/live/style");
+    expect(normalizeStyle(undefined)).toEqual(DEFAULT_STYLE);
+    const s = normalizeStyle({ background: "#000000", text: "red", valueSize: 400, labelSize: "big" });
+    expect(s.background).toBe("#000000");
+    expect(s.text).toBe(DEFAULT_STYLE.text);
+    expect(s.valueSize).toBe(48);
+    expect(s.labelSize).toBe(DEFAULT_STYLE.labelSize);
+  });
+
+  it("warns about colours that are hard to read on the background", async () => {
+    const { DEFAULT_STYLE, lowContrast } = await import("../src/live/style");
+    expect(lowContrast(DEFAULT_STYLE)).toEqual([]);
+    expect(lowContrast({ ...DEFAULT_STYLE, text: "#1a2333" })).toEqual(["Values"]);
+  });
+
+  it("applies the style to the card", () => {
+    const stats = liveStats(ctx, { phase: "NotRunning", splitIndex: -1, currentTime: null, splitTimes: [] });
+    const look = { background: "#00ff00", text: "#000000", labels: "#222222", ahead: "#0000ff", gold: "#aa8800", down: "#ff0000", valueSize: 30, labelSize: 16 };
+    render(<LiveCard title="x" stats={stats} session={EMPTY_SESSION} status={null} choices={DEFAULT_CHOICES} look={look} />);
+    const card = screen.getByRole("region", { name: "Live stats" });
+    expect(card.style.getPropertyValue("--card-bg")).toBe("#00ff00");
+    expect(card.style.getPropertyValue("--live-value-size")).toBe("30px");
+  });
+});

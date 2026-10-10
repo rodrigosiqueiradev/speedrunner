@@ -1,6 +1,7 @@
 import type { LiveSession, LiveStats } from "@speedrunner/core";
 import type { FeedStatus } from "../live/feeds";
 import { STAT_BY_ID, type StatChoice } from "../live/stats";
+import { cardStyleVars, DEFAULT_STYLE, type CardStyle } from "../live/style";
 import { TrendDownIcon, TrendUpIcon } from "./Icons";
 
 /** The live stats card: the runner's chosen stats, in their order. Also the whole overlay window. */
@@ -10,16 +11,18 @@ export function LiveCard({
   session,
   status,
   choices,
+  look = DEFAULT_STYLE,
 }: {
   title: string;
   stats: LiveStats;
   session: LiveSession;
   status: FeedStatus | null;
   choices: StatChoice[];
+  look?: CardStyle;
 }) {
   const shown = choices.filter((c) => c.shown).map((c) => STAT_BY_ID.get(c.id)!);
   return (
-    <section className="live-card" aria-label="Live stats">
+    <section className="live-card" aria-label="Live stats" style={cardStyleVars(look)}>
       <header className="live-card-head">
         <span className="live-card-title">{title}</span>
         <StatusDot status={status} />

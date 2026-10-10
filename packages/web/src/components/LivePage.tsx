@@ -2,6 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { LIVE_RUN_KEY, loadLiveConfig, saveLiveConfig, type LiveConfig } from "../live/config";
 import { DEFAULT_LIVESPLIT_URL, DEMO_SPEEDS, type DemoSpeed } from "../live/feeds";
 import { DEFAULT_CHOICES, LIVE_STATS, STAT_BY_ID, type StatChoice } from "../live/stats";
+import {
+  DEFAULT_STYLE,
+  LABEL_SIZES,
+  STYLE_COLOURS,
+  VALUE_SIZES,
+  isDefaultStyle,
+  lowContrast,
+  type CardStyle,
+} from "../live/style";
 import { useLive } from "../live/useLive";
 import { isDesktop } from "../platform";
 import { loadSplitFiles, putSplitFile, type StoredSplit } from "../splitFiles";
@@ -303,11 +312,26 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
               {announcement}
             </p>
           </section>
+          <StyleSettings
+            look={config.style}
+            onChange={(style) => update({ style })}
+            onReset={() => {
+              update({ style: DEFAULT_STYLE });
+              setAnnouncement("Card style reset to the standard look.");
+            }}
+          />
         </div>
 
         <div className="live-preview">
           {view.stats && (
-            <LiveCard title={title} stats={view.stats} session={view.session} status={view.status} choices={config.stats} />
+            <LiveCard
+              title={title}
+              stats={view.stats}
+              session={view.session}
+              status={view.status}
+              choices={config.stats}
+              look={config.style}
+            />
           )}
           <p className="live-preview-foot">
             <button onClick={openOverlay}>Open as overlay</button>
@@ -329,5 +353,57 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
         ))}
       </section>
     </main>
+  );
+}
+
+/** Colours and text sizes for the card, used by the preview and the overlay alike. */
+function StyleSettings({ look, onChange, onReset }: { look: CardStyle; onChange: (s: CardStyle) => void; onReset: () => void }) {
+  const hard = lowContrast(look);
+  return (
+    <section className="block live-block" aria-labelledby="live-style-title">
+      <div className="live-stats-head">
+        <h2 id="live-style-title">Card style</h2>
+        <button className="link-button text-link" disabled={isDefaultStyle(look)} onClick={onReset}>
+          Reset to standard
+        </button>
+      </div>
+      <ul className="live-style-colours" aria-label="Colours">
+        {STYLE_COLOURS.map(({ key, label }) => (
+          <li key={key}>
+            <label>
+              <input type="color" value={look[key] as string} onChange={(e) => onChange({ ...look, [key]: e.target.value })} />
+              {label}
+            </label>
+          </li>
+        ))}
+      </ul>
+      <div className="live-style-sizes">
+        <label htmlFor="live-value-size">Value size</label>
+        <input
+          id="live-value-size"
+          type="range"
+          min={VALUE_SIZES.min}
+          max={VALUE_SIZES.max}
+          value={look.valueSize}
+          onChange={(e) => onChange({ ...look, valueSize: Number(e.target.value) })}
+        />
+        <output htmlFor="live-value-size">{look.valueSize}px</output>
+        <label htmlFor="live-label-size">Label size</label>
+        <input
+          id="live-label-size"
+          type="range"
+          min={LABEL_SIZES.min}
+          max={LABEL_SIZES.max}
+          value={look.labelSize}
+          onChange={(e) => onChange({ ...look, labelSize: Number(e.target.value) })}
+        />
+        <output htmlFor="live-label-size">{look.labelSize}px</output>
+      </div>
+      {hard.length > 0 && (
+        <p className="live-style-warning" role="status">
+          Hard to read on this background: {hard.join(", ").toLowerCase()}.
+        </p>
+      )}
+    </section>
   );
 }

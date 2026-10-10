@@ -1,5 +1,6 @@
 import { DEFAULT_LIVESPLIT_URL, type DemoSpeed } from "./feeds";
 import { normalizeChoices, type StatChoice } from "./stats";
+import { normalizeStyle, type CardStyle } from "./style";
 
 /** The live page's settings, kept on this computer so the overlay window opens the same way. */
 export interface LiveConfig {
@@ -7,6 +8,7 @@ export interface LiveConfig {
   url: string;
   speed: DemoSpeed;
   stats: StatChoice[];
+  style: CardStyle;
 }
 
 const KEY = "speedrunner.live.v1";
@@ -27,6 +29,7 @@ export function loadLiveConfig(): LiveConfig {
     url: typeof saved.url === "string" && saved.url ? saved.url : DEFAULT_LIVESPLIT_URL,
     speed: saved.speed === "real" || saved.speed === "faster" ? saved.speed : "fast",
     stats: normalizeChoices(saved.stats),
+    style: normalizeStyle(saved.style),
   };
 }
 
