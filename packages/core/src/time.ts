@@ -19,9 +19,10 @@ export function parseTime(raw: string | undefined | null): Ms | null {
 export function formatTime(ms: Ms | null, decimals = 2): string {
   if (ms == null) return "-";
   const sign = ms < 0 ? "-" : "";
-  // Round to the shown precision first, so 59.999 reads as 1:00.00 rather than 0:60.00.
+  // Cut to the shown precision first, as LiveSplit does: 3:11.265 reads 3:11.26 there too, and
+  // 39:59.995 stays under 40 minutes. (The small epsilon keeps 191265 from reading as 191264.99.)
   const unit = 10 ** (3 - decimals);
-  const abs = Math.round(Math.abs(ms) / unit) * unit;
+  const abs = Math.floor(Math.abs(ms) / unit + 1e-9) * unit;
   const hours = Math.floor(abs / 3_600_000);
   const minutes = Math.floor((abs % 3_600_000) / 60_000);
   const seconds = ((abs % 60_000) / 1000).toFixed(decimals);

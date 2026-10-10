@@ -36,7 +36,7 @@ describe("Goal planner", () => {
   it("plans the next round time under the PB", async () => {
     const goal = await loadSample();
     expect(within(goal).getByLabelText("Goal: sub")).toHaveProperty("value", "40:00");
-    expect(goal.textContent).toMatch(/Sub 40:00 needs 1\.52s: 1\.13s from Troubled Waters, 0\.29s from Don't Mind Me and 0\.11s from WatchYr<3Die\./);
+    expect(goal.textContent).toMatch(/Sub 40:00 needs 1\.51s: 1\.13s from Troubled Waters, 0\.29s from Don't Mind Me and 0\.10s from WatchYr<3Die\./);
     expect(goal.textContent).toMatch(/about 1 in 2 of your recent attempts/);
     expect(within(goal).getAllByRole("row")).toHaveLength(4);
   });
@@ -44,7 +44,7 @@ describe("Goal planner", () => {
   it("says when a goal is beyond the sum of best", async () => {
     const goal = await loadSample();
     fireEvent.change(within(goal).getByLabelText("Goal: sub"), { target: { value: "39:00" } });
-    expect(goal.textContent).toMatch(/Sub 39:00 is 6\.37s faster than every segment at its gold/);
+    expect(goal.textContent).toMatch(/Sub 39:00 is 6\.36s faster than every segment at its gold/);
     expect(within(goal).queryByRole("table")).toBeNull();
   });
 

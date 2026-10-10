@@ -43,7 +43,7 @@ describe("live stats timing method", () => {
     vi.stubGlobal("WebSocket", fakeLiveSplit("GameTime"));
     const { result } = renderHook(() => useLive(xml, { ...config, timing: "RealTime" }));
     await waitFor(() => expect(result.current.timing).toEqual({ method: "GameTime", fromLiveSplit: true, choice: true }));
-    // The sample's game time PB is 37:37.97, its real time PB 40:01.52.
+    // The sample's game time PB is 37:37.96, its real time PB 40:01.51.
     expect(result.current.ctx?.personalBest).toBeLessThan(38 * 60_000);
   });
 

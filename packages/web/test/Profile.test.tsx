@@ -55,7 +55,7 @@ describe("profile timing and updates", () => {
     upload([sample, "dishonored.lss"]);
     const section = await screen.findByRole("region", { name: "How well you run this category" });
     fireEvent.click(screen.getByRole("button", { name: "Game time" }));
-    await waitFor(() => expect(screen.getAllByText("37:37.97").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByText("37:37.96").length).toBeGreaterThan(0));
     fireEvent.click(within(section).getByRole("button", { name: "Add to your profile" }));
     expect(section.textContent).toMatch(/This category is in your profile/);
 
@@ -105,7 +105,7 @@ describe("profile", () => {
 
     fireEvent.change(screen.getByLabelText("Reference time"), { target: { value: "36:00" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    // 36:00 ÷ 40:01.52 = 89.9%.
+    // 36:00 ÷ 40:01.51 = 89.9%.
     expect(screen.getByRole("region", { name: "Dishonored Any%" }).textContent).toMatch(/at 89\.9% of the reference pace/);
 
     unmount();

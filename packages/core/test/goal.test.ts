@@ -99,8 +99,11 @@ describe("comparisons", () => {
   const sample = parseLss(xml);
   const a = analyzeRun(sample);
 
-  it("rounds before formatting so a time never shows 60 seconds", () => {
-    expect(formatTime(2_399_999)).toBe("40:00.00");
+  it("cuts times like LiveSplit, so a time just under a round one stays under it", () => {
+    expect(formatTime(2_399_999)).toBe("39:59.99");
+    expect(formatTime(191_265)).toBe("3:11.26");
+    expect(formatTime(59_999)).toBe("59.99");
+    expect(formatTime(-1_239)).toBe("-1.23");
   });
 
   it("formats times the way LiveSplit writes them", () => {

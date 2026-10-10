@@ -21,7 +21,7 @@ describe("parseTime", () => {
 
 describe("formatTime", () => {
   it("formats like a timer", () => {
-    expect(formatTime(83_456)).toBe("1:23.46");
+    expect(formatTime(83_456)).toBe("1:23.45");
     expect(formatTime(3_723_450)).toBe("1:02:03.45");
     expect(formatTime(5_000)).toBe("5.00");
     expect(formatTime(null)).toBe("-");

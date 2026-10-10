@@ -30,12 +30,12 @@ describe("App", () => {
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [file] } });
 
     await waitFor(() => expect(screen.getByRole("heading", { name: /Dishonored/ })).toBeTruthy());
-    expect(screen.getAllByText("40:01.52").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("40:01.51").length).toBeGreaterThan(0);
     expect(screen.getAllByText("gold ignored").length).toBeGreaterThan(0);
 
     // Switching to game time recomputes the PB.
     fireEvent.click(screen.getByRole("button", { name: "Game time" }));
-    await waitFor(() => expect(screen.getAllByText("37:37.97").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByText("37:37.96").length).toBeGreaterThan(0));
   });
 
   it("shows session insights only where the data backs them", async () => {
@@ -75,7 +75,7 @@ describe("App", () => {
     // The How it's calculated tab works the formula through with the loaded run.
     fireEvent.click(screen.getByRole("tab", { name: "How it's calculated" }));
     const how = screen.getByRole("region", { name: "How it's calculated" });
-    expect(how.textContent).toMatch(/40:01\.52 − .* = 39:49\.37/);
+    expect(how.textContent).toMatch(/40:01\.51 − .* = 39:49\.37/);
     expect(how.textContent).toMatch(/latest half of your clean times \(at least 10, at most 50\)/);
   });
 
