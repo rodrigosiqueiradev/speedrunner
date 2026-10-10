@@ -70,6 +70,11 @@ describe("parseLss", () => {
     expect(analyzeRun(run).advice.every((a) => !/[{}]|usual -/.test(a.message))).toBe(true);
   });
 
+  it("decodes numeric character references in names", () => {
+    const run = parseLss(small.replace(/<Name>[^<]*<\/Name>/, "<Name>A &#39;b&#x27; &amp; c</Name>"));
+    expect(run.segments[0].name).toBe("A 'b' & c");
+  });
+
   it("rejects files that are not splits", () => {
     expect(() => parseLss("<Layout></Layout>")).toThrow(/Run/);
   });

@@ -9,6 +9,8 @@ const parser = new XMLParser({
   attributeNamePrefix: "@",
   parseTagValue: false,
   parseAttributeValue: false,
+  // Character references too (&#39;, &#x27;), which hand-edited files and other tools write.
+  htmlEntities: true,
   isArray: (name) => ARRAY_TAGS.has(name),
 });
 
