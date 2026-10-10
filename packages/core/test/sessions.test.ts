@@ -28,7 +28,7 @@ interface PlannedAttempt {
 
 /** Builds a run (6 one-minute segments by default) from planned attempts, with ±2% noise per segment. */
 function plannedRun(plan: PlannedAttempt[], base = [60_000, 60_000, 60_000, 60_000, 60_000, 60_000]): Run {
-  const segments = base.map((_, i) => ({ name: `S${i + 1}`, pbSplit: null, gold: null, history: new Map<number, number | null>() }));
+  const segments = base.map((_, i) => ({ name: `S${i + 1}`, rawName: `S${i + 1}`, pbSplit: null, gold: null, history: new Map<number, number | null>() }));
   const attempts = plan.map((p, k) => {
     const id = k + 1;
     const stop = p.resetAfter ?? base.length;

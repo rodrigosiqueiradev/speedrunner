@@ -51,8 +51,10 @@ export function parseLss(xml: string, options: ParseOptions = {}): Run {
       // LiveSplit stores non-positive ids for imported/merged history; they are not real attempts.
       if (id > 0) history.set(id, read(t));
     }
+    const rawName = text(s.Name) ?? "";
     return {
-      name: text(s.Name) ?? "",
+      name: segmentDisplayName(rawName),
+      rawName,
       pbSplit: read(pb),
       gold: read(s.BestSegmentTime),
       history,
@@ -93,4 +95,9 @@ function text(node: unknown): string | undefined {
 /** True when the file has any game times, so a choice between real time and game time means something. */
 export function hasGameTime(xml: string): boolean {
   return /<GameTime>\s*[\d-]/.test(xml);
+}
+
+/** A segment name without LiveSplit's subsplit markers: "-Name" and "{Section}Name" both read "Name". */
+export function segmentDisplayName(name: string): string {
+  return name.replace(/^-/, "").replace(/^\{[^}]*\}\s*/, "") || name;
 }

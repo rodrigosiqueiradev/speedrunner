@@ -21,6 +21,8 @@ export interface AnalyzeOptions {
 export interface SegmentStats {
   index: number;
   name: string;
+  /** The name with subsplit markers, as the split file has it (see Segment). */
+  rawName: string;
   /** This segment's time in the PB, or null if the PB skipped a split around it. */
   pbTime: Ms | null;
   /** Best segment ever, from LiveSplit's stored gold and the history. */
@@ -131,6 +133,7 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
     return {
       index: i,
       name: segment.name,
+      rawName: segment.rawName,
       pbTime,
       gold,
       samples: all.length,

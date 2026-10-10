@@ -63,7 +63,8 @@ export function useLive(xml: string | null, config: Pick<LiveConfig, "source" | 
 
   // LiveSplit is followed by its segment names, not the parsed file, so switching clocks
   // re-reads the file without dropping the connection.
-  const names = ctx ? JSON.stringify(ctx.run.segments.map((s) => s.name)) : null;
+  // LiveSplit reports names as the file has them, subsplit markers included.
+  const names = ctx ? JSON.stringify(ctx.run.segments.map((s) => s.rawName)) : null;
   const demoCtx = config.source === "demo" ? ctx : null;
   useEffect(() => {
     if (names == null) return;

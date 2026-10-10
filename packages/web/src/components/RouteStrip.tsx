@@ -27,7 +27,7 @@ export function RouteStrip({ segments, onSelect }: { segments: SegmentStats[]; o
         {segments.map((s) => {
           const save = s.realisticTimeSave ?? 0;
           const r = rank.get(s.index);
-          const name = displayName(s.name);
+          const name = s.name;
           return (
             <button
               key={s.index}
@@ -71,10 +71,10 @@ export function RouteStrip({ segments, onSelect }: { segments: SegmentStats[]; o
                 <button onClick={() => onSelect(s.index)}>
                   <b>{i + 1}</b>
                   <span>
-                    {sectionOf(s.index) && sectionOf(s.index) !== displayName(s.name) && (
+                    {sectionOf(s.index) && sectionOf(s.index) !== s.name && (
                       <span className="route-top-section">{sectionOf(s.index)} · </span>
                     )}
-                    {displayName(s.name)}
+                    {s.name}
                   </span>
                   <span className="route-top-save">{formatSave(s.realisticTimeSave)}</span>
                 </button>
@@ -87,30 +87,28 @@ export function RouteStrip({ segments, onSelect }: { segments: SegmentStats[]; o
   );
 }
 
-/** LiveSplit subsplits: "-Name" is a split inside a section and "{Section}Name" closes it. */
-export function displayName(name: string): string {
-  return name.replace(/^-/, "").replace(/^\{[^}]*\}\s*/, "") || name;
-}
-
 interface Section {
   name: string;
   start: number;
   time: number;
 }
 
-/** Groups subsplits into their sections, or returns null when the run doesn't use subsplits. */
-export function routeSections(segments: SegmentStats[]): Section[] | null {
-  if (!segments.some((s) => /^\{[^}]*\}/.test(s.name))) return null;
+/**
+ * Groups subsplits into their sections, or returns null when the run doesn't use subsplits.
+ * LiveSplit marks a split inside a section "-Name" and the one closing it "{Section}Name".
+ */
+export function routeSections(segments: Array<Pick<SegmentStats, "index" | "rawName" | "pbTime">>): Section[] | null {
+  if (!segments.some((s) => /^\{[^}]*\}/.test(s.rawName))) return null;
   const out: Section[] = [];
   let open: Section | null = null;
   for (const s of segments) {
     const t = s.pbTime ?? 0;
-    const closes = s.name.match(/^\{([^}]*)\}/);
+    const closes = s.rawName.match(/^\{([^}]*)\}/);
     if (!open) open = { name: "", start: s.index, time: 0 };
     open.time += t;
     if (closes) open.name = closes[1].trim();
-    else if (!s.name.startsWith("-")) open.name = s.name;
-    if (closes || !s.name.startsWith("-")) {
+    else if (!s.rawName.startsWith("-")) open.name = s.rawName;
+    if (closes || !s.rawName.startsWith("-")) {
       out.push(open);
       open = null;
     }

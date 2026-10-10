@@ -12,7 +12,13 @@ export interface Attempt {
 }
 
 export interface Segment {
+  /** The name to show, without LiveSplit's subsplit markers. */
   name: string;
+  /**
+   * The name as the split file has it. Subsplits mark a split inside a section "-Name" and the
+   * split closing a section "{Section}Name"; LiveSplit's server reports names this way too.
+   */
+  rawName: string;
   /** Cumulative split time in the personal best, or null if the PB skipped this split. */
   pbSplit: Ms | null;
   /** Best ever time for this segment as stored by LiveSplit (the "gold"). */

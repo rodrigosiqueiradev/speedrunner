@@ -1,14 +1,14 @@
-import type { SegmentStats } from "@speedrunner/core";
+import { segmentDisplayName } from "@speedrunner/core";
 import { describe, expect, it } from "vitest";
-import { displayName, routeSections } from "../src/components/RouteStrip";
+import { routeSections } from "../src/components/RouteStrip";
 
-const seg = (index: number, name: string, pbTime: number) => ({ index, name, pbTime }) as SegmentStats;
+const seg = (index: number, rawName: string, pbTime: number) => ({ index, rawName, pbTime });
 
-describe("displayName", () => {
+describe("segmentDisplayName", () => {
   it("drops LiveSplit's subsplit markers", () => {
-    expect(displayName("-Forest gate")).toBe("Forest gate");
-    expect(displayName("{Forest} Boss")).toBe("Boss");
-    expect(displayName("Troubled Waters")).toBe("Troubled Waters");
+    expect(segmentDisplayName("-Forest gate")).toBe("Forest gate");
+    expect(segmentDisplayName("{Forest} Boss")).toBe("Boss");
+    expect(segmentDisplayName("Troubled Waters")).toBe("Troubled Waters");
   });
 });
 

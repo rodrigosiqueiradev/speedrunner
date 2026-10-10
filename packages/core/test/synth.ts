@@ -11,6 +11,7 @@ export function synthRun(opts: {
   const finals = new Map<number, number>();
   const segments = base.map((_, i) => ({
     name: `S${i + 1}`,
+    rawName: `S${i + 1}`,
     pbSplit: null as number | null,
     gold: null,
     history: new Map<number, number | null>(),

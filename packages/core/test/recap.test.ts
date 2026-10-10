@@ -33,8 +33,8 @@ function run(attempts: Array<[string, number, number?]>): Run {
     attemptCount: list.length,
     attempts: list,
     segments: [
-      { name: "Forest", pbSplit: null, gold: null, history: s1 },
-      { name: "Boss", pbSplit: null, gold: null, history: s2 },
+      { name: "Forest", rawName: "Forest", pbSplit: null, gold: null, history: s1 },
+      { name: "Boss", rawName: "Boss", pbSplit: null, gold: null, history: s2 },
     ],
     comparisons: [],
   };

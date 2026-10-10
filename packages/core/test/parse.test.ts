@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { formatTime, parseLss, parseTime } from "../src/index.js";
+import { analyzeRun, formatTime, parseLss, parseTime } from "../src/index.js";
 
 const small = readFileSync(new URL("./fixtures/small.lss", import.meta.url), "utf8");
 
@@ -57,6 +57,17 @@ describe("parseLss", () => {
     const gt = parseLss(gameTimeOnly);
     expect(gt.timingMethod).toBe("GameTime");
     expect(gt.segments[2].pbSplit).toBe(180_000);
+  });
+
+  it("shows subsplit names without their markers, keeping the file's names for LiveSplit", () => {
+    let n = 0;
+    const subsplits = small.replace(/<Name>([^<]*)<\/Name>/g, (m, name) => (n++ === 0 ? `<Name>-${name}</Name>` : n === 2 ? `<Name>{Forest}${name}</Name>` : m));
+    const run = parseLss(subsplits);
+    expect(run.segments[0].rawName).toMatch(/^-/);
+    expect(run.segments[0].name).toBe(run.segments[0].rawName.slice(1));
+    expect(run.segments[1].rawName).toMatch(/^\{Forest\}/);
+    expect(run.segments[1].name).not.toContain("{");
+    expect(analyzeRun(run).advice.every((a) => !/[{}]|usual -/.test(a.message))).toBe(true);
   });
 
   it("rejects files that are not splits", () => {

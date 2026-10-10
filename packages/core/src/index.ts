@@ -1,5 +1,5 @@
 export * from "./types.js";
-export { parseLss, hasGameTime, type ParseOptions } from "./parse.js";
+export { parseLss, hasGameTime, segmentDisplayName, type ParseOptions } from "./parse.js";
 export { parseTime, formatTime } from "./time.js";
 export * from "./analyze.js";
 export * from "./score.js";
