@@ -6,7 +6,7 @@ import { useLive } from "../live/useLive";
 import { isDesktop } from "../platform";
 import { loadSplitFiles, putSplitFile, type StoredSplit } from "../splitFiles";
 import { FilePicker, type FilePickerHandle } from "./FilePicker";
-import { ArrowDownIcon, ArrowUpIcon, GripIcon } from "./Icons";
+import { ArrowDownIcon, ArrowUpIcon } from "./Icons";
 import { Entry } from "./HowItWorks";
 import { InfoTip } from "./InfoTip";
 import { LiveCard } from "./LiveCard";
@@ -89,30 +89,6 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
     const atEnd = by < 0 ? to === 0 : to === next.length - 1;
     focusAfter.current = `[data-move="${item.id}-${atEnd ? (by < 0 ? "down" : "up") : by < 0 ? "up" : "down"}"]`;
   };
-  // Dragging a row by its handle reorders the card as the pointer crosses the middle of another row.
-  const [dragging, setDragging] = useState<string | null>(null);
-  const list = useRef<HTMLOListElement>(null);
-  const dragTo = (id: string, y: number) => {
-    const rows = Array.from(list.current?.querySelectorAll<HTMLElement>("[data-stat-row]") ?? []);
-    const others = rows.filter((r) => r.dataset.statRow !== id);
-    const to = others.filter((r) => {
-      const box = r.getBoundingClientRect();
-      return box.top + box.height / 2 < y;
-    }).length;
-    const from = shown.findIndex((c) => c.id === id);
-    if (from < 0 || to === from) return;
-    const next = [...shown];
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    setLists(next, hidden);
-  };
-  const endDrag = () => {
-    if (!dragging) return;
-    const at = shown.findIndex((c) => c.id === dragging);
-    setAnnouncement(`${label(dragging)} moved to ${at + 1} of ${shown.length}.`);
-    setDragging(null);
-  };
-
   const show = (id: string) => {
     setLists([...shown, { id, shown: true }], hidden.filter((c) => c.id !== id));
     setAnnouncement(`${label(id)} added to the card, at ${shown.length + 1} of ${shown.length + 1}.`);
@@ -270,26 +246,11 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
             {shown.length === 0 ? (
               <p className="section-note">No stats yet. Add some from the list below.</p>
             ) : (
-              <ol ref={list} className="live-choices" aria-label="Stats on the card, in order">
+              <ol className="live-choices" aria-label="Stats on the card, in order">
                 {shown.map((c, i) => {
                   const def = STAT_BY_ID.get(c.id)!;
                   return (
-                    <li key={c.id} data-stat-row={c.id} data-dragging={dragging === c.id || undefined}>
-                      <span
-                        className="live-grip"
-                        aria-hidden="true"
-                        title="Drag to reorder"
-                        onPointerDown={(e) => {
-                          e.preventDefault();
-                          e.currentTarget.setPointerCapture(e.pointerId);
-                          setDragging(c.id);
-                        }}
-                        onPointerMove={(e) => dragging === c.id && dragTo(c.id, e.clientY)}
-                        onPointerUp={endDrag}
-                        onPointerCancel={endDrag}
-                      >
-                        <GripIcon />
-                      </span>
+                    <li key={c.id}>
                       <span className="live-rank">{i + 1}</span>
                       <label>
                         <input type="checkbox" checked onChange={() => hide(c.id)} />

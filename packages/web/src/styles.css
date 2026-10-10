@@ -672,10 +672,6 @@ button:disabled { opacity: 0.5; cursor: default; }
 .live-stats-head .text-link { font-size: 0.875rem; }
 .live-choices { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); max-width: 560px; }
 .live-choices li { display: flex; align-items: center; gap: var(--s2); min-height: 44px; padding: 0 var(--s1); border-bottom: 1px solid var(--line); }
-.live-grip { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 32px; margin-left: -4px; color: var(--ink-3); cursor: grab; touch-action: none; border-radius: 4px; }
-.live-grip:hover { color: var(--ink); background: var(--hover); }
-.live-choices li[data-dragging] { background: var(--surface); box-shadow: var(--shadow-pop); border-radius: 6px; position: relative; z-index: 1; }
-.live-choices li[data-dragging] .live-grip { cursor: grabbing; color: var(--ink); }
 .live-rank { width: 20px; font-family: var(--mono); font-size: 0.75rem; font-weight: 500; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .live-choices label { display: flex; align-items: center; gap: var(--s3); cursor: pointer; font-weight: 500; }
 .live-choices input { width: 16px; height: 16px; accent-color: var(--accent-fill); }

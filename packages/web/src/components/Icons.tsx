@@ -60,9 +60,3 @@ export const TrendDownIcon = ({ label }: { label: string }) => (
     <path d="M5 8.5 1 2h8z" fill="currentColor" />
   </svg>
 );
-
-export const GripIcon = () => (
-  <svg {...base} strokeWidth={2}>
-    <path d="M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01" />
-  </svg>
-);
