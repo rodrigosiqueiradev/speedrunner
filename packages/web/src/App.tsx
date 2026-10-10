@@ -17,6 +17,7 @@ import { HowItWorks } from "./components/HowItWorks";
 import { PbOddsSummary, ResetCoach } from "./components/PbCoach";
 import { PracticePlan } from "./components/PracticePlan";
 import { Profile } from "./components/Profile";
+import { ProfileRuns } from "./components/ProfileRuns";
 import { YearInRuns } from "./components/YearInRuns";
 import { UploadIcon } from "./components/Icons";
 import { InfoTip, revealExplanation, SHOW_PANEL } from "./components/InfoTip";
@@ -285,22 +286,7 @@ export function App() {
 
         <FilePicker ref={picker} onLoad={load} onError={setError} compact={!!ok} />
 
-        {!ok && savedRuns.length > 0 && (
-          <section className="block profile-runs" aria-labelledby="profile-runs-title">
-            <h2 id="profile-runs-title">Or open a run from your profile</h2>
-            <ul className="recap-files">
-              {savedRuns.map((e) => (
-                <li key={e.key}>
-                  <span>
-                    {`${e.score.game || "Unknown game"} ${e.score.category}`.trim()}{" "}
-                    <span className="recap-file">{profileFiles[e.key].fileName}</span>
-                  </span>
-                  <button onClick={() => openFromProfile(e.key)}>Open</button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {!ok && savedRuns.length > 0 && <ProfileRuns entries={savedRuns} onOpen={openFromProfile} />}
 
         {error && (
           <p className="error" role="alert">

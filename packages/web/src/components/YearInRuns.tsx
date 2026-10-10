@@ -12,6 +12,7 @@ import {
   loadCardFonts,
 } from "../recapCard";
 import { RECAP_DOCS } from "../recap-explain";
+import { RECAP_FILES_DOC } from "../saved-files-explain";
 import { saveFile } from "../download";
 import { canCopyImage, canvasToPng, copyPng } from "../shareImage";
 import { FilePicker, type FilePickerHandle } from "./FilePicker";
@@ -53,10 +54,11 @@ const tryParse = (xml: string): Run | null => {
   }
 };
 
+// Profile files are the usual case, so only the others are flagged.
 const SOURCE_NOTE: Record<Source, string | null> = {
-  profile: "from your profile",
+  profile: null,
   open: "open in Analyse a run",
-  added: null,
+  added: "added here",
 };
 
 /** A yearly recap across the runner's split files, drawn as an image they can save and share. */
@@ -79,19 +81,22 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
 
   // One file per game and category, so attempts aren't counted twice: a file added here wins, then the
   // profile's, then the one open on the run page.
-  const files = useMemo(() => {
+  const candidates = useMemo(() => {
     const byKey = new Map<string, RecapFile>();
     if (open && openRun) byKey.set(keyOf(openRun), { fileName: open.fileName, run: openRun, source: "open" });
     for (const f of profileRuns) byKey.set(keyOf(f.run), f);
     for (const f of choices.added) byKey.set(keyOf(f.run), { ...f, source: "added" });
-    return [...byKey.entries()].filter(([k]) => !choices.removed.includes(k)).map(([, f]) => f);
-  }, [open, openRun, profileRuns, choices]);
+    return [...byKey.values()];
+  }, [open, openRun, profileRuns, choices.added]);
+  const files = useMemo(() => candidates.filter((f) => !choices.removed.includes(keyOf(f.run))), [candidates, choices.removed]);
+  const leftOut = useMemo(() => candidates.filter((f) => choices.removed.includes(keyOf(f.run))), [candidates, choices.removed]);
   const [error, setError] = useState<string | null>(null);
   const [year, setYear] = useState<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
 
   const runs = useMemo(() => files.map((f) => f.run), [files]);
+  const yearsOf = useMemo(() => new Map(files.map((f) => [f, recapYears([f.run])])), [files]);
   const years = useMemo(() => recapYears(runs), [runs]);
   const shown = year != null && years.includes(year) ? year : (years[0] ?? null);
   const recap = useMemo(() => (shown == null ? null : yearRecap(runs, shown)), [runs, shown]);
@@ -161,6 +166,14 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
         </section>
         <FilePicker ref={picker} onLoad={add} onError={setError} multiple noSample title="Drop your split files here" />
         {errorLine}
+        {leftOut.length > 0 && (
+          <p className="section-foot recap-left-out">
+            You left out {leftOut.map((f) => categoryName(f.run)).join(", ")}.{" "}
+            <button className="link-button text-link" onClick={() => onChoicesChange({ ...choices, removed: [] })}>
+              Put {leftOut.length === 1 ? "it" : "them"} back
+            </button>
+          </p>
+        )}
         {files.length > 0 && (
           <p className="error" role="alert">
             {files.length === 1 ? "This file has" : "These files have"} no dated attempts, so there's no year to recap.
@@ -261,13 +274,16 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
             </p>
           )}
 
-          <h2 className="recap-subhead">Split files</h2>
+          <h2 className="recap-subhead title-with-tip">
+            {RECAP_FILES_DOC.label} <InfoTip doc={RECAP_FILES_DOC} />
+          </h2>
           <ul className="recap-files">
             {files.map((f) => (
               <li key={keyOf(f.run)}>
                 <span>
                   {categoryName(f.run)} <span className="recap-file">{f.fileName}</span>
                   {SOURCE_NOTE[f.source] && <span className="flag muted">{SOURCE_NOTE[f.source]}</span>}
+                  {!yearsOf.get(f)?.includes(recap.year) && <span className="flag muted">none in {recap.year}</span>}
                 </span>
                 <button
                   className="link-button remove"
@@ -277,9 +293,25 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
                       removed: [...choices.removed, keyOf(f.run)],
                     })
                   }
-                  aria-label={`Remove ${categoryName(f.run)}`}
+                  aria-label={
+                    f.source === "added" ? `Remove ${categoryName(f.run)}` : `Leave ${categoryName(f.run)} out of this recap`
+                  }
                 >
-                  Remove
+                  {f.source === "added" ? "Remove" : "Leave out"}
+                </button>
+              </li>
+            ))}
+            {leftOut.map((f) => (
+              <li key={keyOf(f.run)} className="left-out">
+                <span>
+                  {categoryName(f.run)} <span className="flag muted">left out</span>
+                </span>
+                <button
+                  className="link-button text-link"
+                  onClick={() => onChoicesChange({ ...choices, removed: choices.removed.filter((k) => k !== keyOf(f.run)) })}
+                  aria-label={`Put ${categoryName(f.run)} back in this recap`}
+                >
+                  Put back
                 </button>
               </li>
             ))}
@@ -296,6 +328,7 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
         {Object.values(RECAP_DOCS).map((doc) => (
           <Entry key={doc.id} doc={doc} />
         ))}
+        <Entry doc={RECAP_FILES_DOC} />
       </section>
     </main>
   );

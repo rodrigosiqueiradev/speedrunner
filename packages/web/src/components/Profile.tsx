@@ -1,11 +1,12 @@
 import { formatTime, overallScore, referencePace, type CategoryScore, type ComponentKey } from "@speedrunner/core";
-import { forwardRef, useState, type FormEvent } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState, type FormEvent } from "react";
 import { SCORE_METRICS, type ScoreDoc } from "../explain";
 import { formatScore, parseTypedTime } from "../format";
 import { localPlace } from "../platform";
 import { referenceOf, type ProfileEntry } from "../profile";
+import { SAVED_FILES_DOC } from "../saved-files-explain";
 import { FilePicker, type FilePickerHandle } from "./FilePicker";
-import { ScoreEntries } from "./HowItWorks";
+import { Entry, ScoreEntries } from "./HowItWorks";
 import { InfoTip } from "./InfoTip";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 
@@ -43,6 +44,8 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
   { entries, onAdd, onError, onRemove, canOpen, onOpen, onSetReference },
   picker,
 ) {
+  const filePicker = useRef<FilePickerHandle>(null);
+  useImperativeHandle(picker, () => ({ open: () => filePicker.current?.open() }));
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   // Firm scores first, best first; provisional ones after them.
   const rank = (e: ProfileEntry) => (e.score.score ?? -1) - (e.score.provisional ? 1000 : 0);
@@ -59,7 +62,7 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
             it, so different games sit on one scale, and your best five make your overall score.
           </p>
         </section>
-        <FilePicker ref={picker} onLoad={onAdd} onError={onError} multiple noSample title="Drop your split files here" />
+        <FilePicker ref={filePicker} onLoad={onAdd} onError={onError} multiple noSample title="Drop your split files here" />
       </>
     );
   }
@@ -75,7 +78,7 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
 
   return (
     <main className="results">
-      <FilePicker ref={picker} onLoad={onAdd} onError={onError} multiple compact />
+      <FilePicker ref={filePicker} onLoad={onAdd} onError={onError} multiple compact />
       <div className="run-head">
         <div>
           <h1 className="run-title">Runner profile</h1>
@@ -155,22 +158,20 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
             From {selected.fileName}, {selected.score.timingMethod === "GameTime" ? "game time" : "real time"},{" "}
             {selected.score.finishedAttempts.toLocaleString()} finished runs.
           </p>
-        </div>
-        <p className="section-foot profile-action">
-          {canOpen(selected.key) ? (
-            <>
+          <p className="detail-actions">
+            {canOpen(selected.key) ? (
               <button className="primary" onClick={() => onOpen(selected.key)}>
-                Open in Analyse a run
+                Analyse this run
               </button>
-              <span>Uses the copy of {selected.fileName} kept with your profile.</span>
-            </>
-          ) : (
-            <span>
-              This category was added before split files were kept with your profile. Add {selected.fileName} again to
-              open it from here and include it in Year in runs.
-            </span>
-          )}
-        </p>
+            ) : (
+              <>
+                <button onClick={() => filePicker.current?.open()}>Add {selected.fileName} again</button>
+                <span>Its split file isn't saved yet.</span>
+              </>
+            )}
+            <InfoTip doc={SAVED_FILES_DOC} />
+          </p>
+        </div>
         <ScoreBreakdown score={selected.score} />
         <Reference key={selected.key} entry={selected} onSet={(t) => onSetReference(selected.key, t)} />
         <p className="section-foot">
@@ -186,6 +187,7 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
           Everything is worked out from your split files {localPlace}. Examples use {title(selected.score)}.
         </p>
         <ScoreEntries score={selected.score} />
+        <Entry doc={SAVED_FILES_DOC} />
       </section>
     </main>
   );

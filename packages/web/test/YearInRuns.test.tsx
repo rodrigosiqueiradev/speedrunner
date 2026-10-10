@@ -81,8 +81,11 @@ describe("year in runs", () => {
     upload([kirby, "kirby.lss"]);
     expect(await screen.findByText("kirby.lss")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Remove Dishonored Any%" }));
+    fireEvent.click(screen.getByRole("button", { name: "Leave Dishonored Any% out of this recap" }));
     expect(screen.getByRole("alert").textContent).toMatch(/no dated attempts/);
+    // A file left out can be put back.
+    fireEvent.click(screen.getByRole("button", { name: "Put it back" }));
+    await screen.findByRole("heading", { name: "Year in runs 2017" });
   });
 });
 
@@ -99,11 +102,14 @@ describe("split files kept with the profile", () => {
     fireEvent.click(screen.getByRole("link", { name: "Year in runs" }));
     await screen.findByRole("heading", { name: "Year in runs 2017" });
     expect(screen.getByText("dishonored.lss")).toBeTruthy();
-    expect(screen.getByText("from your profile")).toBeTruthy();
+    // Leaving a profile file out of the recap keeps it in the profile, and it can be put back.
+    fireEvent.click(screen.getByRole("button", { name: "Leave Dishonored Any% out of this recap" }));
+    fireEvent.click(screen.getByRole("button", { name: "Put it back" }));
+    await screen.findByRole("heading", { name: "Year in runs 2017" });
 
     // The profile opens the category on the run page.
     fireEvent.click(screen.getByRole("link", { name: "Profile" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open in Analyse a run" }));
+    fireEvent.click(screen.getByRole("button", { name: "Analyse this run" }));
     expect(await screen.findByRole("heading", { name: /Dishonored/, level: 1 })).toBeTruthy();
     expect(document.querySelector(".run-meta")?.textContent).toMatch(/^dishonored\.lss · /);
   });
@@ -116,7 +122,8 @@ describe("split files kept with the profile", () => {
 
     render(<App />);
     const list = await screen.findByRole("region", { name: "Or open a run from your profile" });
-    fireEvent.click(within(list).getByRole("button", { name: "Open" }));
+    expect(list.textContent).toMatch(/PB \d/);
+    fireEvent.click(within(list).getByRole("button", { name: "Open Dishonored Any%" }));
     expect(await screen.findByRole("heading", { name: /Dishonored/, level: 1 })).toBeTruthy();
   });
 
@@ -124,8 +131,8 @@ describe("split files kept with the profile", () => {
     localStorage.setItem("speedrunner.profile.v3", JSON.stringify([await profileEntry()]));
     render(<App />);
     fireEvent.click(screen.getByRole("link", { name: "Profile" }));
-    expect(screen.getByText(/Add old\.lss again to open it from here/)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Open in Analyse a run" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Add old.lss again" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Analyse this run" })).toBeNull();
   });
 });
 
