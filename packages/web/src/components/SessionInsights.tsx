@@ -21,9 +21,9 @@ export function SessionInsights({ insights: r }: { insights: Insights }) {
     <>
       <p className="session-meta">
         <span className="session-meta-label">
-          {r.sessions.toLocaleString()} sessions <InfoTip doc={SESSION_DOCS.sessions} />
+          {r.sessions.toLocaleString("en-US")} sessions <InfoTip doc={SESSION_DOCS.sessions} />
         </span>{" "}
-        from {r.timedAttempts.toLocaleString()} attempts
+        from {r.timedAttempts.toLocaleString("en-US")} attempts
         {r.medianSessionMinutes != null && (
           <>
             {" "}

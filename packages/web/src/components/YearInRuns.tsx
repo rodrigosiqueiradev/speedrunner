@@ -251,7 +251,7 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
           </div>
           {undated > 0 && (
             <p className="section-note">
-              {undated.toLocaleString()} {undated === 1 ? "attempt has" : "attempts have"} no start time in the file, so{" "}
+              {undated.toLocaleString("en-US")} {undated === 1 ? "attempt has" : "attempts have"} no start time in the file, so{" "}
               {undated === 1 ? "it isn't" : "they aren't"} in any year.
             </p>
           )}

@@ -324,8 +324,8 @@ export function App() {
               }
               meta={
                 <>
-                  {loaded?.fileName} · {a.attemptCount.toLocaleString()} attempts ·{" "}
-                  {a.finishedAttempts.toLocaleString()} finished
+                  {loaded?.fileName} · {a.attemptCount.toLocaleString("en-US")} attempts ·{" "}
+                  {a.finishedAttempts.toLocaleString("en-US")} finished
                 </>
               }
             >

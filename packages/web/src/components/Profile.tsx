@@ -144,7 +144,7 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
         note={
           <>
             From {selected.fileName}, {selected.score.timingMethod === "GameTime" ? "game time" : "real time"},{" "}
-            {selected.score.finishedAttempts.toLocaleString()} finished runs.
+            {selected.score.finishedAttempts.toLocaleString("en-US")} finished runs.
           </>
         }
         actions={
