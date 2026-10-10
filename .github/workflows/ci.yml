@@ -1,5 +1,5 @@
 name: CI
-# Tests only. The desktop apps are built by desktop.yml, on version tags or on demand.
+# Typecheck and tests. The desktop apps are built by desktop.yml, on version tags or on demand.
 on:
   push:
     branches: [main]
@@ -14,4 +14,6 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Vitest strips types without checking them, so type errors are caught here.
+      - run: npm run typecheck
       - run: npm test
