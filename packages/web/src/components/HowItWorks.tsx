@@ -1,7 +1,8 @@
-import type { CategoryScore, RunAnalysis } from "@speedrunner/core";
+import type { CategoryScore, PbOdds, RunAnalysis } from "@speedrunner/core";
 import { ChevronIcon } from "./Icons";
 import { ADVICE_RULES, CLEAN_TIME, METRICS, SCORE_METRICS, type MetricDoc, type ScoreDoc } from "../explain";
 import { localPlace } from "../platform";
+import { PB_ODDS_METRICS } from "../pbExplain";
 import { PRACTICE_ENTRIES } from "../practice-explain";
 import { GOAL_ENTRIES } from "../goal-explain";
 import { SESSION_ENTRIES } from "../session-explain";
@@ -9,7 +10,15 @@ import { SESSION_ENTRIES } from "../session-explain";
 const SUMMARY = ["personalBest", "realisticTarget", "sumOfBest", "attempts"];
 const SEGMENT = ["pbTime", "gold", "median", "timeSaveVsGold", "realisticTimeSave", "variability", "resetRate"];
 
-export function HowItWorks({ analysis, score }: { analysis: RunAnalysis; score: CategoryScore }) {
+export function HowItWorks({
+  analysis,
+  score,
+  odds,
+}: {
+  analysis: RunAnalysis;
+  score: CategoryScore;
+  odds?: PbOdds | null;
+}) {
   return (
     <section id="how-it-works" className="how" aria-labelledby="how-title">
       <h2 id="how-title">How it's calculated</h2>
@@ -59,6 +68,15 @@ export function HowItWorks({ analysis, score }: { analysis: RunAnalysis; score: 
         </div>
       </details>
 
+      {odds && (
+        <>
+          <h3>PB odds</h3>
+          {Object.values(PB_ODDS_METRICS).map((doc) => (
+            <Entry key={doc.id} doc={doc} example={doc.example?.(odds)} />
+          ))}
+        </>
+      )}
+
       <h3>Practice plan</h3>
       {PRACTICE_ENTRIES.map((doc) => <Entry key={doc.id} doc={doc} />)}
 
@@ -88,7 +106,7 @@ export function ScoreEntries({ score }: { score: CategoryScore | null }) {
 }
 
 /** One explanation, collapsed to its label and short description until opened. */
-export function Entry({ doc, example }: { doc: MetricDoc | ScoreDoc; example?: string | null }) {
+export function Entry({ doc, example }: { doc: Pick<MetricDoc, "id" | "label" | "short" | "how">; example?: string | null }) {
   return (
     <details id={`how-${doc.id}`} className="how-entry">
       <summary>

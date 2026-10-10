@@ -94,6 +94,10 @@ For a full, plain-language explanation of every number, see [docs/how-it-works.m
 | `segments[].resetRate` | Share of attempts reaching the segment that reset during it. |
 | `advice[]` | Ranked suggestions: weak in PB, inconsistent, gold is rare, run killer. |
 
+`pbOdds(run)` simulates attempts from your recent segment times to give the PB chance per attempt and from
+every split, the deficit at each split where a reset finds a PB sooner, and a forecast of attempts (and a date) until a PB.
+Its per-segment sampling model, `buildSegmentModel(run)`, is exported for other features to reuse.
+
 Data handling choices:
 - A segment time recorded right after a skipped split covers two segments, so it is ignored.
 - Times under 60% of the segment's median are treated as mis-splits and ignored, including a

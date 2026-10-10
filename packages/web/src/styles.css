@@ -480,6 +480,25 @@ table.profile-table th:first-child { white-space: nowrap; }
   .score-part:nth-child(even) { border-left: 1px solid var(--line); }
 }
 
+/* PB odds and reset coach. */
+.section-foot.muted { color: var(--ink-3); }
+.pb-splits .text-cell { font-family: var(--sans); }
+.pb-splits th:last-child, .pb-splits td:last-child { text-align: left; }
+.reset-coach { margin: var(--s5) 0; padding: var(--s4) var(--s5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.reset-coach h3 { font-size: 1rem; }
+.reset-inputs { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5); margin-top: var(--s3); }
+.reset-inputs label { display: flex; flex-direction: column; gap: var(--s1); font-size: 0.875rem; font-weight: 500; color: var(--ink-2); min-width: 0; }
+.reset-inputs select, .reset-inputs input {
+  font: inherit; font-size: 0.9375rem; color: var(--ink); background: var(--surface); min-height: 36px;
+  padding: 0 var(--s2); border: 1px solid var(--line-strong); border-radius: 8px; max-width: 100%;
+}
+.reset-inputs input { width: 9ch; font-family: var(--mono); }
+.reset-inputs select:focus-visible, .reset-inputs input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.reset-hint { margin: var(--s1) 0 0; font-size: 0.8125rem; color: var(--ink-3); }
+.reset-verdict { margin: var(--s3) 0 0; padding: var(--s3) var(--s4); border-radius: 8px; background: var(--surface-sunk); border-left: 3px solid var(--line-strong); max-width: 72ch; }
+.reset-verdict.keep-going { background: var(--accent-wash); border-left-color: var(--accent); }
+.reset-verdict.keep-going-practice { background: var(--gold-wash); border-left-color: var(--gold); }
+
 /* Year in runs */
 .recap { display: grid; margin-bottom: var(--s7); grid-template-columns: minmax(0, 540px) minmax(0, 1fr); gap: var(--s6); align-items: start; }
 .recap-card { width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: var(--radius); display: block; background: #0e1726; }

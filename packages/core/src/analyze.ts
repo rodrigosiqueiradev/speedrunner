@@ -1,3 +1,4 @@
+import { cleanSegmentTimes } from "./segment-model.js";
 import type { Ms, Run } from "./types.js";
 
 export interface AnalyzeOptions {
@@ -88,19 +89,8 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
   const pbTimes = segmentTimesOfPb(run);
 
   const stats: SegmentStats[] = segments.map((segment, i) => {
-    // A history time is only this segment's own time if the previous split was not skipped
-    // in the same attempt; otherwise LiveSplit recorded the combined time of both segments.
-    const clean: Array<[number, Ms]> = [];
-    for (const [id, time] of segment.history) {
-      if (time == null || time <= 0) continue;
-      if (i > 0 && segments[i - 1].history.get(id) == null) continue;
-      clean.push([id, time]);
-    }
-    clean.sort((a, b) => a[0] - b[0]);
-    const raw = clean.map(([, t]) => t);
-    const floor =
-      raw.length >= minSamples ? outlierFloor * quantile([...raw].sort((a, b) => a - b), 0.5) : 0;
-    const all = raw.filter((t) => t >= floor);
+    const { times: clean, floor, discarded } = cleanSegmentTimes(run, i, { minSamples, outlierFloor });
+    const all = clean.map(([, t]) => t);
     const recent = all.slice(-recentWindow).sort((a, b) => a - b);
 
     const historyGold = all.length ? Math.min(...all) : null;
@@ -123,7 +113,7 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
       pbTime,
       gold,
       samples: all.length,
-      discardedSamples: raw.length - all.length,
+      discardedSamples: discarded,
       suspiciousGold,
       median,
       p25,

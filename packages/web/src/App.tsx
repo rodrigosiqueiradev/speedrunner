@@ -1,9 +1,10 @@
-import { analyzeRun, analyzeSessions, parseLss, scoreRun, type Run, type TimingMethod } from "@speedrunner/core";
+import { analyzeRun, analyzeSessions, parseLss, pbOdds, scoreRun, type Run, type TimingMethod } from "@speedrunner/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdviceList } from "./components/AdviceList";
 import { FilePicker, type FilePickerHandle } from "./components/FilePicker";
 import { GoalPlanner } from "./components/GoalPlanner";
 import { HowItWorks } from "./components/HowItWorks";
+import { PbCoach } from "./components/PbCoach";
 import { PracticePlan } from "./components/PracticePlan";
 import { Profile } from "./components/Profile";
 import { YearInRuns } from "./components/YearInRuns";
@@ -55,6 +56,7 @@ export function App() {
         run,
         analysis,
         score: scoreRun(run, analysis),
+        odds: pbOdds(run),
         sessions: analyzeSessions(run),
         hasGameTime: hasGameTime(loaded.xml),
       };
@@ -235,6 +237,18 @@ export function App() {
               <AdviceList advice={a.advice} onSelect={selectSegment} />
             </section>
 
+            {ok.odds && (
+              <section className="block" aria-labelledby="odds-title">
+                <div className="block-head">
+                  <h2 id="odds-title">Your PB odds</h2>
+                  <p className="section-note">
+                    How often an attempt beats your PB at your current form, and when a run is still worth playing on.
+                  </p>
+                </div>
+                <PbCoach odds={ok.odds} />
+              </section>
+            )}
+
             <section className="block" aria-labelledby="plan-title">
               <div className="block-head">
                 <h2 id="plan-title">Practice plan</h2>
@@ -313,7 +327,7 @@ export function App() {
               />
             </section>
 
-            <HowItWorks analysis={a} score={ok.score} />
+            <HowItWorks analysis={a} score={ok.score} odds={ok.odds} />
           </main>
         )}
           </>

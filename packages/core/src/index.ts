@@ -3,6 +3,8 @@ export { parseLss, type ParseOptions } from "./parse.js";
 export { parseTime, formatTime } from "./time.js";
 export * from "./analyze.js";
 export * from "./score.js";
+export * from "./segment-model.js";
+export * from "./pb-odds.js";
 export * from "./recap.js";
 export * from "./practice.js";
 export * from "./goal.js";
