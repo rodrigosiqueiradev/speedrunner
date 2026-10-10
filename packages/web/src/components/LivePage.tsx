@@ -121,7 +121,7 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
   const openOverlay = () => {
     const url = `${window.location.pathname}${window.location.search}#live-overlay`;
     // The desktop app opens its own borderless window; a browser opens a pop-up.
-    if (isDesktop) void openOverlayWindow();
+    if (isDesktop) openOverlayWindow().catch(() => setError("The overlay window didn't open. Try again, or restart the app."));
     else window.open(url, "speedrunner-live", "popup,width=360,height=560");
   };
 

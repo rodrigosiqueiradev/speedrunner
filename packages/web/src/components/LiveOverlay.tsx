@@ -36,6 +36,7 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
     };
   }, [onBack]);
 
+  const borderless = isOverlayWindow();
   const view = useLive(file?.xml ?? null, config);
   const run = view.ctx?.run;
   // The overlay follows LiveSplit's splits too, since in the desktop app the live page isn't open.
@@ -47,18 +48,18 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
   return (
     <div
       className="live-overlay"
-      data-window={isOverlayWindow ? "borderless" : undefined}
+      data-window={borderless ? "borderless" : undefined}
       style={{ background: config.style.background }}
       // The desktop overlay has no title bar: dragging anywhere but a link or button moves it.
       onMouseDown={
-        isOverlayWindow
+        borderless
           ? (e) => {
               if (e.button === 0 && !(e.target as Element).closest("a, button")) void dragThisWindow();
             }
           : undefined
       }
     >
-      {isOverlayWindow && (
+      {borderless && (
         <button className="live-overlay-close" aria-label="Close overlay" title="Close (Esc)" onClick={() => void closeThisWindow()}>
           <CloseIcon />
         </button>
@@ -72,7 +73,7 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
           page first.
         </p>
       )}
-      <p className="live-overlay-hint">{isOverlayWindow ? "Drag to move · Esc to close" : "Esc to go back"}</p>
+      <p className="live-overlay-hint">{borderless ? "Drag to move · Esc to close" : "Esc to go back"}</p>
       {run && view.stats && (
         <LiveCard
           title={liveTitle(run)}

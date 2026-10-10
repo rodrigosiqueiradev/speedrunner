@@ -129,7 +129,7 @@ export function App() {
 
   const backFromOverlay = useCallback(() => {
     // A pop-up or desktop overlay window closes; a main window showing the overlay goes back to the live page.
-    if (isOverlayWindow) void closeThisWindow();
+    if (isOverlayWindow()) void closeThisWindow();
     else if (window.opener) window.close();
     else {
       setView("live");
