@@ -14,16 +14,10 @@ and how well they run each category on one 0-100 scale across games.
 
 ## Node and npm
 
-The project uses **Node 24** (the current LTS) and **npm 12**. `.nvmrc` holds the Node version, so
-`nvm use` or `fnm use` picks it up, and `package.json` declares both in `engines` and `devEngines`,
-so npm warns when a different version runs an install. Node 24 comes with npm 11, so install npm 12
-on top of it once:
-
-```sh
-npm install -g npm@12
-```
-
-CI and the desktop builds read the same files, so they run the same versions as your machine.
+The project uses **Node 24** (the current LTS) with the npm it ships with (**npm 11**). `.nvmrc`
+holds the Node version, so `nvm use` or `fnm use` picks it up, and `package.json` declares both in
+`engines` and `devEngines`, so npm warns when a different version runs an install. CI and the desktop
+builds read the same `.nvmrc`, so they run the same versions as your machine.
 
 ## Running the web app
 
