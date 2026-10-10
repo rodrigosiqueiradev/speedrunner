@@ -42,5 +42,17 @@ export function saveLiveConfig(config: LiveConfig): void {
   window.dispatchEvent(new CustomEvent(LIVE_CONFIG_EVENT));
 }
 
-/** True when a storage event from another window is about the live settings. */
-export const isLiveConfigKey = (key: string | null) => key === KEY;
+const RUN_CHANGED_KEY = "speedrunner.live.run-changed";
+
+/** Tells other windows (and this one) that the live split file changed, so the overlay reloads it. */
+export function notifyRunChanged(): void {
+  try {
+    localStorage.setItem(RUN_CHANGED_KEY, String(Date.now()));
+  } catch {
+    // Storage blocked: other windows pick the file up when they next open.
+  }
+  window.dispatchEvent(new CustomEvent(LIVE_CONFIG_EVENT));
+}
+
+/** True when a storage event from another window is about the live settings or split file. */
+export const isLiveConfigKey = (key: string | null) => key === KEY || key === RUN_CHANGED_KEY;

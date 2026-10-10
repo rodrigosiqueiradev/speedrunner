@@ -682,6 +682,9 @@ button:disabled { opacity: 0.5; cursor: default; }
 .live-move button { min-height: 32px; min-width: 32px; padding: 0; justify-content: center; color: var(--ink-2); }
 .live-move button:disabled { visibility: hidden; }
 .live-preview { position: sticky; top: 72px; }
+.live-sync { margin: 0 0 var(--s3); font-size: 0.875rem; color: var(--ink-2); }
+.live-sync strong { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.live-sync[data-state="missing"] { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s2); padding: var(--s3); border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); }
 .live-preview-foot { display: flex; flex-direction: column; gap: var(--s2); margin: var(--s3) 0 0; font-size: 0.875rem; color: var(--ink-2); }
 .live-preview-foot button { align-self: flex-start; }
 .live-how { margin-top: var(--s6); }

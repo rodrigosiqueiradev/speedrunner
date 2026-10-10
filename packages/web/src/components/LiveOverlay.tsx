@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { LIVE_CONFIG_EVENT, LIVE_RUN_KEY, isLiveConfigKey, loadLiveConfig } from "../live/config";
+import { LIVE_CONFIG_EVENT, LIVE_RUN_KEY, isLiveConfigKey, loadLiveConfig, notifyRunChanged } from "../live/config";
+import { useSplitsSync } from "../live/useSplitsSync";
 import { useLive } from "../live/useLive";
-import { loadSplitFiles, type StoredSplit } from "../splitFiles";
+import { loadSplitFiles, putSplitFile, type StoredSplit } from "../splitFiles";
 import { LiveCard } from "./LiveCard";
 
 /**
@@ -34,6 +35,11 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
 
   const view = useLive(file?.xml ?? null, config);
   const run = view.ctx?.run;
+  // The overlay follows LiveSplit's splits too, since in the desktop app the live page isn't open.
+  const sync = useSplitsSync(config.source === "livesplit" ? view.status : null, file ?? null, (next) => {
+    setFile(next);
+    void putSplitFile(LIVE_RUN_KEY, next).then(notifyRunChanged);
+  });
 
   return (
     <div className="live-overlay" style={{ background: config.style.background }}>
@@ -55,6 +61,11 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
           status={view.status}
           choices={config.stats}
           look={config.style}
+          note={
+            sync.state === "missing" || sync.state === "different"
+              ? `LiveSplit has ${sync.name} open. Choose it on the Live stats page.`
+              : null
+          }
         />
       )}
     </div>

@@ -12,6 +12,7 @@ export function LiveCard({
   status,
   choices,
   look = DEFAULT_STYLE,
+  note,
 }: {
   title: string;
   stats: LiveStats;
@@ -19,6 +20,8 @@ export function LiveCard({
   status: FeedStatus | null;
   choices: StatChoice[];
   look?: CardStyle;
+  /** A short line under the stats, such as which file to choose. It replaces the split name mismatch line, which says the same. */
+  note?: string | null;
 }) {
   const shown = choices.filter((c) => c.shown).map((c) => STAT_BY_ID.get(c.id)!);
   return (
@@ -56,7 +59,8 @@ export function LiveCard({
           {status.reason} Trying again every few seconds.
         </p>
       )}
-      {status?.kind === "connected" && status.mismatch && <p className="live-card-note">{status.mismatch}</p>}
+      {status?.kind === "connected" && status.mismatch && !note && <p className="live-card-note">{status.mismatch}</p>}
+      {note && <p className="live-card-note">{note}</p>}
     </section>
   );
 }

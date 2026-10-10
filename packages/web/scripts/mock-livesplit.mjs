@@ -68,6 +68,8 @@ server.on("connection", (ws) =>
       getcurrenttime: fmt(t.time),
       getlastsplittime: t.index > 0 ? fmt(splitAt[t.index - 1]) : "-",
       getcurrentsplitname: t.index >= 0 && t.index < segments.length ? segments[t.index].name : "-",
+      // Older LiveSplit servers don't know this command and never answer it: NO_SPLITS_PATH=1 acts like one.
+      ...(process.env.NO_SPLITS_PATH ? {} : { getsplitspath: file }),
     };
     const answer = answers[String(raw).trim()];
     if (answer != null) ws.send(answer);

@@ -14,7 +14,12 @@ import {
 /** Where a live feed is: shown under the stats so the runner knows why nothing moves. */
 export type FeedStatus =
   | { kind: "connecting" }
-  | { kind: "connected"; mismatch: string | null }
+  | {
+      kind: "connected";
+      mismatch: string | null;
+      /** The splits file LiveSplit has open, when its server can say (newer LiveSplit versions). */
+      splitsPath: string | null;
+    }
   | { kind: "offline"; reason: string }
   | { kind: "demo"; attempt: number };
 
@@ -30,6 +35,10 @@ export const DEFAULT_LIVESPLIT_URL = "ws://localhost:16834/livesplit";
 const POLL_MS = 250;
 const ANSWER_TIMEOUT_MS = 3000;
 const RETRY_MS = 3000;
+/** How often to ask which splits file LiveSplit has open, while the timer isn't running. */
+const SPLITS_PATH_MS = 5000;
+/** Older servers don't know getsplitspath and never answer it; give up on it after this long. */
+const OPTIONAL_TIMEOUT_MS = 1500;
 const PHASES: TimerPhase[] = ["NotRunning", "Running", "Paused", "Ended"];
 
 /**
@@ -44,6 +53,10 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
   let retry: ReturnType<typeof setTimeout> | undefined;
   let snap: TimerSnapshot = IDLE_SNAPSHOT;
   let mismatch: string | null = null;
+  let splitsPath: string | null = null;
+  // null: not asked yet on this connection; false: the server doesn't know the command.
+  let pathSupported: boolean | null = null;
+  let pathAskedAt = 0;
 
   const open = () => {
     if (stopped) return;
@@ -68,9 +81,34 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
         });
         ws.send(command);
       });
+    // For a command older servers may not know: they send nothing back, so stop waiting for it
+    // after a short while and take it off the queue, keeping later answers matched up.
+    const askOptional = (command: string) =>
+      new Promise<string | null>((resolve) => {
+        const answer = (text: string) => {
+          clearTimeout(timer);
+          resolve(text.trim());
+        };
+        const timer = setTimeout(() => {
+          const i = waiting.indexOf(answer);
+          if (i >= 0) waiting.splice(i, 1);
+          resolve(null);
+        }, OPTIONAL_TIMEOUT_MS);
+        waiting.push(answer);
+        ws.send(command);
+      });
 
+    pathSupported = null;
     const poll = async () => {
       while (!stopped && ws.readyState === WebSocket.OPEN) {
+        // Between attempts, check which splits LiveSplit has open, so the page can follow a switch.
+        const idle = snap.phase === "NotRunning" || snap.phase === "Ended";
+        if (pathSupported !== false && (pathSupported === null || (idle && Date.now() - pathAskedAt > SPLITS_PATH_MS))) {
+          pathAskedAt = Date.now();
+          const path = await askOptional("getsplitspath");
+          pathSupported = path != null;
+          if (path != null) splitsPath = path && path !== "-" ? path : null;
+        }
         const phaseText = await ask("getcurrenttimerphase");
         const phase = PHASES.find((p) => p === phaseText) ?? "NotRunning";
         const index = phase === "NotRunning" ? -1 : Number.parseInt(await ask("getsplitindex"), 10);
@@ -89,7 +127,7 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
               : null;
         }
         snap = { phase, splitIndex: Number.isFinite(index) ? index : -1, currentTime, splitTimes };
-        onUpdate(snap, { kind: "connected", mismatch });
+        onUpdate(snap, { kind: "connected", mismatch, splitsPath });
         await new Promise((r) => setTimeout(r, POLL_MS));
       }
     };
@@ -165,4 +203,9 @@ export function startDemo(ctx: LiveContext, speed: DemoSpeed, onUpdate: Listener
   const timer = setInterval(tick, 100);
   tick();
   return { stop: () => clearInterval(timer) };
+}
+
+/** The file name at the end of a Windows or Unix path. */
+export function fileNameOf(path: string): string {
+  return path.split(/[\\/]/).pop() ?? path;
 }

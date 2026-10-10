@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { LIVE_RUN_KEY, loadLiveConfig, saveLiveConfig, type LiveConfig } from "../live/config";
+import { LIVE_RUN_KEY, loadLiveConfig, notifyRunChanged, saveLiveConfig, type LiveConfig } from "../live/config";
+import { useSplitsSync, type SplitsSync } from "../live/useSplitsSync";
 import { DEFAULT_LIVESPLIT_URL, DEMO_SPEEDS, type DemoSpeed } from "../live/feeds";
 import { DEFAULT_CHOICES, LIVE_STATS, STAT_BY_ID, type StatChoice } from "../live/stats";
 import {
@@ -74,10 +75,11 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
   const choose = (next: StoredSplit) => {
     setError(null);
     setFile(next);
-    void putSplitFile(LIVE_RUN_KEY, next);
+    void putSplitFile(LIVE_RUN_KEY, next).then(notifyRunChanged);
   };
 
   const view = useLive(file?.xml ?? null, config);
+  const sync = useSplitsSync(config.source === "livesplit" ? view.status : null, file, choose);
   const run = view.ctx?.run;
   const title = run ? `${run.game || "Unknown game"} · ${run.category}` : "";
 
@@ -323,6 +325,7 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
         </div>
 
         <div className="live-preview">
+          <SyncNote sync={sync} onChoose={() => picker.current?.open()} onUse={choose} />
           {view.stats && (
             <LiveCard
               title={title}
@@ -405,5 +408,36 @@ function StyleSettings({ look, onChange, onReset }: { look: CardStyle; onChange:
         </p>
       )}
     </section>
+  );
+}
+
+/** Says whether the split file follows the one LiveSplit has open. */
+function SyncNote({ sync, onChoose, onUse }: { sync: SplitsSync; onChoose: () => void; onUse: (file: StoredSplit) => void }) {
+  if (sync.state === "unknown") return null;
+  if (sync.state === "different") {
+    const { file } = sync;
+    return (
+      <p className="live-sync" data-state="missing" role="status">
+        <span>
+          LiveSplit has <strong>{sync.name}</strong> open, not this file.
+        </span>
+        <button onClick={() => onUse(file)}>Switch to it</button>
+      </p>
+    );
+  }
+  if (sync.state === "missing") {
+    return (
+      <p className="live-sync" data-state="missing" role="status">
+        <span>
+          LiveSplit has <strong>{sync.name}</strong> open, which isn't in your profile.
+        </span>
+        <button onClick={onChoose}>Choose file</button>
+      </p>
+    );
+  }
+  return (
+    <p className="live-sync" role="status">
+      {sync.state === "switched" ? "Switched to" : "Matches"} <strong>{sync.name}</strong>, the splits open in LiveSplit.
+    </p>
   );
 }
