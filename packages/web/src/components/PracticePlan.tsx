@@ -5,6 +5,7 @@ import { PRACTICE_DOCS as D } from "../practice-explain";
 import { InfoTip } from "./InfoTip";
 
 const SESSIONS = [30, 60, 90, 120];
+const TOP = 10;
 const P = PRACTICE_SETTINGS;
 
 /** A practice session plan, and the per-segment ranking it is built from. */
@@ -18,6 +19,7 @@ export function PracticePlan({
   onSelect: (index: number) => void;
 }) {
   const [minutes, setMinutes] = useState<number>(P.sessionMinutes);
+  const [showAll, setShowAll] = useState(false);
   const plan = useMemo(() => planPractice(run, analysis, { sessionMinutes: minutes }), [run, analysis, minutes]);
 
   if (plan.items.length === 0) {
@@ -108,7 +110,7 @@ export function PracticePlan({
             </tr>
           </thead>
           <tbody>
-            {plan.ranking.map((r) => (
+            {(showAll ? plan.ranking : plan.ranking.slice(0, TOP)).map((r) => (
               <tr key={r.index}>
                 <th scope="row">
                   <button className="link-button" onClick={() => onSelect(r.index)}>
@@ -131,7 +133,13 @@ export function PracticePlan({
           </tbody>
         </table>
       </div>
-
+      {plan.ranking.length > TOP && (
+        <p className="section-foot">
+          <button className="link-button text-link" aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
+            {showAll ? `Show the top ${TOP}` : `Show all ${plan.ranking.length} segments`}
+          </button>
+        </p>
+      )}
     </>
   );
 }

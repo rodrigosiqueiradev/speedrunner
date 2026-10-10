@@ -5,6 +5,7 @@ import { formatSave } from "../format";
 import { InfoTip } from "./InfoTip";
 
 type Order = "route" | "biggest";
+const TOP = 10;
 
 /**
  * One horizontal bar per segment. The full bar is PB minus gold; the stronger inner part is
@@ -12,11 +13,13 @@ type Order = "route" | "biggest";
  */
 export function SavingsChart({ segments }: { segments: SegmentStats[] }) {
   const [hover, setHover] = useState<number | null>(null);
-  const [order, setOrder] = useState<Order>("route");
+  const [order, setOrder] = useState<Order>("biggest");
+  const [showAll, setShowAll] = useState(false);
   const rows = segments.filter((s) => s.timeSaveVsGold != null);
   const max = Math.max(1, ...rows.map((s) => s.timeSaveVsGold!));
   const sorted =
     order === "route" ? rows : [...rows].sort((a, b) => b.timeSaveVsGold! - a.timeSaveVsGold!);
+  const shown = showAll ? sorted : sorted.slice(0, TOP);
 
   if (rows.length === 0) return <p className="muted">Not enough data for this chart yet.</p>;
 
@@ -32,12 +35,12 @@ export function SavingsChart({ segments }: { segments: SegmentStats[] }) {
           </span>
         </div>
         <div className="toggle small" role="group" aria-label="Order">
-          <button aria-pressed={order === "route"} onClick={() => setOrder("route")}>Route order</button>
           <button aria-pressed={order === "biggest"} onClick={() => setOrder("biggest")}>Biggest first</button>
+          <button aria-pressed={order === "route"} onClick={() => setOrder("route")}>Route order</button>
         </div>
       </div>
       <div className="bars" role="table" aria-label="Time save per segment">
-        {sorted.map((s) => {
+        {shown.map((s) => {
           const full = s.timeSaveVsGold!;
           const realistic = Math.min(s.realisticTimeSave ?? 0, full);
           return (
@@ -86,6 +89,13 @@ export function SavingsChart({ segments }: { segments: SegmentStats[] }) {
           );
         })}
       </div>
+      {rows.length > TOP && (
+        <p className="chart-more">
+          <button className="link-button text-link" aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
+            {showAll ? `Show the ${order === "biggest" ? "biggest" : "first"} ${TOP}` : `Show all ${rows.length} segments`}
+          </button>
+        </p>
+      )}
     </figure>
   );
 }

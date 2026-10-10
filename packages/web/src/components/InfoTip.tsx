@@ -52,10 +52,15 @@ export function InfoTip({ doc }: { doc: Pick<MetricDoc, "id" | "label" | "short"
   );
 }
 
+/** Fired with a tab panel's id when something inside that hidden panel needs to be shown. */
+export const SHOW_PANEL = "speedrunner:show-panel";
+
 /** Opens a metric's entry in the How it works section and scrolls to it. */
 export function revealExplanation(id: string) {
   const el = document.getElementById(`how-${id}`);
   if (!el) return;
+  const panel = el.closest<HTMLElement>("[role=tabpanel]");
+  if (panel?.hidden) window.dispatchEvent(new CustomEvent(SHOW_PANEL, { detail: panel.id }));
   if (el instanceof HTMLDetailsElement) el.open = true;
   el.scrollIntoView({ behavior: "smooth", block: "start" });
   el.querySelector("summary")?.focus({ preventScroll: true });

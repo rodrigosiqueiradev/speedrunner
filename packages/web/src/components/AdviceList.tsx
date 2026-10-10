@@ -9,8 +9,21 @@ const LABELS: Record<AdviceKind, string> = {
   "run-killer": "Runs die here",
 };
 
-/** A ranked list: one row per segment, ordered by the most time any of its advice is worth. */
-export function AdviceList({ advice, onSelect }: { advice: Advice[]; onSelect: (index: number) => void }) {
+/**
+ * A ranked list: one row per segment, ordered by the most time any of its advice is worth.
+ * With onMore, it shows the first few rows and a link to the full list instead of the rules link.
+ */
+export function AdviceList({
+  advice,
+  onSelect,
+  limit = 6,
+  onMore,
+}: {
+  advice: Advice[];
+  onSelect: (index: number) => void;
+  limit?: number;
+  onMore?: () => void;
+}) {
   if (advice.length === 0) {
     return (
       <p className="empty-note">
@@ -20,7 +33,8 @@ export function AdviceList({ advice, onSelect }: { advice: Advice[]; onSelect: (
   }
   const groups = new Map<number, Advice[]>();
   for (const a of advice) groups.set(a.segmentIndex, [...(groups.get(a.segmentIndex) ?? []), a]);
-  const ranked = [...groups.values()].slice(0, 6);
+  const all = [...groups.values()].slice(0, 6);
+  const ranked = all.slice(0, limit);
 
   return (
     <>
@@ -60,17 +74,27 @@ export function AdviceList({ advice, onSelect }: { advice: Advice[]; onSelect: (
           );
         })}
       </ol>
-      <p className="section-foot">
-        <a
-          href="#how-advice"
-          onClick={(e) => {
-            e.preventDefault();
-            revealExplanation("advice");
-          }}
-        >
-          When each kind of advice appears
-        </a>
-      </p>
+      {onMore ? (
+        all.length > ranked.length && (
+          <p className="section-foot">
+            <button className="link-button text-link" onClick={onMore}>
+              See all {all.length} and a practice plan
+            </button>
+          </p>
+        )
+      ) : (
+        <p className="section-foot">
+          <a
+            href="#how-advice"
+            onClick={(e) => {
+              e.preventDefault();
+              revealExplanation("advice");
+            }}
+          >
+            When each kind of advice appears
+          </a>
+        </p>
+      )}
     </>
   );
 }

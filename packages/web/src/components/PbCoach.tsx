@@ -4,8 +4,8 @@ import { formatSave } from "../format";
 import { PB_ODDS_METRICS as M, type PbOddsDoc } from "../pbExplain";
 import { InfoTip } from "./InfoTip";
 
-/** PB odds per attempt, a forecast, and a "should I reset?" coach for every split. */
-export function PbCoach({ odds }: { odds: PbOdds }) {
+/** PB odds per attempt and a forecast of how many attempts a PB takes. */
+export function PbOddsSummary({ odds }: { odds: PbOdds }) {
   const f = odds.forecast;
   const unreachable = odds.perAttempt === 0;
   const sims = odds.simulations.toLocaleString("en-US");
@@ -42,7 +42,7 @@ export function PbCoach({ odds }: { odds: PbOdds }) {
       {unreachable && (
         <p className="section-foot">
           Your PB is {formatSave(odds.medianFinish - odds.personalBest)} faster than your typical finish today. The
-          split odds below still show where a run can turn into a PB.
+          odds at each split, under Practise, still show where a run can turn into a PB.
         </p>
       )}
       {odds.thinSegments.length > 0 && (
@@ -52,31 +52,45 @@ export function PbCoach({ odds }: { odds: PbOdds }) {
           {odds.thinSegments.length > 3 ? ", …" : ""}), so treat these odds as rough.
         </p>
       )}
+    </>
+  );
+}
 
+/** A "should I reset?" calculator, and the odds and reset point at every split behind a button. */
+export function ResetCoach({ odds }: { odds: PbOdds }) {
+  const [showSplits, setShowSplits] = useState(false);
+  return (
+    <>
       <ResetCalculator odds={odds} />
-
-      <div className="table-wrap">
-        <table className="segments pb-splits">
-          <thead>
-            <tr>
-              <th scope="col">Split</th>
-              <ColumnHead doc={M.fromSplit} label="PB chance on pace" />
-              <ColumnHead doc={M.resetAfter} />
-              <ColumnHead doc={M.practice} label="If the run is dead" />
-            </tr>
-          </thead>
-          <tbody>
-            {odds.splits.map((s) => (
-              <tr key={s.index}>
-                <th scope="row">{s.name}</th>
-                <td>{s.onPace == null ? "-" : describeChance(s.onPace)}</td>
-                <td>{s.resetAfter == null ? "-" : s.resetAfter < 0 ? `ahead by ${formatSave(-s.resetAfter)}` : formatSave(s.resetAfter)}</td>
-                <td className="text-cell">{s.practiceLate ? "Keep going for practice" : "Reset"}</td>
+      <p className="section-foot">
+        <button className="link-button text-link" aria-expanded={showSplits} onClick={() => setShowSplits((v) => !v)}>
+          {showSplits ? "Hide the odds at each split" : `Show the odds at each of the ${odds.splits.length} splits`}
+        </button>
+      </p>
+      {showSplits && (
+        <div className="table-wrap">
+          <table className="segments pb-splits">
+            <thead>
+              <tr>
+                <th scope="col">Split</th>
+                <ColumnHead doc={M.fromSplit} label="PB chance on pace" />
+                <ColumnHead doc={M.resetAfter} />
+                <ColumnHead doc={M.practice} label="If the run is dead" />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {odds.splits.map((s) => (
+                <tr key={s.index}>
+                  <th scope="row">{s.name}</th>
+                  <td>{s.onPace == null ? "-" : describeChance(s.onPace)}</td>
+                  <td>{s.resetAfter == null ? "-" : s.resetAfter < 0 ? `ahead by ${formatSave(-s.resetAfter)}` : formatSave(s.resetAfter)}</td>
+                  <td className="text-cell">{s.practiceLate ? "Keep going for practice" : "Reset"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }
@@ -94,9 +108,6 @@ function ResetCalculator({ odds }: { odds: PbOdds }) {
   const advice = valid ? resetAdvice(odds, split, s.pbSplit! + Math.round(seconds * 1000)) : null;
   return (
     <div className="reset-coach">
-      <h3 className="th-inner">
-        {M.reset.label} <InfoTip doc={M.reset} />
-      </h3>
       <div className="reset-inputs">
         <label htmlFor={`${id}-split`}>
           At split

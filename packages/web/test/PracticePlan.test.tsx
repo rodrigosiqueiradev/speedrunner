@@ -6,7 +6,11 @@ import { App } from "../src/App";
 
 const sample = readFileSync(resolve(__dirname, "../public/sample.lss"), "utf8");
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  // Tabs live in the URL hash; start each test on the overview.
+  history.replaceState(null, "", "/");
+});
 
 if (!Blob.prototype.text) {
   Blob.prototype.text = function () {
@@ -27,7 +31,8 @@ describe("practice plan", () => {
   it("plans a session and changes with its length", async () => {
     render(<App />);
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
-    await screen.findByRole("heading", { level: 2, name: "Practice plan" });
+    fireEvent.click(await screen.findByRole("tab", { name: "Practise" }));
+    screen.getByRole("heading", { level: 2, name: "Practice plan" });
 
     const plan = screen.getByRole("list", { name: "60 minute practice plan" });
     expect(minutesIn(plan)).toBe(60);
@@ -42,7 +47,8 @@ describe("practice plan", () => {
   it("explains each number in a tooltip and in How it's calculated", async () => {
     render(<App />);
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
-    await screen.findByRole("heading", { level: 2, name: "Practice plan" });
+    fireEvent.click(await screen.findByRole("tab", { name: "Practise" }));
+    screen.getByRole("heading", { level: 2, name: "Practice plan" });
 
     for (const label of ["Practice plan", "Expected save", "Per hour", "Gap to good day", "One rep", "Learning per doubling"]) {
       expect(screen.getAllByRole("button", { name: `How is ${label} calculated?` }).length).toBe(1);

@@ -83,6 +83,11 @@ typography:
     fontSize: "1.375rem"
     fontWeight: 500
     fontFeature: "\"tnum\""
+  time-compact:
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
+    fontSize: "1.125rem"
+    fontWeight: 500
+    fontFeature: "\"tnum\""
   time-cell:
     fontFamily: "IBM Plex Mono, ui-monospace, monospace"
     fontSize: "0.875rem"
@@ -201,7 +206,7 @@ A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Go
 - **Page Surface** (`page-surface`): white panels for the comparisons, chart, tables, dropzone and popovers.
 - **Page Sunk** (`page-sunk`): table header rows, tags and muted flags.
 - **Hover Tint** (`hover-tint`): row, button and summary hover backgrounds.
-- **Rule Line / Rule Line Strong**: hairline dividers and panel borders. The strong rule is for button borders, the dropzone dash, popover borders and the rule above "How it's calculated".
+- **Rule Line / Rule Line Strong**: hairline dividers and panel borders. The strong rule is for button borders, the dropzone dash, popover borders and the rule above "How it's calculated" on the profile and Year in runs pages.
 - **Ink / Ink Secondary / Ink Muted**: primary text, then notes and explanations, then meta, captions, ranks and secondary values.
 - **Error Red / Error Wash**: file-read errors only.
 
@@ -223,13 +228,13 @@ A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Go
 ### Hierarchy
 - **Display** (600, clamp(1.9rem, 4vw, 2.6rem), 1.15): only the landing headline.
 - **Headline** (600, clamp(1.6rem, 3.2vw, 2.1rem), 1.2): the run title (the game, followed by the category in Ink Muted at 500).
-- **Title** (600, 1.25rem): section headings such as "What to practise first" and "Where the time is", and the dropzone title. "How it's calculated" steps up to **Title Lead** (1.5rem) because it closes the page as its own reading section. Its group headings (Run totals, Per segment, Practice advice) are h3s at body size and weight 600.
+- **Title** (600, 1.25rem): section headings such as "What to practise first" and "Where the time is", and the dropzone title. "How it's calculated" steps up to **Title Lead** (1.5rem) because it is its own reading section (a tab on the run page, the closing section elsewhere). Its group headings (Run totals, Per segment, Practice advice) are h3s at body size and weight 600.
 - **Lede** (400, 1.0625rem): the landing introduction only.
 - **Body** (400, 16px, 1.55): base text.
 - **Note** (400, 0.9375rem): section notes, advice reasons and explanation bodies in Ink Secondary, capped at 70–78ch.
 - **Label** (500, 0.8125rem): table headers, captions and the route strip's biggest-saves list. Sentence case, never uppercase.
 - **Micro** (500, 0.75rem): tags, table flags, route strip section names, its axis and its rank numbers.
-- **Time Lead / Time / Time Cell** (Plex Mono, tabular numerals): 2rem/600 for the lead comparison, 1.375rem/500 for the other comparisons, 0.875rem for table cells, bar values and save amounts.
+- **Time Lead / Time / Time Compact / Time Cell** (Plex Mono, tabular numerals): 2rem/600 for the lead comparison, 1.375rem/500 for the other comparisons, 1.125rem/500 for times in option lists and secondary panels (LiveSplit comparisons, Year in runs stats), 0.875rem for table cells, bar values and save amounts.
 
 ### Named Rules
 **The Tabular Time Rule.** Every time, delta, save and percentage is set in Plex Mono with tabular numerals and right-aligned in its column. Prose never sets numbers in mono, except inside a worked example.
@@ -238,7 +243,7 @@ A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Go
 
 ## Layout
 
-There's a single centred column of 1080px max with 16px side gutters, under a 56px sticky Night Shell header that uses the same inner width. The landing view narrows to 640px and is centred. The results view runs top to bottom in reading order: run heading and timing toggle, comparisons panel, route strip, then sections separated by 48px (`s7`) of space. Sections aren't nested in cards. Each has a title and a note above it, then its content. "How it's calculated" closes the page after a strong rule and 32px of padding.
+There's a single centred column of 1080px max with 16px side gutters, under a 56px sticky Night Shell header that uses the same inner width. The landing view narrows to 640px and is centred. The results view opens with the run heading and timing toggle, then the run tabs (Overview, Practise, Segments, Sessions, How it's calculated), so no tab is longer than its own content. Overview holds what a runner decides on: the comparisons panel, route strip, the top three practice priorities, PB odds and the category score. Inside a tab, sections are separated by 48px (`s7`) of space. Sections aren't nested in cards. Each has a title and a one-line note above it, then its content. Lists that would run to every segment show the top 10 with a "Show all" text link, and session checks with no clear effect fold under one line. The profile and Year in runs pages still close with "How it's calculated" after a strong rule and 32px of padding.
 
 Spacing follows a 4px-based scale (4, 8, 12, 16, 24, 32, 48). The interior rhythm is 12–16px between rows, 24px for panel side padding and 48px between sections.
 
@@ -269,7 +274,7 @@ Quiet and plain. A button looks like a labelled control, not a call to action.
 - **Primary:** Split Blue fill, white text at 500 weight. Hover deepens to Split Blue Ink. There's at most one per view (the dropzone's "Choose .lss file").
 - **Toggle:** joined segmented buttons with inner corners squared. The pressed segment takes the primary fill.
 - **Shell button:** transparent on Night Shell with a 30% Night Shell Ink border, 32px tall.
-- **Link button:** unstyled text that underlines on hover, used for segment names in the advice list.
+- **Link button:** unstyled text that underlines on hover, used for segment names in the advice list. The **text link** variant looks like a link (Split Blue Ink, underlined) and is used for in-place actions such as "Show all 56 segments".
 - **Motion:** 140ms background and border transitions on `cubic-bezier(0.16, 1, 0.3, 1)`.
 
 ### Comparisons panel (signature)
@@ -286,6 +291,9 @@ Reuses the logbook pieces rather than adding new ones. The comparisons panel hol
 
 ### Advice list
 A ranked logbook entry, one row per segment. A mono rank number in Ink Muted comes first, then the segment name as a link button and its advice tags as pills, then the reasons in Note type, with the estimated worth right-aligned in Split Blue Ink mono. Rows are divided by hairlines with no card around them.
+
+### Run tabs
+A plain tab row under the run heading: sentence-case labels in 500 Note type, Ink Secondary until hovered, 46px tall, 24px apart, on Page Ground with a Rule Line underneath. The selected tab turns Ink with a 2px Split Blue underline. The row sticks under the shell, and below 640px it runs edge to edge and scrolls sideways. Each tab is in the URL hash, so links and the back button work, and arrow keys move between tabs. Segment buttons anywhere open the Segments tab at that row; "How it's calculated" links in info tips open that tab at the entry.
 
 ### Info tips
 A borderless 20px info icon in Ink Muted. Hovering or opening it gives it a Split Blue Wash circle. Its panel is a Page Surface popover (8px radius, strong border, Pop shadow, 0.875rem text) that holds the short explanation and a "How it's calculated" link. It appears with a 160ms fade and a 4px drop, and closes on outside click or Escape. On mobile it becomes a bottom sheet.
@@ -307,7 +315,7 @@ These are data views. Headers sit on Page Sunk in Label type, cells are Time Cel
 The first-run entry point: a 640px panel on Page Surface with a 1.5px dashed Rule Line Strong border and 14px corners. While dragging, it switches to a Split Blue border and wash. Inside are a title, a hint that restates the privacy promise, and a primary and a default button.
 
 ### Navigation
-A Night Shell bar, sticky, 56px tall. The wordmark is "Speedrunner" in 600 sans. Once a run is loaded, the right side shows a muted "How it's calculated" link (hidden below 640px) and the shell "Open file" button.
+A Night Shell bar, sticky, 56px tall. The wordmark is "Speedrunner" in 600 sans. The right side links to the other views (Analyse a run, Profile, Year in runs). Once a run is loaded it shows the shell "Open file" button; "How it's calculated" for a run is its last tab.
 
 ## Do's and Don'ts
 

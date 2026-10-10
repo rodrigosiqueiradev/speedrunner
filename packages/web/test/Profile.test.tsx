@@ -24,7 +24,11 @@ beforeEach(() => {
   localStorage.clear();
   history.replaceState(null, "", "/");
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  // Tabs live in the URL hash; start each test on the overview.
+  history.replaceState(null, "", "/");
+});
 
 const upload = (...files: Array<[string, string]>) =>
   fireEvent.change(screen.getByTestId("file-input"), {

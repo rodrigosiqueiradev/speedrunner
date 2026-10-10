@@ -9,6 +9,8 @@ const sample = readFileSync(resolve(__dirname, "../public/sample.lss"), "utf8");
 
 afterEach(() => {
   cleanup();
+  // Tabs live in the URL hash; start each test on the overview.
+  history.replaceState(null, "", "/");
   vi.restoreAllMocks();
 });
 
@@ -26,6 +28,7 @@ async function loadSample() {
   render(<App />);
   fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "dishonored.lss")] } });
   await screen.findByRole("heading", { name: /Dishonored/ });
+  fireEvent.click(screen.getByRole("tab", { name: "Practise" }));
   return screen.getByRole("region", { name: "What does your goal take?" });
 }
 
@@ -72,13 +75,19 @@ describe("Goal planner explanations", () => {
   it("explains each part in a tooltip that links to How it's calculated", async () => {
     const goal = await loadSample();
     fireEvent.click(within(goal).getByRole("button", { name: "How is Goal plan calculated?" }));
-    expect(within(goal).getByRole("note").textContent).toMatch(/least demanding/);
+    const note = within(goal).getByRole("note");
+    expect(note.textContent).toMatch(/least demanding/);
     const exportSection = screen.getByRole("region", { name: "Race these in LiveSplit" });
     for (const label of ["Saving comparisons", "Realistic target", "Sub goal (balanced)", "Recent golds"]) {
       expect(within(exportSection).getByRole("button", { name: `How is ${label} calculated?` })).toBeTruthy();
     }
+
+    // The link in the tooltip opens the How it's calculated tab at that entry.
+    Element.prototype.scrollIntoView = () => {};
+    fireEvent.click(within(note).getByRole("link", { name: "How it's calculated" }));
+    expect(screen.getByRole("tab", { name: "How it's calculated" }).getAttribute("aria-selected")).toBe("true");
     const how = screen.getByRole("region", { name: "How it's calculated" });
-    expect(how.querySelector("#how-goal-plan")).not.toBeNull();
+    expect(how.querySelector<HTMLDetailsElement>("#how-goal-plan")?.open).toBe(true);
     expect(how.querySelector("#how-recent-golds")).not.toBeNull();
   });
 });

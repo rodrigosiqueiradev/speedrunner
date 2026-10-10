@@ -32,7 +32,7 @@ It's an honest analysis rather than a hype dashboard. The realistic target comes
 ## Capabilities and Constraints
 
 - `packages/core`: parser and analyzer that run in Node and the browser, plus a command-line tool. It's shared with the web app and a possible future desktop app.
-- `packages/web`: React and Vite app. It shows a summary, a route strip, ranked advice, a savings chart, a per-segment table and a "How it's calculated" section.
+- `packages/web`: React and Vite app. The run page has tabs: an overview (summary, route strip, top advice, PB odds, category score), practice (advice, practice plan, reset coach, goal planner), segments (savings chart and per-segment table), sessions, and "How it's calculated".
 - How the data is cleaned (skipped splits, mis-splits under 60% of the median, imported history) and all the thresholds are documented in `docs/how-it-works.md`. The UI has to stay consistent with that document.
 - Terms the UI uses: personal best, realistic target, sum of best, gold, typical, good-day time, save to gold, good-day save, variability, reset rate, clean segment times. The advice labels are Slow in PB, Inconsistent, Gold is rare and Runs die here.
 - Must never upload user data or add tracking that sends split contents anywhere.

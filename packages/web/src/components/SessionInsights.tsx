@@ -1,6 +1,7 @@
 import { SESSION_INSIGHT_SETTINGS as S, type Finding, type FindingStatus, type PaceBucket, type SessionInsights as Insights } from "@speedrunner/core";
 import type { MetricDoc } from "../explain";
 import { FINDING_DOCS, SESSION_DOCS } from "../session-explain";
+import { ChevronIcon } from "./Icons";
 import { InfoTip } from "./InfoTip";
 
 const STATUS: Record<FindingStatus, string> = {
@@ -14,6 +15,8 @@ const ORDER: FindingStatus[] = ["clear", "no-effect", "not-enough-data"];
 export function SessionInsights({ insights: r }: { insights: Insights }) {
   if (!r.available) return <p className="empty-note">{r.reason}</p>;
   const findings = [...r.findings].sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status));
+  const clear = findings.filter((f) => f.status === "clear");
+  const quiet = findings.filter((f) => f.status !== "clear");
   return (
     <>
       <p className="session-meta">
@@ -28,11 +31,26 @@ export function SessionInsights({ insights: r }: { insights: Insights }) {
           </>
         )}
       </p>
-      <ul className="findings">
-        {findings.map((f) => (
-          <FindingRow key={f.kind} finding={f} />
-        ))}
-      </ul>
+      {clear.length > 0 && (
+        <ul className="findings">
+          {clear.map((f) => (
+            <FindingRow key={f.kind} finding={f} />
+          ))}
+        </ul>
+      )}
+      {quiet.length > 0 && (
+        <details className="quiet-findings">
+          <summary>
+            <ChevronIcon />
+            <span>{quietSummary(quiet, clear.length > 0)}</span>
+          </summary>
+          <ul className="findings">
+            {quiet.map((f) => (
+              <FindingRow key={f.kind} finding={f} />
+            ))}
+          </ul>
+        </details>
+      )}
       <div className="pace-charts">
         <PaceChart doc={SESSION_DOCS.playing} note="Against that session's average" buckets={r.byMinutesIn} />
         <PaceChart doc={SESSION_DOCS.timeOfDay} note="When the session started, against your average" buckets={r.byTimeOfDay} />
@@ -99,6 +117,18 @@ function PaceChart({ doc, note, buckets }: { doc: MetricDoc; note: string; bucke
       </div>
     </figure>
   );
+}
+
+/** "Nothing clear yet: 3 checks found no effect, 4 checks need more sessions", for the line the quiet checks fold under. */
+function quietSummary(quiet: Finding[], afterClear: boolean): string {
+  const none = quiet.filter((f) => f.status === "no-effect").length;
+  const thin = quiet.length - none;
+  const checks = (n: number) => `${n} ${n === 1 ? "check" : "checks"}`;
+  const parts = [
+    none > 0 && `${checks(none)} found no effect`,
+    thin > 0 && `${checks(thin)} ${thin === 1 ? "needs" : "need"} more sessions`,
+  ].filter(Boolean);
+  return `${afterClear ? "Other checks" : "Nothing clear yet"}: ${parts.join(", ")}`;
 }
 
 function paceText(pace: number): string {
