@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { LIVE_CONFIG_EVENT, LIVE_RUN_KEY, isLiveConfigKey, loadLiveConfig, notifyRunChanged } from "../live/config";
+import { LIVE_CONFIG_EVENT, LIVE_RUN_KEY, isLiveConfigKey, loadLiveConfig, saveLiveRun } from "../live/config";
 import { useSplitsSync } from "../live/useSplitsSync";
 import { useLive } from "../live/useLive";
-import { loadSplitFiles, putSplitFile, type StoredSplit } from "../splitFiles";
-import { LiveCard } from "./LiveCard";
+import { loadSplitFiles, type StoredSplit } from "../splitFiles";
+import { ActionLink } from "./Controls";
+import { LiveCard, liveTitle } from "./LiveCard";
 
 /**
  * Just the live card, filling the window: for a small window next to LiveSplit or a stream overlay.
@@ -38,7 +39,7 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
   // The overlay follows LiveSplit's splits too, since in the desktop app the live page isn't open.
   const sync = useSplitsSync(config.source === "livesplit" ? view.status : null, file ?? null, (next) => {
     setFile(next);
-    void putSplitFile(LIVE_RUN_KEY, next).then(notifyRunChanged);
+    void saveLiveRun(next);
   });
 
   return (
@@ -46,16 +47,16 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
       {file === null && (
         <p className="live-card-empty">
           Choose a split file on the{" "}
-          <a href="#live" onClick={(e) => (e.preventDefault(), onBack())}>
+          <ActionLink href="#live" onClick={onBack}>
             Live stats
-          </a>{" "}
+          </ActionLink>{" "}
           page first.
         </p>
       )}
       <p className="live-overlay-hint">Esc to go back</p>
       {run && view.stats && (
         <LiveCard
-          title={`${run.game || "Unknown game"} · ${run.category}`}
+          title={liveTitle(run)}
           stats={view.stats}
           session={view.session}
           status={view.status}

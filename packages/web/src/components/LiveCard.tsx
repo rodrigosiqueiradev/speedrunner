@@ -4,6 +4,9 @@ import { STAT_BY_ID, type StatChoice } from "../live/stats";
 import { cardStyleVars, DEFAULT_STYLE, type CardStyle } from "../live/style";
 import { TrendDownIcon, TrendUpIcon } from "./Icons";
 
+/** The card's title: "Dishonored · Any%". */
+export const liveTitle = (run: { game: string; category: string }) => `${run.game || "Unknown game"} · ${run.category}`;
+
 /** The live stats card: the runner's chosen stats, in their order. Also the whole overlay window. */
 export function LiveCard({
   title,

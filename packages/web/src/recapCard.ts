@@ -1,5 +1,5 @@
 import { formatTime, pbImprovement, type YearRecap } from "@speedrunner/core";
-import { formatSave } from "./format";
+import { categoryName, formatSave } from "./format";
 import type { RecapDocKey } from "./recap-explain";
 
 /** The shareable image is a fixed 4:5 card, the shape most feeds show uncropped. */
@@ -26,9 +26,6 @@ export function hoursPlayed(ms: number): string {
   const h = ms / 3_600_000;
   return h >= 10 ? nf.format(Math.round(h)) : h.toFixed(1);
 }
-
-export const categoryName = (c: { game: string; category: string }) =>
-  `${c.game || "Unknown game"} ${c.category}`.trim();
 
 export interface CardStat {
   key: RecapDocKey;

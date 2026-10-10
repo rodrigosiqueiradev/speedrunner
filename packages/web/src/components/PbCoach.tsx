@@ -1,8 +1,10 @@
 import { ANALYSIS_DEFAULTS, describeChance, formatTime, oneIn, pbChanceFrom, resetAdvice, type PbOdds } from "@speedrunner/core";
 import { useId, useState } from "react";
 import { formatSave, parseBehind } from "../format";
-import { describeResetAfter, PB_ODDS_METRICS as M, type PbOddsDoc } from "../pbExplain";
+import { describeResetAfter, PB_ODDS_METRICS as M } from "../pbExplain";
+import { TextButton, Toggle } from "./Controls";
 import { InfoTip } from "./InfoTip";
+import { MetricHeader, StatRow } from "./Metric";
 
 /** PB odds per attempt and a forecast of how many attempts a PB takes. */
 export function PbOddsSummary({ odds }: { odds: PbOdds }) {
@@ -12,7 +14,7 @@ export function PbOddsSummary({ odds }: { odds: PbOdds }) {
   return (
     <>
       <div className="comparisons" role="table" aria-label="PB odds">
-        <Row
+        <StatRow
           doc={M.perAttempt}
           value={unreachable ? "< 0.01%" : oneIn(odds.perAttempt)}
           note={
@@ -22,13 +24,13 @@ export function PbOddsSummary({ odds }: { odds: PbOdds }) {
           }
           lead
         />
-        <Row
+        <StatRow
           doc={M.ifFinished}
           value={describeChance(odds.ifFinished)}
           note={`Typical finish ${formatTime(odds.medianFinish)}, good finish ${formatTime(odds.goodFinish)}`}
         />
         {f && (
-          <Row
+          <StatRow
             doc={M.forecast}
             value={`${f.attemptsFor50.toLocaleString("en-US")} attempts`}
             note={
@@ -57,6 +59,10 @@ export function PbOddsSummary({ odds }: { odds: PbOdds }) {
 }
 
 type Mode = "hunting" | "practising";
+const MODES: Array<{ value: Mode; label: string }> = [
+  { value: "hunting", label: "PB hunting" },
+  { value: "practising", label: "Practising" },
+];
 
 /**
  * A "should I reset?" calculator, and the odds and reset point at every split behind a button.
@@ -72,20 +78,13 @@ export function ResetCoach({ odds }: { odds: PbOdds }) {
         <span className="plan-controls-label">
           <span id="reset-mode">I'm</span> <InfoTip doc={M.mode} />
         </span>
-        <div className="toggle small" role="group" aria-labelledby="reset-mode">
-          <button aria-pressed={hunting} onClick={() => setMode("hunting")}>
-            PB hunting
-          </button>
-          <button aria-pressed={!hunting} onClick={() => setMode("practising")}>
-            Practising
-          </button>
-        </div>
+        <Toggle small labelledBy="reset-mode" options={MODES} value={mode} onChange={setMode} />
       </div>
       <ResetCalculator odds={odds} mode={mode} />
       <p className="section-foot">
-        <button className="link-button text-link" aria-expanded={showSplits} onClick={() => setShowSplits((v) => !v)}>
+        <TextButton aria-expanded={showSplits} onClick={() => setShowSplits((v) => !v)}>
           {showSplits ? "Hide the odds at each split" : `Show the odds at each of the ${odds.splits.length} splits`}
-        </button>
+        </TextButton>
       </p>
       {showSplits && (
         <div className="table-wrap">
@@ -93,8 +92,8 @@ export function ResetCoach({ odds }: { odds: PbOdds }) {
             <thead>
               <tr>
                 <th scope="col">Split</th>
-                <ColumnHead doc={M.fromSplit} label="PB chance on pace" />
-                {hunting && <ColumnHead doc={M.resetAfter} />}
+                <MetricHeader doc={M.fromSplit} label="PB chance on pace" />
+                {hunting && <MetricHeader doc={M.resetAfter} />}
               </tr>
             </thead>
             <tbody>
@@ -171,33 +170,6 @@ function ResetCalculator({ odds, mode }: { odds: PbOdds; mode: Mode }) {
         {message}
       </p>
     </div>
-  );
-}
-
-function Row({ doc, value, note, lead }: { doc: PbOddsDoc; value: string; note: string; lead?: boolean }) {
-  return (
-    <div className={`comparison${lead ? " lead" : ""}`} role="row">
-      <div className="comparison-name" role="rowheader">
-        <span className="comparison-label">
-          {doc.label} <InfoTip doc={doc} />
-        </span>
-        <span className="comparison-note">{note}</span>
-      </div>
-      <div className="comparison-delta" role="cell" />
-      <div className="comparison-time" role="cell">
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function ColumnHead({ doc, label }: { doc: PbOddsDoc; label?: string }) {
-  return (
-    <th scope="col">
-      <span className="th-inner">
-        {label ?? doc.label} <InfoTip doc={doc} />
-      </span>
-    </th>
   );
 }
 

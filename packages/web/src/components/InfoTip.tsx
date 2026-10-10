@@ -2,8 +2,11 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { MetricDoc } from "../explain";
 import { InfoIcon } from "./Icons";
 
+/** What a tooltip needs from a metric's explanation. */
+export type TipDoc = Pick<MetricDoc, "id" | "label" | "short">;
+
 /** A small "?" button that explains a metric and links to its full explanation. */
-export function InfoTip({ doc }: { doc: Pick<MetricDoc, "id" | "label" | "short"> }) {
+export function InfoTip({ doc }: { doc: TipDoc }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const id = useId();

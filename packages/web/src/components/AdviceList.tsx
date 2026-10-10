@@ -1,6 +1,6 @@
 import type { Advice, AdviceKind } from "@speedrunner/core";
 import { formatSave } from "../format";
-import { revealExplanation } from "./InfoTip";
+import { ExplainLink, TextButton } from "./Controls";
 
 const LABELS: Record<AdviceKind, string> = {
   "weak-in-pb": "Slow in PB",
@@ -77,22 +77,12 @@ export function AdviceList({
       {onMore ? (
         all.length > ranked.length && (
           <p className="section-foot">
-            <button className="link-button text-link" onClick={onMore}>
-              See all {all.length} and a practice plan
-            </button>
+            <TextButton onClick={onMore}>See all {all.length} and a practice plan</TextButton>
           </p>
         )
       ) : (
         <p className="section-foot">
-          <a
-            href="#how-advice"
-            onClick={(e) => {
-              e.preventDefault();
-              revealExplanation("advice");
-            }}
-          >
-            When each kind of advice appears
-          </a>
+          <ExplainLink id="advice">When each kind of advice appears</ExplainLink>
         </p>
       )}
     </>

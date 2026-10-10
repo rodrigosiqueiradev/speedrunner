@@ -1,7 +1,7 @@
 import { COMPONENT_KEYS, SCORE_SETTINGS, weakestComponent, type CategoryScore, type ComponentKey } from "@speedrunner/core";
 import { SCORE_METRICS } from "../explain";
 import { formatScore } from "../format";
-import { InfoTip } from "./InfoTip";
+import { MetricLabel } from "./Metric";
 
 const pct1 = (x: number) => `${(x * 100).toFixed(1)}%`;
 
@@ -47,9 +47,7 @@ export function ScoreBreakdown({ score: s }: { score: CategoryScore }) {
   return (
     <div className="score-panel">
       <div className="score-main">
-        <span className="comparison-label">
-          {SCORE_METRICS.category.label} <InfoTip doc={SCORE_METRICS.category} />
-        </span>
+        <MetricLabel doc={SCORE_METRICS.category} />
         <span className="score-value">
           {formatScore(s.score)}
           <small>/100</small>
@@ -62,9 +60,7 @@ export function ScoreBreakdown({ score: s }: { score: CategoryScore }) {
         {COMPONENT_KEYS.map((k) => (
           <div key={k} className={`score-part${s[k].score == null ? " missing" : ""}`}>
             <dt>
-              <span className="comparison-label">
-                {SCORE_METRICS[k].label} <InfoTip doc={SCORE_METRICS[k]} />
-              </span>
+              <MetricLabel doc={SCORE_METRICS[k]} />
               <span className="score-weight">{s.weights[k] ? `${Math.round(s.weights[k] * 100)}%` : ""}</span>
             </dt>
             <dd className="score-part-value">{formatScore(s[k].score)}</dd>

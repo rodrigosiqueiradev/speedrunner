@@ -1,7 +1,7 @@
 import { ANALYSIS_DEFAULTS, formatTime, type SegmentStats } from "@speedrunner/core";
 import { METRICS, type MetricDoc } from "../explain";
 import { formatSave } from "../format";
-import { InfoTip } from "./InfoTip";
+import { MetricHeader } from "./Metric";
 
 const pct = (x: number | null) => (x == null ? "-" : `${Math.round(x * 100)}%`);
 
@@ -23,11 +23,7 @@ export function SegmentTable({ segments, selected }: { segments: SegmentStats[];
           <tr>
             <th scope="col">Segment</th>
             {COLUMNS.map((c) => (
-              <th key={c.doc.id} scope="col">
-                <span className="th-inner">
-                  {c.doc.label} <InfoTip doc={c.doc} />
-                </span>
-              </th>
+              <MetricHeader key={c.doc.id} doc={c.doc} />
             ))}
           </tr>
         </thead>

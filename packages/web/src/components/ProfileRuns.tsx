@@ -1,11 +1,13 @@
 import { formatTime } from "@speedrunner/core";
 import { useState } from "react";
+import { categoryName } from "../format";
 import type { ProfileEntry } from "../profile";
 import { SAVED_FILES_DOC } from "../saved-files-explain";
+import { TextButton } from "./Controls";
 import { InfoTip } from "./InfoTip";
 
 const SHOWN = 5;
-const title = (e: ProfileEntry) => `${e.score.game || "Unknown game"} ${e.score.category}`.trim();
+const title = (e: ProfileEntry) => categoryName(e.score);
 
 /** The profile's saved runs on the run page's landing, newest first, so one opens without choosing a file. */
 export function ProfileRuns({ entries, onOpen }: { entries: ProfileEntry[]; onOpen: (key: string) => void }) {
@@ -41,9 +43,9 @@ export function ProfileRuns({ entries, onOpen }: { entries: ProfileEntry[]; onOp
       </ul>
       {sorted.length > SHOWN && (
         <p className="section-foot">
-          <button className="link-button text-link" onClick={() => setAll((x) => !x)}>
+          <TextButton aria-expanded={all} onClick={() => setAll((x) => !x)}>
             {all ? "Show fewer" : `Show all ${sorted.length} runs`}
-          </button>
+          </TextButton>
         </p>
       )}
     </section>

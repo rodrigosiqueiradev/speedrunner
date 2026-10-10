@@ -40,3 +40,9 @@ export function parseBehind(text: string): number | null {
 export function formatScore(x: number | null): string {
   return x == null ? "-" : String(Math.round(x));
 }
+
+/** "Dishonored Any%": a run's game and category, as the app names it everywhere. */
+export const categoryName = (c: { game: string; category: string }) => `${c.game || "Unknown game"} ${c.category}`.trim();
+
+/** The error when a file chosen for the profile or a recap isn't a split file. */
+export const notSplitsAdded = (fileName: string) => `We couldn't read "${fileName}" as LiveSplit splits, so it wasn't added.`;

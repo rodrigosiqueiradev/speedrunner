@@ -1,3 +1,4 @@
+import { putSplitFile, type StoredSplit } from "../splitFiles";
 import { DEFAULT_LIVESPLIT_URL, type DemoSpeed } from "./feeds";
 import { normalizeChoices, type StatChoice } from "./stats";
 import { normalizeStyle, type CardStyle } from "./style";
@@ -45,6 +46,11 @@ export function saveLiveConfig(config: LiveConfig): void {
 const RUN_CHANGED_KEY = "speedrunner.live.run-changed";
 
 /** Tells other windows (and this one) that the live split file changed, so the overlay reloads it. */
+/** Makes a split file the live run, for this window and any overlay window. */
+export function saveLiveRun(file: StoredSplit): Promise<void> {
+  return putSplitFile(LIVE_RUN_KEY, file).then(notifyRunChanged);
+}
+
 export function notifyRunChanged(): void {
   try {
     localStorage.setItem(RUN_CHANGED_KEY, String(Date.now()));

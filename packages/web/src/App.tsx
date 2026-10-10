@@ -5,7 +5,6 @@ import {
   pbOdds,
   scoreRun,
   type CategoryScore,
-  type Run,
   type TimingMethod,
 } from "@speedrunner/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -22,14 +21,17 @@ import { YearInRuns } from "./components/YearInRuns";
 import { LiveOverlay } from "./components/LiveOverlay";
 import { LivePage } from "./components/LivePage";
 import { UploadIcon } from "./components/Icons";
-import { InfoTip, revealExplanation, SHOW_PANEL } from "./components/InfoTip";
+import { SHOW_PANEL } from "./components/InfoTip";
+import { ActionLink, ExplainLink, Toggle } from "./components/Controls";
+import { ErrorMessage, Landing, PageHead, Section } from "./components/Layout";
 import { RouteStrip } from "./components/RouteStrip";
-import { panelId, RunTabs, TABS, tabFromHash, type Tab } from "./components/RunTabs";
+import { panelId, RunTabs, TabPanel, TABS, tabFromHash, type Tab } from "./components/RunTabs";
 import { SavingsChart } from "./components/SavingsChart";
 import { ScoreBreakdown } from "./components/ScoreBreakdown";
 import { SegmentTable } from "./components/SegmentTable";
 import { SessionInsights } from "./components/SessionInsights";
 import { Summary } from "./components/Summary";
+import { categoryName, notSplitsAdded } from "./format";
 import { PB_ODDS_METRICS } from "./pbExplain";
 import { isDesktop } from "./platform";
 import { categoryKey, loadProfile, saveProfile, upsertEntry, type ProfileEntry } from "./profile";
@@ -50,6 +52,11 @@ const VIEW_LINKS: Record<Exclude<View, "overlay">, string> = {
 };
 const HASH_VIEWS: Record<string, View> = { "#profile": "profile", "#recap": "recap", "#live": "live", "#live-overlay": "overlay" };
 const viewFromHash = (): View => HASH_VIEWS[window.location.hash] ?? "run";
+const TIMING_OPTIONS: Array<{ value: TimingMethod; label: string }> = [
+  { value: "RealTime", label: "Real time" },
+  { value: "GameTime", label: "Game time" },
+];
+const PRACTISE_NOTE = "Ranked by the time each segment's advice is estimated to be worth.";
 
 export function App() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -167,7 +174,7 @@ export function App() {
     try {
       keepInProfile(scoreRun(parseLss(xml)), fileName, xml);
     } catch {
-      setError(`We couldn't read "${fileName}" as LiveSplit splits, so it wasn't added.`);
+      setError(notSplitsAdded(fileName));
     }
   };
 
@@ -212,29 +219,18 @@ export function App() {
             {(["run", "profile", "recap", "live"] as const)
               .filter((v) => v !== view)
               .map((v) => (
-                <a
-                  key={v}
-                  href={v === "run" ? "#" : `#${v}`}
-                  className="keep"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    go(v);
-                  }}
-                >
+                <ActionLink key={v} href={v === "run" ? "#" : `#${v}`} className="keep" onClick={() => go(v)}>
                   {VIEW_LINKS[v]}
-                </a>
+                </ActionLink>
               ))}
             {view === "profile" && profile.length > 0 && (
               <>
-                <a
+                <ActionLink
                   href="#how-it-works"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-                  }}
+                  onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
                 >
                   How it's calculated
-                </a>
+                </ActionLink>
                 <button className="shell-button" onClick={() => profilePicker.current?.open()}>
                   <UploadIcon /> Add files
                 </button>
@@ -257,11 +253,7 @@ export function App() {
       <div className="app">
         {view === "profile" && (
           <>
-            {error && (
-              <p className="error" role="alert">
-                {error}
-              </p>
-            )}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
             <Profile
               ref={profilePicker}
               entries={profile}
@@ -295,7 +287,7 @@ export function App() {
             loaded={loaded}
             runs={savedRuns.map((e) => ({
               key: e.key,
-              label: `${e.score.game || "Unknown game"} ${e.score.category}`.trim(),
+              label: categoryName(e.score),
               file: profileFiles[e.key],
             }))}
           />
@@ -304,76 +296,66 @@ export function App() {
         {view === "run" && (
           <>
         {!ok && (
-          <section className="landing" aria-labelledby="landing-title">
-            <h1 id="landing-title">Find where your run loses time</h1>
-            <p className="lede">
-              Load your LiveSplit splits to see a realistic target time, which segments to practise first, and how
-              every number is worked out.
-            </p>
-          </section>
+          <Landing title="Find where your run loses time">
+            Load your LiveSplit splits to see a realistic target time, which segments to practise first, and how every
+            number is worked out.
+          </Landing>
         )}
 
         <FilePicker ref={picker} onLoad={load} onError={setError} compact={!!ok} />
 
         {!ok && savedRuns.length > 0 && <ProfileRuns entries={savedRuns} onOpen={openFromProfile} />}
 
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
+        {error && <ErrorMessage>{error}</ErrorMessage>}
         {result && "error" in result && (
-          <p className="error" role="alert">
+          <ErrorMessage>
             We couldn't read that file as LiveSplit splits. Make sure it's an .lss file saved from LiveSplit, not a
             layout (.lsl) or a renamed file.
-          </p>
+          </ErrorMessage>
         )}
 
         {ok && a && (
           <main className="results">
-            <div className="run-head">
-              <div>
-                <h1 className="run-title">
+            <PageHead
+              title={
+                <>
                   {a.game || "Unknown game"} <span>{a.category}</span>
-                </h1>
-                <p className="run-meta">
+                </>
+              }
+              meta={
+                <>
                   {loaded?.fileName} · {a.attemptCount.toLocaleString()} attempts ·{" "}
                   {a.finishedAttempts.toLocaleString()} finished
-                </p>
-              </div>
-              {ok.hasGameTime && <TimingToggle value={ok.run.timingMethod} onChange={setTiming} />}
-            </div>
+                </>
+              }
+            >
+              {ok.hasGameTime && (
+                <Toggle label="Timing method" options={TIMING_OPTIONS} value={ok.run.timingMethod} onChange={setTiming} />
+              )}
+            </PageHead>
 
             <div ref={tabsTop} />
             <RunTabs value={tab} onChange={(t) => showTab(t)} />
 
-            <div className="tab-panel" role="tabpanel" id={panelId("overview")} aria-labelledby="tab-overview" hidden={tab !== "overview"}>
+            <TabPanel tab="overview" current={tab}>
               <Summary analysis={a} />
               <RouteStrip segments={a.segments} onSelect={selectSegment} />
 
-              <section className="block" aria-labelledby="top-practise-title">
-                <div className="block-head">
-                  <h2 id="top-practise-title">What to practise first</h2>
-                  <p className="section-note">Ranked by the time each segment's advice is estimated to be worth.</p>
-                </div>
+              <Section titleId="top-practise-title" title="What to practise first" note={PRACTISE_NOTE}>
                 <AdviceList advice={a.advice} onSelect={selectSegment} limit={3} onMore={() => showTab("practise")} />
-              </section>
+              </Section>
 
               {ok.odds && (
-                <section className="block" aria-labelledby="odds-title">
-                  <div className="block-head">
-                    <h2 id="odds-title">Your PB odds</h2>
-                    <p className="section-note">How often an attempt beats your PB at your current form.</p>
-                  </div>
+                <Section titleId="odds-title" title="Your PB odds" note="How often an attempt beats your PB at your current form.">
                   <PbOddsSummary odds={ok.odds} />
-                </section>
+                </Section>
               )}
 
-              <section className="block" aria-labelledby="score-title">
-                <div className="block-head">
-                  <h2 id="score-title">How well you run this category</h2>
-                  <p className="section-note">From 0 to 100, worked out from this file alone so it compares across games.</p>
-                </div>
+              <Section
+                titleId="score-title"
+                title="How well you run this category"
+                note="From 0 to 100, worked out from this file alone so it compares across games."
+              >
                 <ScoreBreakdown score={ok.score} />
                 <ProfileAction
                   inProfile={profile.find((e) => e.key === categoryKey(ok.score))}
@@ -381,36 +363,27 @@ export function App() {
                   onAdd={() => keepInProfile(ok.score, loaded!.fileName, loaded!.xml)}
                   onView={() => go("profile")}
                 />
-              </section>
-            </div>
+              </Section>
+            </TabPanel>
 
-            <div className="tab-panel" role="tabpanel" id={panelId("practise")} aria-labelledby="tab-practise" hidden={tab !== "practise"}>
-              <section className="block" aria-labelledby="practise-title">
-                <div className="block-head">
-                  <h2 id="practise-title">What to practise first</h2>
-                  <p className="section-note">Ranked by the time each segment's advice is estimated to be worth.</p>
-                </div>
+            <TabPanel tab="practise" current={tab}>
+              <Section titleId="practise-title" title="What to practise first" note={PRACTISE_NOTE}>
                 <AdviceList advice={a.advice} onSelect={selectSegment} />
-              </section>
+              </Section>
 
-              <section className="block" aria-labelledby="plan-title">
-                <div className="block-head">
-                  <h2 id="plan-title">Practice plan</h2>
-                  <p className="section-note">Where an hour of practice takes the most time off a typical run.</p>
-                </div>
+              <Section titleId="plan-title" title="Practice plan" note="Where an hour of practice takes the most time off a typical run.">
                 <PracticePlan run={ok.run} analysis={a} onSelect={selectSegment} />
-              </section>
+              </Section>
 
               {ok.odds && (
-                <section className="block" aria-labelledby="reset-title">
-                  <div className="block-head">
-                    <h2 id="reset-title" className="title-with-tip">
-                      {PB_ODDS_METRICS.reset.label} <InfoTip doc={PB_ODDS_METRICS.reset} />
-                    </h2>
-                    <p className="section-note">Whether a run that's behind PB pace is still worth playing on.</p>
-                  </div>
+                <Section
+                  titleId="reset-title"
+                  title={PB_ODDS_METRICS.reset.label}
+                  tip={PB_ODDS_METRICS.reset}
+                  note="Whether a run that's behind PB pace is still worth playing on."
+                >
                   <ResetCoach odds={ok.odds} />
-                </section>
+                </Section>
               )}
 
               <GoalPlanner
@@ -421,51 +394,39 @@ export function App() {
                 fileName={loaded!.fileName}
                 odds={ok.odds}
               />
-            </div>
+            </TabPanel>
 
-            <div className="tab-panel" role="tabpanel" id={panelId("segments")} aria-labelledby="tab-segments" hidden={tab !== "segments"}>
-              <section className="block" aria-labelledby="time-title">
-                <div className="block-head">
-                  <h2 id="time-title">Where the time is</h2>
-                  <p className="section-note">How much each segment could give back against your PB.</p>
-                </div>
+            <TabPanel tab="segments" current={tab}>
+              <Section titleId="time-title" title="Where the time is" note="How much each segment could give back against your PB.">
                 <SavingsChart segments={a.segments} />
-              </section>
+              </Section>
 
-              <section className="block" aria-labelledby="segments-title">
-                <div className="block-head">
-                  <h2 id="segments-title">All segments</h2>
-                  <p className="section-note">
-                    Stats use only{" "}
-                    <a
-                      href="#how-clean-time"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        revealExplanation("clean-time");
-                      }}
-                    >
-                      clean segment times
-                    </a>
-                    .
-                  </p>
-                </div>
+              <Section
+                titleId="segments-title"
+                title="All segments"
+                note={
+                  <>
+                    Stats use only <ExplainLink id="clean-time">clean segment times</ExplainLink>.
+                  </>
+                }
+              >
                 <SegmentTable segments={a.segments} selected={selected} />
-              </section>
-            </div>
+              </Section>
+            </TabPanel>
 
-            <div className="tab-panel" role="tabpanel" id={panelId("sessions")} aria-labelledby="tab-sessions" hidden={tab !== "sessions"}>
-              <section className="block" aria-labelledby="sessions-title">
-                <div className="block-head">
-                  <h2 id="sessions-title">How your sessions go</h2>
-                  <p className="section-note">Warm-up, fatigue and tilt, stated only when enough sessions back them.</p>
-                </div>
+            <TabPanel tab="sessions" current={tab}>
+              <Section
+                titleId="sessions-title"
+                title="How your sessions go"
+                note="Warm-up, fatigue and tilt, stated only when enough sessions back them."
+              >
                 <SessionInsights insights={ok.sessions} />
-              </section>
-            </div>
+              </Section>
+            </TabPanel>
 
-            <div className="tab-panel" role="tabpanel" id={panelId("how")} aria-labelledby="tab-how" hidden={tab !== "how"}>
+            <TabPanel tab="how" current={tab}>
               <HowItWorks analysis={a} score={ok.score} odds={ok.odds} />
-            </div>
+            </TabPanel>
           </main>
         )}
           </>
@@ -490,15 +451,9 @@ function ProfileAction({
   onView: () => void;
 }) {
   const viewLink = (
-    <a
-      href="#profile"
-      onClick={(e) => {
-        e.preventDefault();
-        onView();
-      }}
-    >
+    <ActionLink href="#profile" onClick={onView}>
       View your profile
-    </a>
+    </ActionLink>
   );
   if (inProfile?.fileName === fileName) {
     return <p className="section-foot">This category is in your profile. {viewLink}</p>;
@@ -512,18 +467,6 @@ function ProfileAction({
         <span>Saved {isDesktop ? "on this computer" : "in this browser"} only.</span>
       )}
     </p>
-  );
-}
-
-function TimingToggle({ value, onChange }: { value: Run["timingMethod"]; onChange: (t: TimingMethod) => void }) {
-  return (
-    <div className="toggle" role="group" aria-label="Timing method">
-      {(["RealTime", "GameTime"] as const).map((m) => (
-        <button key={m} aria-pressed={value === m} onClick={() => onChange(m)}>
-          {m === "RealTime" ? "Real time" : "Game time"}
-        </button>
-      ))}
-    </div>
   );
 }
 

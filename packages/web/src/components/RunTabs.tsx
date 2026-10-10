@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 
 export type Tab = "overview" | "practise" | "segments" | "sessions" | "how";
 
@@ -47,6 +47,15 @@ export function RunTabs({ value, onChange }: { value: Tab; onChange: (tab: Tab) 
           {t.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** One tab's content. Hidden tabs stay rendered so links can reach into them. */
+export function TabPanel({ tab, current, children }: { tab: Tab; current: Tab; children: ReactNode }) {
+  return (
+    <div className="tab-panel" role="tabpanel" id={panelId(tab)} aria-labelledby={`tab-${tab}`} hidden={tab !== current}>
+      {children}
     </div>
   );
 }

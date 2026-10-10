@@ -2,9 +2,11 @@ import { PRACTICE_SETTINGS, formatTime, planPractice, type Run, type RunAnalysis
 import { useMemo, useState } from "react";
 import { formatSave } from "../format";
 import { PRACTICE_DOCS as D } from "../practice-explain";
+import { TextButton, Toggle } from "./Controls";
 import { InfoTip } from "./InfoTip";
+import { MetricHeader } from "./Metric";
 
-const SESSIONS = [30, 60, 90, 120];
+const SESSIONS = [30, 60, 90, 120].map((m) => ({ value: m, label: `${m} min` }));
 const TOP = 10;
 const P = PRACTICE_SETTINGS;
 
@@ -39,13 +41,7 @@ export function PracticePlan({
         <span className="plan-controls-label">
           <span id="plan-length">Session length</span> <InfoTip doc={D.plan} />
         </span>
-        <div className="toggle small" role="group" aria-labelledby="plan-length">
-          {SESSIONS.map((m) => (
-            <button key={m} aria-pressed={minutes === m} onClick={() => setMinutes(m)}>
-              {m} min
-            </button>
-          ))}
-        </div>
+        <Toggle small labelledBy="plan-length" options={SESSIONS} value={minutes} onChange={setMinutes} />
       </div>
 
       <ol className="plan" aria-label={`${minutes} minute practice plan`}>
@@ -125,11 +121,7 @@ export function PracticePlan({
             <tr>
               <th scope="col">Segment</th>
               {[D.perHour, D.gap, D.rep, D.learning].map((doc) => (
-                <th key={doc.id} scope="col">
-                  <span className="th-inner">
-                    {doc.label} <InfoTip doc={doc} />
-                  </span>
-                </th>
+                <MetricHeader key={doc.id} doc={doc} />
               ))}
             </tr>
           </thead>
@@ -159,9 +151,9 @@ export function PracticePlan({
       </div>
       {plan.ranking.length > TOP && (
         <p className="section-foot">
-          <button className="link-button text-link" aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
+          <TextButton aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
             {showAll ? `Show the top ${TOP}` : `Show all ${plan.ranking.length} segments`}
-          </button>
+          </TextButton>
         </p>
       )}
     </>

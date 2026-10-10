@@ -1,13 +1,15 @@
-import { formatTime, overallScore, referencePace, type CategoryScore, type ComponentKey } from "@speedrunner/core";
+import { formatTime, overallScore, referencePace, type ComponentKey } from "@speedrunner/core";
 import { forwardRef, useImperativeHandle, useRef, useState, type FormEvent } from "react";
 import { SCORE_METRICS, type ScoreDoc } from "../explain";
-import { formatScore, parseTypedTime } from "../format";
+import { categoryName, formatScore, parseTypedTime } from "../format";
 import { localPlace } from "../platform";
 import { referenceOf, type ProfileEntry } from "../profile";
 import { SAVED_FILES_DOC } from "../saved-files-explain";
 import { FilePicker, type FilePickerHandle } from "./FilePicker";
 import { Entry, ScoreEntries } from "./HowItWorks";
 import { InfoTip } from "./InfoTip";
+import { HowSection, Landing, PageHead, Section } from "./Layout";
+import { MetricHeader, MetricLabel, StatRow } from "./Metric";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 
 interface Props {
@@ -22,7 +24,6 @@ interface Props {
 }
 
 const pace1 = (x: number | null) => (x == null ? "-" : `${(x * 100).toFixed(1)}%`);
-const title = (s: CategoryScore) => `${s.game || "Unknown game"} ${s.category}`.trim();
 
 const COLUMNS: Array<{ doc: ScoreDoc; cell: (e: ProfileEntry) => string }> = [
   { doc: SCORE_METRICS.category, cell: (e) => formatScore(e.score.score) },
@@ -55,13 +56,10 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
   if (!selected) {
     return (
       <>
-        <section className="landing" aria-labelledby="landing-title">
-          <h1 id="landing-title">Your runner profile</h1>
-          <p className="lede">
-            Add a split file for each game and category you run. Each gets a score from 0 to 100 for how well you run
-            it, so different games sit on one scale, and your best five make your overall score.
-          </p>
-        </section>
+        <Landing title="Your runner profile">
+          Add a split file for each game and category you run. Each gets a score from 0 to 100 for how well you run it,
+          so different games sit on one scale, and your best five make your overall score.
+        </Landing>
         <FilePicker ref={filePicker} onLoad={onAdd} onError={onError} multiple noSample title="Drop your split files here" />
       </>
     );
@@ -79,56 +77,44 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
   return (
     <main className="results">
       <FilePicker ref={filePicker} onLoad={onAdd} onError={onError} multiple compact />
-      <div className="run-head">
-        <div>
-          <h1 className="run-title">Runner profile</h1>
-          <p className="run-meta">
+      <PageHead
+        title="Runner profile"
+        meta={
+          <>
             {entries.length} {entries.length === 1 ? "category" : "categories"} · saved {localPlace}
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="comparisons" role="table" aria-label="Profile scores">
-        <div className="comparison lead" role="row">
-          <div className="comparison-name" role="rowheader">
-            <span className="comparison-label">
-              {SCORE_METRICS.overall.label} <InfoTip doc={SCORE_METRICS.overall} />
-            </span>
-            <span className="comparison-note">
-              {overall.score == null
-                ? "Needs a category that isn't provisional"
-                : overall.counted.length === 1
-                  ? "From your one scored category. Add more to average your best 5"
-                  : `Average of your ${overall.counted.length} best categories`}
-            </span>
-          </div>
-          <div className="comparison-delta" role="cell" />
-          <div className="comparison-time" role="cell">
-            {formatScore(overall.score)}
-          </div>
-        </div>
+        <StatRow
+          doc={SCORE_METRICS.overall}
+          value={formatScore(overall.score)}
+          note={
+            overall.score == null
+              ? "Needs a category that isn't provisional"
+              : overall.counted.length === 1
+                ? "From your one scored category. Add more to average your best 5"
+                : `Average of your ${overall.counted.length} best categories`
+          }
+          lead
+        />
         {strongest && <ScoreRow label="Strongest" entry={strongest} onSelect={select} />}
         {weakest && <ScoreRow label="Weakest" entry={weakest} onSelect={select} />}
       </div>
 
-      <section className="block" aria-labelledby="categories-title">
-        <div className="block-head">
-          <h2 id="categories-title">Categories</h2>
-          <p className="section-note">
-            Each score only uses that category's split file. Pick a category to see how its score is made up.
-          </p>
-        </div>
+      <Section
+        titleId="categories-title"
+        title="Categories"
+        note="Each score only uses that category's split file. Pick a category to see how its score is made up."
+      >
         <div className="table-wrap">
           <table className="segments profile-table">
             <thead>
               <tr>
                 <th scope="col">Category</th>
                 {COLUMNS.map((c) => (
-                  <th key={c.doc.id} scope="col">
-                    <span className="th-inner">
-                      {c.doc.id === "category-score" ? "Score" : c.doc.label} <InfoTip doc={c.doc} />
-                    </span>
-                  </th>
+                  <MetricHeader key={c.doc.id} doc={c.doc} label={c.doc.id === "category-score" ? "Score" : undefined} />
                 ))}
               </tr>
             </thead>
@@ -137,7 +123,7 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
                 <tr key={e.key} className={e.key === selected.key ? "selected" : undefined}>
                   <th scope="row">
                     <button className="link-button" onClick={() => select(e.key)}>
-                      {title(e.score)}
+                      {categoryName(e.score)}
                     </button>
                     {e.score.provisional && <span className="flag muted">provisional</span>}
                   </th>
@@ -149,15 +135,19 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
             </tbody>
           </table>
         </div>
-      </section>
+      </Section>
 
-      <section id="category-detail" className="block" aria-labelledby="detail-title">
-        <div className="block-head">
-          <h2 id="detail-title">{title(selected.score)}</h2>
-          <p className="section-note">
+      <Section
+        id="category-detail"
+        titleId="detail-title"
+        title={categoryName(selected.score)}
+        note={
+          <>
             From {selected.fileName}, {selected.score.timingMethod === "GameTime" ? "game time" : "real time"},{" "}
             {selected.score.finishedAttempts.toLocaleString()} finished runs.
-          </p>
+          </>
+        }
+        actions={
           <p className="detail-actions">
             {canOpen(selected.key) ? (
               <button className="primary" onClick={() => onOpen(selected.key)}>
@@ -171,44 +161,43 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
             )}
             <InfoTip doc={SAVED_FILES_DOC} />
           </p>
-        </div>
+        }
+      >
         <ScoreBreakdown score={selected.score} />
         <Reference key={selected.key} entry={selected} onSet={(t) => onSetReference(selected.key, t)} />
         <p className="section-foot">
           <button className="link-button remove" onClick={() => onRemove(selected.key)}>
-            Remove {title(selected.score)} from your profile
+            Remove {categoryName(selected.score)} from your profile
           </button>
         </p>
-      </section>
+      </Section>
 
-      <section id="how-it-works" className="how" aria-labelledby="how-title">
-        <h2 id="how-title">How the score is calculated</h2>
-        <p className="section-note">
-          Everything is worked out from your split files {localPlace}. Examples use {title(selected.score)}.
-        </p>
+      <HowSection
+        title="How the score is calculated"
+        note={
+          <>
+            Everything is worked out from your split files {localPlace}. Examples use {categoryName(selected.score)}.
+          </>
+        }
+      >
         <ScoreEntries score={selected.score} />
         <Entry doc={SAVED_FILES_DOC} />
-      </section>
+      </HowSection>
     </main>
   );
 });
 
 function ScoreRow({ label, entry, onSelect }: { label: string; entry: ProfileEntry; onSelect: (key: string) => void }) {
   return (
-    <div className="comparison" role="row">
-      <div className="comparison-name" role="rowheader">
-        <span className="comparison-label">{label}</span>
-        <span className="comparison-note">
-          <button className="link-button" onClick={() => onSelect(entry.key)}>
-            {title(entry.score)}
-          </button>
-        </span>
-      </div>
-      <div className="comparison-delta" role="cell" />
-      <div className="comparison-time" role="cell">
-        {formatScore(entry.score.score)}
-      </div>
-    </div>
+    <StatRow
+      label={label}
+      value={formatScore(entry.score.score)}
+      note={
+        <button className="link-button" onClick={() => onSelect(entry.key)}>
+          {categoryName(entry.score)}
+        </button>
+      }
+    />
   );
 }
 
@@ -242,9 +231,7 @@ function Reference({ entry, onSet }: { entry: ProfileEntry; onSet: (time: number
   return (
     <div className="reference">
       <p className="reference-text">
-        <span className="comparison-label">
-          {SCORE_METRICS.pace.label} <InfoTip doc={SCORE_METRICS.pace} />
-        </span>{" "}
+        <MetricLabel doc={SCORE_METRICS.pace} />{" "}
         {sentence}
       </p>
       <form className="reference-form" onSubmit={submit}>

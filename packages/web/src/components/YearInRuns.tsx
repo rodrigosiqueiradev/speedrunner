@@ -7,17 +7,20 @@ import {
   cardHighlights,
   cardStats,
   categoriesLine,
-  categoryName,
   drawRecapCard,
   loadCardFonts,
 } from "../recapCard";
 import { RECAP_DOCS } from "../recap-explain";
 import { RECAP_FILES_DOC } from "../saved-files-explain";
 import { saveFile } from "../download";
+import { categoryName, notSplitsAdded } from "../format";
 import { canCopyImage, canvasToPng, copyPng } from "../shareImage";
 import { FilePicker, type FilePickerHandle } from "./FilePicker";
 import { Entry } from "./HowItWorks";
+import { TextButton, Toggle } from "./Controls";
 import { InfoTip } from "./InfoTip";
+import { ErrorMessage, HowSection, Landing, PageHead } from "./Layout";
+import { StatRow } from "./Metric";
 
 type Source = "profile" | "open" | "added";
 
@@ -126,7 +129,7 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
         removed: choices.removed.filter((k) => k !== key),
       });
     } catch {
-      setError(`We couldn't read "${fileName}" as LiveSplit splits, so it wasn't added.`);
+      setError(notSplitsAdded(fileName));
     }
   };
 
@@ -148,37 +151,30 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
     }
   };
 
-  const errorLine = error && (
-    <p className="error" role="alert">
-      {error}
-    </p>
-  );
+  const errorLine = error && <ErrorMessage>{error}</ErrorMessage>;
 
   if (!recap) {
     return (
       <>
-        <section className="landing" aria-labelledby="landing-title">
-          <h1 id="landing-title">Your year in runs</h1>
-          <p className="lede">
-            Add the split files for every game and category you ran. You get your attempts, hours played, PBs, best gold,
-            most improved segment and longest streak for the year, as an image you can share if you want to.
-          </p>
-        </section>
+        <Landing title="Your year in runs">
+          Add the split files for every game and category you ran. You get your attempts, hours played, PBs, best gold,
+          most improved segment and longest streak for the year, as an image you can share if you want to.
+        </Landing>
         <FilePicker ref={picker} onLoad={add} onError={setError} multiple noSample title="Drop your split files here" />
         {errorLine}
         {leftOut.length > 0 && (
           <p className="section-foot recap-left-out">
             You left out {leftOut.map((f) => categoryName(f.run)).join(", ")}.{" "}
-            <button className="link-button text-link" onClick={() => onChoicesChange({ ...choices, removed: [] })}>
+            <TextButton onClick={() => onChoicesChange({ ...choices, removed: [] })}>
               Put {leftOut.length === 1 ? "it" : "them"} back
-            </button>
+            </TextButton>
           </p>
         )}
         {files.length > 0 && (
-          <p className="error" role="alert">
+          <ErrorMessage>
             {files.length === 1 ? "This file has" : "These files have"} no dated attempts, so there's no year to recap.
             LiveSplit saves a start time with each attempt from version 1.6 onwards.
-          </p>
+          </ErrorMessage>
         )}
       </>
     );
@@ -193,25 +189,24 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
   return (
     <main className="results">
       <FilePicker ref={picker} onLoad={add} onError={setError} multiple compact />
-      <div className="run-head">
-        <div>
-          <h1 className="run-title">
+      <PageHead
+        title={
+          <>
             Year in runs <span>{recap.year}</span>
-          </h1>
-          <p className="run-meta" title={recap.categories.map(categoryName).join(", ")}>
-            {categoriesLine(recap)} · made {localPlace}, nothing is uploaded
-          </p>
-        </div>
+          </>
+        }
+        meta={`${categoriesLine(recap)} · made ${localPlace}, nothing is uploaded`}
+        metaTitle={recap.categories.map(categoryName).join(", ")}
+      >
         {years.length > 1 && (
-          <div className="toggle" role="group" aria-label="Year">
-            {years.slice(0, 6).map((y) => (
-              <button key={y} aria-pressed={y === shown} onClick={() => setYear(y)}>
-                {y}
-              </button>
-            ))}
-          </div>
+          <Toggle
+            label="Year"
+            options={years.slice(0, 6).map((y) => ({ value: y, label: y }))}
+            value={recap.year}
+            onChange={setYear}
+          />
         )}
-      </div>
+      </PageHead>
       {errorLine}
 
       <div className="recap">
@@ -242,29 +237,16 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
           <h2 className="recap-subhead">On the card</h2>
           <div className="comparisons recap-stats" role="table" aria-label="On the card">
             {stats.map((st) => (
-              <div className="comparison" role="row" key={st.key}>
-                <div className="comparison-name" role="rowheader">
-                  <span className="comparison-label">
-                    {st.label} <InfoTip doc={RECAP_DOCS[st.key]} />
-                  </span>
-                </div>
-                <div className="comparison-delta" role="cell" />
-                <div className="comparison-time" role="cell">
-                  {st.value}
-                </div>
-              </div>
+              <StatRow key={st.key} doc={RECAP_DOCS[st.key]} label={st.label} value={st.value} />
             ))}
             {highlights.map((h) => (
-              <div className="comparison recap-highlight" role="row" key={h.key}>
-                <div className="comparison-name" role="rowheader">
-                  <span className="comparison-label">
-                    {h.label} <InfoTip doc={RECAP_DOCS[h.key]} />
-                  </span>
-                  <span className="comparison-note">
-                    {h.title}: {h.detail}
-                  </span>
-                </div>
-              </div>
+              <StatRow
+                key={h.key}
+                className="recap-highlight"
+                doc={RECAP_DOCS[h.key]}
+                label={h.label}
+                note={`${h.title}: ${h.detail}`}
+              />
             ))}
           </div>
           {undated > 0 && (
@@ -306,13 +288,12 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
                 <span>
                   {categoryName(f.run)} <span className="flag muted">left out</span>
                 </span>
-                <button
-                  className="link-button text-link"
+                <TextButton
                   onClick={() => onChoicesChange({ ...choices, removed: choices.removed.filter((k) => k !== keyOf(f.run)) })}
                   aria-label={`Put ${categoryName(f.run)} back in this recap`}
                 >
                   Put back
-                </button>
+                </TextButton>
               </li>
             ))}
           </ul>
@@ -322,14 +303,12 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
         </div>
       </div>
 
-      <section id="how-it-works" className="how" aria-labelledby="how-title">
-        <h2 id="how-title">How it's calculated</h2>
-        <p className="section-note">Everything is worked out from your split files {localPlace}.</p>
+      <HowSection note={`Everything is worked out from your split files ${localPlace}.`}>
         {Object.values(RECAP_DOCS).map((doc) => (
           <Entry key={doc.id} doc={doc} />
         ))}
         <Entry doc={RECAP_FILES_DOC} />
-      </section>
+      </HowSection>
     </main>
   );
 });

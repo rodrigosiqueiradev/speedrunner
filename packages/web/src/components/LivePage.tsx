@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { LIVE_RUN_KEY, loadLiveConfig, notifyRunChanged, saveLiveConfig, type LiveConfig } from "../live/config";
+import { LIVE_RUN_KEY, loadLiveConfig, saveLiveConfig, saveLiveRun, type LiveConfig } from "../live/config";
 import { useSplitsSync, type SplitsSync } from "../live/useSplitsSync";
 import { DEFAULT_LIVESPLIT_URL, DEMO_SPEEDS, type DemoSpeed } from "../live/feeds";
 import { DEFAULT_CHOICES, LIVE_STATS, STAT_BY_ID, type StatChoice } from "../live/stats";
@@ -14,12 +14,14 @@ import {
 } from "../live/style";
 import { useLive } from "../live/useLive";
 import { isDesktop } from "../platform";
-import { loadSplitFiles, putSplitFile, type StoredSplit } from "../splitFiles";
+import { loadSplitFiles, type StoredSplit } from "../splitFiles";
+import { TextButton, Toggle } from "./Controls";
 import { FilePicker, type FilePickerHandle } from "./FilePicker";
 import { ArrowDownIcon, ArrowUpIcon } from "./Icons";
 import { Entry } from "./HowItWorks";
 import { InfoTip } from "./InfoTip";
-import { LiveCard } from "./LiveCard";
+import { ErrorMessage, HowSection, Landing, PageHead } from "./Layout";
+import { LiveCard, liveTitle } from "./LiveCard";
 
 export interface LiveRunOption {
   key: string;
@@ -36,6 +38,12 @@ const SOURCE_DOC = {
     "Demo: replays your recent attempts from the split file, resets included, sped up so a whole run takes the time you pick. Use it to choose your stats without running.",
   ],
 };
+
+const SOURCES: Array<{ value: LiveConfig["source"]; label: string }> = [
+  { value: "livesplit", label: "LiveSplit" },
+  { value: "demo", label: "Demo" },
+];
+const SPEEDS = (Object.keys(DEMO_SPEEDS) as DemoSpeed[]).map((s) => ({ value: s, label: DEMO_SPEEDS[s].label }));
 
 /** The live stats page: pick a run, a timer and which stats to show, and preview the card. */
 export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: StoredSplit | null }) {
@@ -75,13 +83,13 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
   const choose = (next: StoredSplit) => {
     setError(null);
     setFile(next);
-    void putSplitFile(LIVE_RUN_KEY, next).then(notifyRunChanged);
+    void saveLiveRun(next);
   };
 
   const view = useLive(file?.xml ?? null, config);
   const sync = useSplitsSync(config.source === "livesplit" ? view.status : null, file, choose);
   const run = view.ctx?.run;
-  const title = run ? `${run.game || "Unknown game"} · ${run.category}` : "";
+  const title = run ? liveTitle(run) : "";
 
   const shown = config.stats.filter((c) => c.shown);
   const hidden = config.stats.filter((c) => !c.shown);
@@ -125,23 +133,16 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
   if (!file || view.error) {
     return (
       <>
-        <section className="landing" aria-labelledby="live-title">
-          <h1 id="live-title">Live stats</h1>
-          <p className="lede">
-            Pick the split file you're running, then follow LiveSplit's timer with the stats you choose, in a small
-            window or a stream overlay.
-          </p>
-        </section>
+        <Landing title="Live stats" titleId="live-title">
+          Pick the split file you're running, then follow LiveSplit's timer with the stats you choose, in a small window
+          or a stream overlay.
+        </Landing>
         {view.error && (
-          <p className="error" role="alert">
+          <ErrorMessage>
             We couldn't read "{file?.fileName}" as LiveSplit splits. Choose the .lss file you saved from LiveSplit.
-          </p>
+          </ErrorMessage>
         )}
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
+        {error && <ErrorMessage>{error}</ErrorMessage>}
         <FilePicker onLoad={(fileName, xml) => choose({ fileName, xml })} onError={setError} />
         {runs.length > 0 && (
           <section className="profile-runs" aria-labelledby="live-runs-title">
@@ -162,14 +163,15 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
 
   return (
     <main className="live-page">
-      <div className="run-head">
-        <div>
-          <h1 className="run-title">Live stats</h1>
-          <p className="run-meta">
+      <PageHead
+        title="Live stats"
+        meta={
+          <>
             {title}
             {/\.lss$/i.test(file.fileName) && <> · {file.fileName}</>}
-          </p>
-        </div>
+          </>
+        }
+      >
         <div className="live-run-switch">
           {runs.length > 0 && (
             <select
@@ -193,12 +195,8 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
           <button onClick={() => picker.current?.open()}>Choose file</button>
           {fileMenu}
         </div>
-      </div>
-      {error && (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      )}
+      </PageHead>
+      {error && <ErrorMessage>{error}</ErrorMessage>}
 
       <div className="live-layout">
         <div className="live-settings">
@@ -206,13 +204,7 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
             <h2 id="live-source-title" className="title-with-tip">
               Timer source <InfoTip doc={SOURCE_DOC} />
             </h2>
-            <div className="toggle" role="group" aria-label="Timer source">
-              {(["livesplit", "demo"] as const).map((s) => (
-                <button key={s} aria-pressed={config.source === s} onClick={() => update({ source: s })}>
-                  {s === "livesplit" ? "LiveSplit" : "Demo"}
-                </button>
-              ))}
-            </div>
+            <Toggle label="Timer source" options={SOURCES} value={config.source} onChange={(source) => update({ source })} />
             {config.source === "livesplit" ? (
               <form
                 className="live-url"
@@ -230,13 +222,7 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
             ) : (
               <div className="live-speed">
                 <span className="live-speed-label">Replay speed</span>
-                <div className="toggle small" role="group" aria-label="Replay speed">
-                  {(Object.keys(DEMO_SPEEDS) as DemoSpeed[]).map((s) => (
-                    <button key={s} aria-pressed={config.speed === s} onClick={() => update({ speed: s })}>
-                      {DEMO_SPEEDS[s].label}
-                    </button>
-                  ))}
-                </div>
+                <Toggle small label="Replay speed" options={SPEEDS} value={config.speed} onChange={(speed) => update({ speed })} />
               </div>
             )}
           </section>
@@ -244,15 +230,14 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
           <section className="block live-block" aria-labelledby="live-stats-title">
             <div className="live-stats-head">
               <h2 id="live-stats-title">On the card</h2>
-              <button
-                className="link-button text-link"
+              <TextButton
                 onClick={() => {
                   update({ stats: DEFAULT_CHOICES });
                   setAnnouncement("Stats reset to the standard set.");
                 }}
               >
                 Reset to standard
-              </button>
+              </TextButton>
             </div>
             {shown.length === 0 ? (
               <p className="section-note">No stats yet. Add some from the list below.</p>
@@ -347,14 +332,12 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
         </div>
       </div>
 
-      <section className="how live-how" aria-labelledby="live-how-title">
-        <h2 id="live-how-title">How it's calculated</h2>
-        <p className="section-note">Every stat compares the run with your own history in the split file.</p>
+      <HowSection className="live-how" note="Every stat compares the run with your own history in the split file.">
         <Entry doc={SOURCE_DOC} />
         {LIVE_STATS.map((s) => (
           <Entry key={s.id} doc={s.doc} />
         ))}
-      </section>
+      </HowSection>
     </main>
   );
 }
@@ -366,9 +349,9 @@ function StyleSettings({ look, onChange, onReset }: { look: CardStyle; onChange:
     <section className="block live-block" aria-labelledby="live-style-title">
       <div className="live-stats-head">
         <h2 id="live-style-title">Card style</h2>
-        <button className="link-button text-link" disabled={isDefaultStyle(look)} onClick={onReset}>
+        <TextButton disabled={isDefaultStyle(look)} onClick={onReset}>
           Reset to standard
-        </button>
+        </TextButton>
       </div>
       <ul className="live-style-colours" aria-label="Colours">
         {STYLE_COLOURS.map(({ key, label }) => (

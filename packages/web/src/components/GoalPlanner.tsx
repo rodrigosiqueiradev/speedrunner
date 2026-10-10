@@ -27,6 +27,8 @@ import { GOAL_DOCS } from "../goal-explain";
 import { PB_ODDS_METRICS } from "../pbExplain";
 import { isDesktop } from "../platform";
 import { InfoTip } from "./InfoTip";
+import { ErrorMessage, Section } from "./Layout";
+import { MetricLabel } from "./Metric";
 
 interface Props {
   run: Run;
@@ -46,13 +48,12 @@ export function GoalPlanner({ run, analysis, xml, fileName, odds }: Props) {
 
   return (
     <>
-      <section className="block" aria-labelledby="goal-title">
-        <div className="block-head">
-          <h2 id="goal-title" className="title-with-tip">
-            What does your goal take? <InfoTip doc={GOAL_DOCS.plan} />
-          </h2>
-          <p className="section-note">Pick a goal time to see where the time would come from.</p>
-        </div>
+      <Section
+        titleId="goal-title"
+        title="What does your goal take?"
+        tip={GOAL_DOCS.plan}
+        note="Pick a goal time to see where the time would come from."
+      >
         <div className="goal">
           <form className="reference-form" onSubmit={(e) => e.preventDefault()}>
             <label htmlFor="goal-time">Goal: sub</label>
@@ -73,7 +74,7 @@ export function GoalPlanner({ run, analysis, xml, fileName, odds }: Props) {
           {plan && odds && plan.status !== "no-data" && plan.status !== "already" && <GoalOdds odds={odds} goal={plan.goal} />}
         </div>
         {plan && plan.status !== "out-of-reach" && plan.segments.some((s) => s.cut > 0) && <PlanTable plan={plan} />}
-      </section>
+      </Section>
 
       <ExportComparisons run={run} analysis={analysis} xml={xml} fileName={fileName} plan={plan} />
     </>
@@ -261,13 +262,12 @@ function ExportComparisons({ run, analysis, xml, fileName, plan }: Props & { pla
   };
 
   return (
-    <section className="block" aria-labelledby="export-title">
-      <div className="block-head">
-        <h2 id="export-title" className="title-with-tip">
-          Race these in LiveSplit <InfoTip doc={GOAL_DOCS.copy} />
-        </h2>
-        <p className="section-note">Save a copy of your splits with these as comparisons. Your original file isn't changed.</p>
-      </div>
+    <Section
+      titleId="export-title"
+      title="Race these in LiveSplit"
+      tip={GOAL_DOCS.copy}
+      note="Save a copy of your splits with these as comparisons. Your original file isn't changed."
+    >
       <fieldset className="export-options">
         <legend className="visually-hidden">Comparisons to add</legend>
         {options.map((o) => (
@@ -281,12 +281,11 @@ function ExportComparisons({ run, analysis, xml, fileName, plan }: Props & { pla
               onChange={(e) => setChosen((c) => ({ ...c, [o.key]: e.target.checked }))}
             />
             <span className="export-text">
-              <span className="comparison-label">
+              <MetricLabel doc={o.doc}>
                 <label htmlFor={`export-${o.key}`} className="export-label">
                   {o.label}
-                </label>{" "}
-                <InfoTip doc={o.doc} />
-              </span>
+                </label>
+              </MetricLabel>
               <span id={`export-${o.key}-note`} className="comparison-note">
                 {o.note}
               </span>
@@ -301,12 +300,8 @@ function ExportComparisons({ run, analysis, xml, fileName, plan }: Props & { pla
         </button>
         <span role="status">{saved && `Saved ${saved}${isDesktop ? " to your Downloads folder" : ""}.`}</span>
       </p>
-      {error && (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      )}
-    </section>
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+    </Section>
   );
 }
 

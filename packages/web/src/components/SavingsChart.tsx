@@ -2,9 +2,14 @@ import { formatTime, type SegmentStats } from "@speedrunner/core";
 import { useState } from "react";
 import { METRICS } from "../explain";
 import { formatSave } from "../format";
+import { TextButton, Toggle } from "./Controls";
 import { InfoTip } from "./InfoTip";
 
 type Order = "route" | "biggest";
+const ORDERS: Array<{ value: Order; label: string }> = [
+  { value: "biggest", label: "Biggest first" },
+  { value: "route", label: "Route order" },
+];
 const TOP = 10;
 
 /**
@@ -34,10 +39,7 @@ export function SavingsChart({ segments }: { segments: SegmentStats[] }) {
             <i className="swatch gold" /> Down to gold <InfoTip doc={METRICS.timeSaveVsGold} />
           </span>
         </div>
-        <div className="toggle small" role="group" aria-label="Order">
-          <button aria-pressed={order === "biggest"} onClick={() => setOrder("biggest")}>Biggest first</button>
-          <button aria-pressed={order === "route"} onClick={() => setOrder("route")}>Route order</button>
-        </div>
+        <Toggle small label="Order" options={ORDERS} value={order} onChange={setOrder} />
       </div>
       <div className="bars" role="table" aria-label="Time save per segment">
         {shown.map((s) => {
@@ -91,9 +93,9 @@ export function SavingsChart({ segments }: { segments: SegmentStats[] }) {
       </div>
       {rows.length > TOP && (
         <p className="chart-more">
-          <button className="link-button text-link" aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
+          <TextButton aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
             {showAll ? `Show the ${order === "biggest" ? "biggest" : "first"} ${TOP}` : `Show all ${rows.length} segments`}
-          </button>
+          </TextButton>
         </p>
       )}
     </figure>
