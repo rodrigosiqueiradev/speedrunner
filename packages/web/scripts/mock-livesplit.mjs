@@ -18,20 +18,31 @@ const toMs = (s) => {
   const m = /(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(s ?? "");
   return m ? ((+m[1] * 60 + +m[2]) * 60 + +m[3]) * 1000 : null;
 };
+// LiveSplit sends names as plain text, so undo the file's XML escaping.
+const XML_ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+const unescape = (s) =>
+  s.replace(/&(?:#x([\da-f]+)|#(\d+)|(\w+));/gi, (m, hex, dec, name) =>
+    hex ? String.fromCodePoint(parseInt(hex, 16)) : dec ? String.fromCodePoint(+dec) : (XML_ENTITIES[name] ?? m),
+  );
 const segments = [...xml.matchAll(/<Segment>([\s\S]*?)<\/Segment>/g)].map(([, body]) => ({
-  name: /<Name>([\s\S]*?)<\/Name>/.exec(body)[1],
+  name: unescape(/<Name>([\s\S]*?)<\/Name>/.exec(body)[1]),
   history: new Map(
     [...body.matchAll(/<Time id="(-?\d+)">([\s\S]*?)<\/Time>/g)].map(([, id, t]) => [id, toMs(/<RealTime>(.*?)<\/RealTime>/.exec(t)?.[1])]),
   ),
 }));
 const last = segments.at(-1);
 const attempt = attemptArg || [...last.history.keys()].filter((id) => +id > 0 && last.history.get(id) != null).at(-1);
+// When each split happens, and its split time: null for a skipped split, which LiveSplit reports as "-".
+// The segment after a skip holds the time since the last split, so a skip happens with the split before it.
 const splitAt = [];
+const splitTime = [];
 let acc = 0;
 for (const s of segments) {
   if (!s.history.has(attempt)) break;
-  acc += s.history.get(attempt) ?? 0;
+  const time = s.history.get(attempt);
+  acc += time ?? 0;
   splitAt.push(acc);
+  splitTime.push(time == null ? null : acc);
 }
 const speed = Number(speedArg);
 const holdMs = 5000;
@@ -66,10 +77,11 @@ server.on("connection", (ws) =>
       getcurrenttimerphase: t.phase,
       getsplitindex: String(t.index),
       getcurrenttime: fmt(t.time),
-      getlastsplittime: t.index > 0 ? fmt(splitAt[t.index - 1]) : "-",
+      getlastsplittime: t.index > 0 && splitTime[t.index - 1] != null ? fmt(splitTime[t.index - 1]) : "-",
       getcurrentsplitname: t.index >= 0 && t.index < segments.length ? segments[t.index].name : "-",
-      // Older LiveSplit servers don't know this command and never answer it: NO_SPLITS_PATH=1 acts like one.
-      ...(process.env.NO_SPLITS_PATH ? {} : { getsplitspath: file }),
+      // Older LiveSplit servers don't know these commands and never answer them: NO_SPLITS_PATH=1 acts like one.
+      // The replay is in real time, the clock LiveSplit compares against by default.
+      ...(process.env.NO_SPLITS_PATH ? {} : { getsplitspath: file, gettimingmethod: "RealTime" }),
     };
     const answer = answers[String(raw).trim()];
     if (answer != null) ws.send(answer);
