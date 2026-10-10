@@ -27,7 +27,7 @@ It's an honest analysis rather than a hype dashboard. The realistic target comes
 - The input is a LiveSplit `.lss` file (LiveSplit 1.0 through current). The app also ships a sample run.
 - Used between practice sessions, often next to LiveSplit and a game.
 - Supports both real time and game time (there's a toggle when the file has game time).
-- The profile keeps scores in local storage only.
+- The profile keeps scores and a copy of each category's split file on the runner's device only (local storage and IndexedDB).
 
 ## Capabilities and Constraints
 

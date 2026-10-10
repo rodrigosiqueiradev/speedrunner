@@ -93,7 +93,7 @@ completion 68 (27 of the 40 good runs from halfway finished) × 20% + improvemen
 
 ### Profile
 
-The profile keeps one score per game and category, saved in your browser (or on your computer in the desktop app).
+The profile keeps one score per game and category, saved in your browser (or on your computer in the desktop app). It also keeps a copy of each category's split file there, so Year in runs starts from your profile's files and any category opens in Analyse a run without choosing the file again. Categories added before files were kept need their file added once more.
 Adding a newer file for the same game and category replaces the old one.
 
 - **Overall score:** the average of your 5 best category scores, leaving out provisional ones.

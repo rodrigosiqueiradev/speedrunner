@@ -546,6 +546,9 @@ table.profile-table th:first-child { white-space: nowrap; }
 .recap-highlight { grid-template-columns: minmax(0, 1fr); }
 .recap-files { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
 .recap-files li { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); padding: var(--s2) 0; border-bottom: 1px solid var(--line); font-size: 0.9375rem; }
+.profile-runs { max-width: 640px; margin: var(--s6) auto 0; }
+.profile-runs h2 { font-size: 1rem; margin: 0 0 var(--s2); }
+.profile-runs li { align-items: center; }
 .recap-file { color: var(--ink-3); font-size: 0.875rem; margin-left: var(--s1); overflow-wrap: anywhere; }
 @media (max-width: 760px) {
   .recap { grid-template-columns: minmax(0, 1fr); gap: var(--s5); }

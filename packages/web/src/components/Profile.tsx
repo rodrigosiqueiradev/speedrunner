@@ -14,6 +14,9 @@ interface Props {
   onAdd: (fileName: string, xml: string) => void;
   onError: (message: string) => void;
   onRemove: (key: string) => void;
+  /** Whether the category's split file is kept, so it can be opened on the run page. */
+  canOpen: (key: string) => boolean;
+  onOpen: (key: string) => void;
   onSetReference: (key: string, time: number | null) => void;
 }
 
@@ -37,7 +40,7 @@ const COLUMNS: Array<{ doc: ScoreDoc; cell: (e: ProfileEntry) => string }> = [
 
 /** The runner profile: one score per game and category, and an overall score from the best of them. */
 export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
-  { entries, onAdd, onError, onRemove, onSetReference },
+  { entries, onAdd, onError, onRemove, canOpen, onOpen, onSetReference },
   picker,
 ) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -153,6 +156,21 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
             {selected.score.finishedAttempts.toLocaleString()} finished runs.
           </p>
         </div>
+        <p className="section-foot profile-action">
+          {canOpen(selected.key) ? (
+            <>
+              <button className="primary" onClick={() => onOpen(selected.key)}>
+                Open in Analyse a run
+              </button>
+              <span>Uses the copy of {selected.fileName} kept with your profile.</span>
+            </>
+          ) : (
+            <span>
+              This category was added before split files were kept with your profile. Add {selected.fileName} again to
+              open it from here and include it in Year in runs.
+            </span>
+          )}
+        </p>
         <ScoreBreakdown score={selected.score} />
         <Reference key={selected.key} entry={selected} onSet={(t) => onSetReference(selected.key, t)} />
         <p className="section-foot">

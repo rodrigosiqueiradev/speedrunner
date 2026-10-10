@@ -18,30 +18,74 @@ import { FilePicker, type FilePickerHandle } from "./FilePicker";
 import { Entry } from "./HowItWorks";
 import { InfoTip } from "./InfoTip";
 
+type Source = "profile" | "open" | "added";
+
 interface RecapFile {
   fileName: string;
   run: Run;
+  source: Source;
 }
 
+/** What the runner changed on this page: files added here, and categories taken out of the recap. */
+export interface RecapChoices {
+  added: Array<{ fileName: string; run: Run }>;
+  removed: string[];
+}
+
+export const NO_RECAP_CHOICES: RecapChoices = { added: [], removed: [] };
+
 interface Props {
-  /** The split file open on the run page, if any, so the recap can start from it. */
-  initial?: { fileName: string; xml: string } | null;
+  /** The split files kept with the profile, by category key. */
+  profileFiles: Array<{ key: string; fileName: string; xml: string }>;
+  /** The split file open on the run page, if any. */
+  open?: { fileName: string; xml: string } | null;
+  choices: RecapChoices;
+  onChoicesChange: (next: RecapChoices) => void;
 }
 
 const keyOf = (run: Run) => `${run.game.trim().toLowerCase()}|${run.category.trim().toLowerCase()}`;
 
+const tryParse = (xml: string): Run | null => {
+  try {
+    return parseLss(xml);
+  } catch {
+    return null;
+  }
+};
+
+const SOURCE_NOTE: Record<Source, string | null> = {
+  profile: "from your profile",
+  open: "open in Analyse a run",
+  added: null,
+};
+
 /** A yearly recap across the runner's split files, drawn as an image they can save and share. */
-export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRuns({ initial }, ref) {
+export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRuns(
+  { profileFiles, open, choices, onChoicesChange },
+  ref,
+) {
   const picker = useRef<FilePickerHandle>(null);
   useImperativeHandle(ref, () => ({ open: () => picker.current?.open() }));
-  const [files, setFiles] = useState<RecapFile[]>(() => {
-    if (!initial) return [];
-    try {
-      return [{ fileName: initial.fileName, run: parseLss(initial.xml) }];
-    } catch {
-      return [];
-    }
-  });
+
+  const profileRuns = useMemo(
+    () =>
+      profileFiles.flatMap((f) => {
+        const run = tryParse(f.xml);
+        return run ? [{ fileName: f.fileName, run, source: "profile" as const }] : [];
+      }),
+    [profileFiles],
+  );
+  const openRun = useMemo(() => (open ? tryParse(open.xml) : null), [open]);
+
+  // One file per game and category, so attempts aren't counted twice: a file added here wins, then the
+  // profile's, then the one open on the run page.
+  const files = useMemo(() => {
+    const byKey = new Map<string, RecapFile>();
+    if (open && openRun) byKey.set(keyOf(openRun), { fileName: open.fileName, run: openRun, source: "open" });
+    for (const f of profileRuns) byKey.set(keyOf(f.run), f);
+    for (const f of choices.added) byKey.set(keyOf(f.run), { ...f, source: "added" });
+    return [...byKey.entries()].filter(([k]) => !choices.removed.includes(k)).map(([, f]) => f);
+  }, [open, openRun, profileRuns, choices]);
   const [error, setError] = useState<string | null>(null);
   const [year, setYear] = useState<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -70,8 +114,12 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
     setStatus(null);
     try {
       const run = parseLss(xml);
+      const key = keyOf(run);
       // A newer file for the same game and category replaces the older one, so attempts aren't counted twice.
-      setFiles((fs) => [...fs.filter((f) => keyOf(f.run) !== keyOf(run)), { fileName, run }]);
+      onChoicesChange({
+        added: [...choices.added.filter((f) => keyOf(f.run) !== key), { fileName, run }],
+        removed: choices.removed.filter((k) => k !== key),
+      });
     } catch {
       setError(`We couldn't read "${fileName}" as LiveSplit splits, so it wasn't added.`);
     }
@@ -219,10 +267,16 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
               <li key={keyOf(f.run)}>
                 <span>
                   {categoryName(f.run)} <span className="recap-file">{f.fileName}</span>
+                  {SOURCE_NOTE[f.source] && <span className="flag muted">{SOURCE_NOTE[f.source]}</span>}
                 </span>
                 <button
                   className="link-button remove"
-                  onClick={() => setFiles((fs) => fs.filter((x) => x !== f))}
+                  onClick={() =>
+                    onChoicesChange({
+                      added: choices.added.filter((x) => keyOf(x.run) !== keyOf(f.run)),
+                      removed: [...choices.removed, keyOf(f.run)],
+                    })
+                  }
                   aria-label={`Remove ${categoryName(f.run)}`}
                 >
                   Remove

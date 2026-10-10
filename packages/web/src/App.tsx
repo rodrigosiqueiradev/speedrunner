@@ -1,4 +1,13 @@
-import { analyzeRun, analyzeSessions, parseLss, pbOdds, scoreRun, type Run, type TimingMethod } from "@speedrunner/core";
+import {
+  analyzeRun,
+  analyzeSessions,
+  parseLss,
+  pbOdds,
+  scoreRun,
+  type CategoryScore,
+  type Run,
+  type TimingMethod,
+} from "@speedrunner/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { AdviceList } from "./components/AdviceList";
@@ -21,6 +30,8 @@ import { Summary } from "./components/Summary";
 import { PB_ODDS_METRICS } from "./pbExplain";
 import { isDesktop } from "./platform";
 import { categoryKey, loadProfile, saveProfile, upsertEntry, type ProfileEntry } from "./profile";
+import { deleteSplitFile, loadSplitFiles, putSplitFile, type StoredSplit } from "./splitFiles";
+import { NO_RECAP_CHOICES, type RecapChoices } from "./components/YearInRuns";
 
 interface Loaded {
   fileName: string;
@@ -40,12 +51,26 @@ export function App() {
   const [view, setView] = useState<View>(viewFromHash);
   const [tab, setTab] = useState<Tab>(tabFromHash);
   const [profile, setProfile] = useState<ProfileEntry[]>(loadProfile);
+  // The split file behind each profile category, so other pages can open it without choosing it again.
+  const [profileFiles, setProfileFiles] = useState<Record<string, StoredSplit>>({});
+  // Files added or removed on Year in runs, kept while the app is open.
+  const [recapChoices, setRecapChoices] = useState<RecapChoices>(NO_RECAP_CHOICES);
   const picker = useRef<FilePickerHandle>(null);
   const profilePicker = useRef<FilePickerHandle>(null);
   const recapPicker = useRef<FilePickerHandle>(null);
   const tabsTop = useRef<HTMLDivElement>(null);
 
   useEffect(() => saveProfile(profile), [profile]);
+  useEffect(() => {
+    let live = true;
+    void loadSplitFiles().then((stored) => {
+      // Anything added while the store was loading is newer, so it wins.
+      if (live) setProfileFiles((now) => ({ ...stored, ...now }));
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
   useEffect(() => {
     const onHash = () => {
       setView(viewFromHash());
@@ -106,11 +131,24 @@ export function App() {
     if (scroll && window.scrollY > Math.max(0, top)) window.scrollTo({ top });
   };
 
+  const keepInProfile = (score: CategoryScore, fileName: string, xml: string) => {
+    const key = categoryKey(score);
+    setProfile((p) => upsertEntry(p, score, fileName));
+    setProfileFiles((f) => ({ ...f, [key]: { fileName, xml } }));
+    void putSplitFile(key, { fileName, xml });
+    // A category put back in the profile comes back to Year in runs too.
+    setRecapChoices((c) => ({ ...c, removed: c.removed.filter((k) => k !== key) }));
+  };
+
+  const removeFromProfile = (key: string) => {
+    setProfile((p) => p.filter((e) => e.key !== key));
+    setProfileFiles(({ [key]: _gone, ...rest }) => rest);
+    void deleteSplitFile(key);
+  };
+
   const addToProfile = (fileName: string, xml: string) => {
     try {
-      const run = parseLss(xml);
-      const score = scoreRun(run);
-      setProfile((p) => upsertEntry(p, score, fileName));
+      keepInProfile(scoreRun(parseLss(xml)), fileName, xml);
     } catch {
       setError(`We couldn't read "${fileName}" as LiveSplit splits, so it wasn't added.`);
     }
@@ -122,6 +160,20 @@ export function App() {
     setSelected(null);
     setLoaded({ fileName, xml });
   };
+
+  const openFromProfile = (key: string) => {
+    const file = profileFiles[key];
+    if (!file) return;
+    load(file.fileName, file.xml);
+    go("run");
+  };
+
+  // Profile categories whose split file is kept, so they can be opened or recapped.
+  const savedRuns = profile.filter((e) => profileFiles[e.key]);
+  const recapProfileFiles = useMemo(
+    () => profile.flatMap((e) => (profileFiles[e.key] ? [{ key: e.key, ...profileFiles[e.key] }] : [])),
+    [profile, profileFiles],
+  );
 
   const selectSegment = (index: number) => {
     showTab("segments", { scroll: false });
@@ -199,7 +251,9 @@ export function App() {
                 addToProfile(name, xml);
               }}
               onError={setError}
-              onRemove={(key) => setProfile((p) => p.filter((e) => e.key !== key))}
+              onRemove={removeFromProfile}
+              canOpen={(key) => !!profileFiles[key]}
+              onOpen={openFromProfile}
               onSetReference={(key, time) =>
                 setProfile((p) => p.map((e) => (e.key === key ? { ...e, typedReference: time } : e)))
               }
@@ -207,7 +261,15 @@ export function App() {
           </>
         )}
 
-        {view === "recap" && <YearInRuns ref={recapPicker} initial={loaded} />}
+        {view === "recap" && (
+          <YearInRuns
+            ref={recapPicker}
+            profileFiles={recapProfileFiles}
+            open={loaded}
+            choices={recapChoices}
+            onChoicesChange={setRecapChoices}
+          />
+        )}
 
         {view === "run" && (
           <>
@@ -222,6 +284,23 @@ export function App() {
         )}
 
         <FilePicker ref={picker} onLoad={load} onError={setError} compact={!!ok} />
+
+        {!ok && savedRuns.length > 0 && (
+          <section className="block profile-runs" aria-labelledby="profile-runs-title">
+            <h2 id="profile-runs-title">Or open a run from your profile</h2>
+            <ul className="recap-files">
+              {savedRuns.map((e) => (
+                <li key={e.key}>
+                  <span>
+                    {`${e.score.game || "Unknown game"} ${e.score.category}`.trim()}{" "}
+                    <span className="recap-file">{profileFiles[e.key].fileName}</span>
+                  </span>
+                  <button onClick={() => openFromProfile(e.key)}>Open</button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {error && (
           <p className="error" role="alert">
@@ -284,7 +363,7 @@ export function App() {
                 <ProfileAction
                   inProfile={profile.find((e) => e.key === categoryKey(ok.score))}
                   fileName={loaded!.fileName}
-                  onAdd={() => setProfile((p) => upsertEntry(p, ok.score, loaded!.fileName))}
+                  onAdd={() => keepInProfile(ok.score, loaded!.fileName, loaded!.xml)}
                   onView={() => go("profile")}
                 />
               </section>

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/App";
 
@@ -85,3 +85,53 @@ describe("year in runs", () => {
     expect(screen.getByRole("alert").textContent).toMatch(/no dated attempts/);
   });
 });
+
+describe("split files kept with the profile", () => {
+  it("are recapped and open on the run page without choosing them again", async () => {
+    const first = render(<App />);
+    fireEvent.click(screen.getByRole("link", { name: "Profile" }));
+    upload([sample, "dishonored.lss"]);
+    await screen.findByRole("heading", { name: "Runner profile" });
+    first.unmount();
+
+    // After a restart, Year in runs starts from the profile's file.
+    render(<App />);
+    fireEvent.click(screen.getByRole("link", { name: "Year in runs" }));
+    await screen.findByRole("heading", { name: "Year in runs 2017" });
+    expect(screen.getByText("dishonored.lss")).toBeTruthy();
+    expect(screen.getByText("from your profile")).toBeTruthy();
+
+    // The profile opens the category on the run page.
+    fireEvent.click(screen.getByRole("link", { name: "Profile" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open in Analyse a run" }));
+    expect(await screen.findByRole("heading", { name: /Dishonored/, level: 1 })).toBeTruthy();
+    expect(document.querySelector(".run-meta")?.textContent).toMatch(/^dishonored\.lss · /);
+  });
+
+  it("are offered on the run page before a file is chosen", async () => {
+    const first = render(<App />);
+    upload([sample, "dishonored.lss"]);
+    fireEvent.click(await screen.findByRole("button", { name: "Add to your profile" }));
+    first.unmount();
+
+    render(<App />);
+    const list = await screen.findByRole("region", { name: "Or open a run from your profile" });
+    fireEvent.click(within(list).getByRole("button", { name: "Open" }));
+    expect(await screen.findByRole("heading", { name: /Dishonored/, level: 1 })).toBeTruthy();
+  });
+
+  it("asks for the file again for a category saved before files were kept", async () => {
+    localStorage.setItem("speedrunner.profile.v3", JSON.stringify([await profileEntry()]));
+    render(<App />);
+    fireEvent.click(screen.getByRole("link", { name: "Profile" }));
+    expect(screen.getByText(/Add old\.lss again to open it from here/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Open in Analyse a run" })).toBeNull();
+  });
+});
+
+async function profileEntry() {
+  const { parseLss, scoreRun } = await import("@speedrunner/core");
+  const score = scoreRun(parseLss(sample));
+  const { categoryKey } = await import("../src/profile");
+  return { key: categoryKey(score), fileName: "old.lss", addedAt: "2026-01-01", score, typedReference: null };
+}
