@@ -690,7 +690,7 @@ button:disabled { opacity: 0.5; cursor: default; }
  * reads the same in a window and on stream. Its inks keep the system's meanings on that dark ground:
  * blue for time ahead or a good call, gold for golds, plain ink for everything else.
  */
-:root { --card-line: #22304a; --card-ahead: #86b6ef; --card-gold: #f0c25a; }
+:root { --card-line: #22304a; --card-ahead: #86b6ef; --card-gold: #f0c25a; --card-down: #ff8a8a; }
 .live-card {
   background: var(--shell); color: var(--shell-ink); border: 1px solid var(--card-line); border-radius: var(--radius); padding: var(--s4);
   font-variant-numeric: tabular-nums;
@@ -708,6 +708,9 @@ button:disabled { opacity: 0.5; cursor: default; }
 .live-row dd { margin: 0; text-align: right; display: flex; flex-direction: column; min-width: 0; }
 .live-value { font-family: var(--mono); font-size: var(--live-value-size, 1.375rem); font-weight: 500; line-height: 1.2; }
 .live-value.word { font-family: var(--sans); letter-spacing: -0.01em; }
+.live-detail[data-trend] { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.live-detail[data-trend="up"] svg { color: var(--card-ahead); }
+.live-detail[data-trend="down"] svg { color: var(--card-down); }
 .live-detail { font-size: 0.75rem; color: var(--shell-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .live-row[data-tone="ahead"] .live-value { color: var(--card-ahead); }
 .live-row[data-tone="gold"] .live-value { color: var(--card-gold); }

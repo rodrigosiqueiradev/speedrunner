@@ -1,6 +1,7 @@
 import type { LiveSession, LiveStats } from "@speedrunner/core";
 import type { FeedStatus } from "../live/feeds";
 import { STAT_BY_ID, type StatChoice } from "../live/stats";
+import { TrendDownIcon, TrendUpIcon } from "./Icons";
 
 /** The live stats card: the runner's chosen stats, in their order. Also the whole overlay window. */
 export function LiveCard({
@@ -34,7 +35,13 @@ export function LiveCard({
                 <dt>{def.doc.label}</dt>
                 <dd>
                   <span className={v?.word ? "live-value word" : "live-value"}>{v?.value ?? "–"}</span>
-                  {v?.detail && <span className="live-detail">{v.detail}</span>}
+                  {v?.detail && (
+                    <span className="live-detail" data-trend={v.trend}>
+                      {v.trend === "up" && <TrendUpIcon label="Up" />}
+                      {v.trend === "down" && <TrendDownIcon label="Down" />}
+                      {v.detail}
+                    </span>
+                  )}
                 </dd>
               </div>
             );

@@ -47,3 +47,16 @@ export const ArrowDownIcon = () => (
     <path d="M8 3v10M4 9l4 4 4-4" />
   </svg>
 );
+
+/** Small filled direction marks for a value that moved; they carry a label for screen readers. */
+export const TrendUpIcon = ({ label }: { label: string }) => (
+  <svg width="10" height="10" viewBox="0 0 10 10" role="img" aria-label={label}>
+    <path d="M5 1.5 9 8H1z" fill="currentColor" />
+  </svg>
+);
+
+export const TrendDownIcon = ({ label }: { label: string }) => (
+  <svg width="10" height="10" viewBox="0 0 10 10" role="img" aria-label={label}>
+    <path d="M5 8.5 1 2h8z" fill="currentColor" />
+  </svg>
+);

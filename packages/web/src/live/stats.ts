@@ -9,6 +9,8 @@ export interface StatView {
   tone?: "ahead" | "behind" | "gold";
   /** A word rather than a number, set in the text face. */
   word?: boolean;
+  /** Which way the value moved since the last split, shown as a coloured arrow before the detail. */
+  trend?: "up" | "down";
 }
 
 export interface LiveStatDef {
@@ -74,7 +76,8 @@ export const LIVE_STATS: LiveStatDef[] = [
       const move = before == null || describeChance(before) === describeChance(s.pbChance) ? undefined : before;
       return {
         value: describeChance(s.pbChance),
-        detail: move == null ? undefined : `${s.pbChance > move ? "up" : "down"} from ${describeChance(move)}`,
+        detail: move == null ? undefined : `from ${describeChance(move)}`,
+        trend: move == null ? undefined : s.pbChance > move ? "up" : "down",
       };
     },
   },
