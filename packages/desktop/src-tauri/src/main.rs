@@ -5,6 +5,8 @@
 // split files are read and analysed in the page, exactly as in the browser.
 fn main() {
     tauri::Builder::default()
+        // Opens the download page of a newer version in the user's browser.
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // The window is built here instead of from tauri.conf.json so files the page offers
             // to save (such as a copy of the splits with new comparisons) are allowed. Without a

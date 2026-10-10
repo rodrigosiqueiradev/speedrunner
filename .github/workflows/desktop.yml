@@ -55,6 +55,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev patchelf
       - run: npm ci
+      # The app shows its version and compares it with the latest release, so it carries the tag's.
+      - name: Use the tag as the app version
+        if: env.RELEASE_TAG != ''
+        shell: bash
+        run: node .github/scripts/set-app-version.mjs "$RELEASE_TAG"
       - run: npm run app -w packages/desktop -- ${{ matrix.args }}
       - name: Collect the portable app
         shell: bash

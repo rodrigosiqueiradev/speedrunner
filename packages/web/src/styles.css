@@ -754,3 +754,9 @@ html.overlay-mode, html.overlay-mode body { background: var(--shell); }
   .live-layout { grid-template-columns: minmax(0, 1fr); }
   .live-preview { position: static; order: -1; max-width: 400px; }
 }
+
+/* Desktop app: a newer version is out, and the version and update switch in the footer. */
+.update-banner { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); margin: 0 0 var(--s5); padding: var(--s3) var(--s4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--accent-wash); color: var(--ink); }
+.update-actions { display: flex; align-items: center; gap: var(--s3); flex-shrink: 0; }
+.version-note { display: inline-flex; align-items: center; gap: var(--s3); margin-left: var(--s3); }
+.version-note label { display: inline-flex; align-items: center; gap: var(--s1); cursor: pointer; }

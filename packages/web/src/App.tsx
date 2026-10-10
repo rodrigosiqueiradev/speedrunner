@@ -22,6 +22,7 @@ import { YearInRuns } from "./components/YearInRuns";
 import { LiveOverlay } from "./components/LiveOverlay";
 import { LivePage } from "./components/LivePage";
 import { UploadIcon } from "./components/Icons";
+import { UpdateBanner, useUpdates, VersionNote } from "./components/UpdateBanner";
 import { SHOW_PANEL } from "./components/InfoTip";
 import { ActionLink, ExplainLink, Toggle } from "./components/Controls";
 import { ErrorMessage, Landing, PageHead, Section } from "./components/Layout";
@@ -76,6 +77,9 @@ export function App() {
   const profilePicker = useRef<FilePickerHandle>(null);
   const recapPicker = useRef<FilePickerHandle>(null);
   const tabsTop = useRef<HTMLDivElement>(null);
+
+  // Only the desktop app's main window checks for new versions; the overlay and the web app don't.
+  const updates = useUpdates(isDesktop && view !== "overlay");
 
   useEffect(() => saveProfile(profile), [profile]);
   useEffect(() => {
@@ -265,6 +269,9 @@ export function App() {
       </header>
 
       <div className="app">
+        {updates.update && updates.version && (
+          <UpdateBanner update={updates.update} current={updates.version} onDismiss={updates.dismiss} />
+        )}
         {view === "profile" && (
           <>
             {error && <ErrorMessage>{error}</ErrorMessage>}
@@ -449,7 +456,10 @@ export function App() {
           </>
         )}
 
-        <footer className="footer">Your splits never leave {isDesktop ? "your computer" : "your browser"}.</footer>
+        <footer className="footer">
+          Your splits never leave {isDesktop ? "your computer" : "your browser"}.
+          {updates.version && <VersionNote version={updates.version} checking={updates.checking} onChange={updates.setChecking} />}
+        </footer>
       </div>
     </>
   );
