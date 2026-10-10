@@ -8,5 +8,9 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
     "app": "npm run app -w packages/desktop"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "fsevents": false
   }
 }
