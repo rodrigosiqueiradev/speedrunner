@@ -194,9 +194,12 @@ button.primary:hover { background: var(--accent-fill-hover); border-color: var(-
 /* Results */
 .results { display: flex; flex-direction: column; }
 .run-head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s4); flex-wrap: wrap; margin-bottom: var(--s5); }
+/* The heading takes the free space and the toggle keeps its place, so switching years or files never moves it. */
+.run-head > div:first-child { flex: 1 1 0; min-width: 0; }
+.run-head > .toggle { flex: none; }
 .run-title { font-size: clamp(1.6rem, 3.2vw, 2.1rem); letter-spacing: -0.02em; line-height: 1.2; }
 .run-title span { color: var(--ink-3); font-weight: 500; }
-.run-meta { margin: var(--s1) 0 0; color: var(--ink-3); font-size: 0.875rem; }
+.run-meta { margin: var(--s1) 0 0; color: var(--ink-3); font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Run tabs: sticky under the shell so the sections stay one click away */
 .run-tabs {

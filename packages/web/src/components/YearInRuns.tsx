@@ -198,7 +198,7 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
           <h1 className="run-title">
             Year in runs <span>{recap.year}</span>
           </h1>
-          <p className="run-meta">
+          <p className="run-meta" title={recap.categories.map(categoryName).join(", ")}>
             {categoriesLine(recap)} · made {localPlace}, nothing is uploaded
           </p>
         </div>
