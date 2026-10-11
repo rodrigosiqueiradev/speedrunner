@@ -7,7 +7,11 @@ import { TableWrap } from "../src/components/Layout";
 // Vitest swaps CSS imports for empty strings, so read the stylesheet itself.
 const css = readFileSync(join(__dirname, "../src/styles.css"), "utf8");
 
-/** The declarations of the first rule whose selector is exactly `selector`. */
+/**
+ * The declarations of the first rule whose selector is exactly `selector`, written on one line as the rest of
+ * styles.css is. A rule split over lines or moved behind a comment comes back empty and fails the test, so
+ * update this helper rather than the assertions if the stylesheet's format changes.
+ */
 function rule(selector: string): string {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return css.match(new RegExp(`^${escaped} \\{([^}]*)\\}`, "m"))?.[1] ?? "";
@@ -47,14 +51,13 @@ describe("sticky table headers", () => {
       </TableWrap>,
     );
     const wrap = container.querySelector<HTMLElement>(".table-wrap")!;
-    const table = container.querySelector("table")!;
     Object.defineProperty(wrap, "clientWidth", { configurable: true, value: 800 });
 
-    Object.defineProperty(table, "offsetWidth", { configurable: true, value: 780 });
+    Object.defineProperty(wrap, "scrollWidth", { configurable: true, value: 800 });
     act(() => report());
     expect(wrap.classList.contains("overflowing")).toBe(false);
 
-    Object.defineProperty(table, "offsetWidth", { configurable: true, value: 900 });
+    Object.defineProperty(wrap, "scrollWidth", { configurable: true, value: 900 });
     act(() => report());
     expect(wrap.classList.contains("overflowing")).toBe(true);
   });

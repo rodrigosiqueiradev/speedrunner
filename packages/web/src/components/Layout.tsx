@@ -108,7 +108,8 @@ export function ErrorMessage({ children }: { children: ReactNode }) {
 /**
  * The box around a table. Its header row sticks to the top of the window while the page scrolls, which
  * needs a box that doesn't scroll. When the window is too narrow for the table, the box scrolls sideways
- * instead, so no column is cut off.
+ * instead, so no column is cut off. The header then only sticks inside the box, so it scrolls away with a
+ * long table; the styles make the segments table fit down to 800px wide windows so that is rare.
  */
 export function TableWrap({ className, children }: { className?: string; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -118,10 +119,11 @@ export function TableWrap({ className, children }: { className?: string; childre
     const wrap = ref.current;
     const table = wrap?.querySelector("table");
     if (!wrap || !table || typeof ResizeObserver === "undefined") return;
-    const check = () => setOverflowing(table.offsetWidth > wrap.clientWidth);
+    const check = () => setOverflowing(wrap.scrollWidth > wrap.clientWidth);
     const observer = new ResizeObserver(check);
     observer.observe(wrap);
     observer.observe(table);
+    check();
     return () => observer.disconnect();
   }, []);
 
