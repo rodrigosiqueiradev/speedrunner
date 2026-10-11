@@ -52,6 +52,12 @@ export async function openOverlayWindow(onTop: boolean): Promise<void> {
     decorations: false,
     alwaysOnTop: onTop,
     ...place,
+    // OBS's Window Capture, on its default Automatic method, uses Windows Graphics Capture only for
+    // window classes it knows draw with the GPU, such as Chromium's (any class containing "Chrome").
+    // Every other class gets BitBlt, which sees an empty window where WebView2 (Chromium) draws.
+    // Naming the class this way lets OBS capture the overlay without changing its settings. Windows
+    // only; the Rust side accepts it from here, though the JS types don't list it.
+    ...({ windowClassname: "SpeedrunnerOverlay_Chrome" } as object),
   });
   await new Promise<void>((resolve, reject) => {
     void overlay.once("tauri://created", () => resolve());
