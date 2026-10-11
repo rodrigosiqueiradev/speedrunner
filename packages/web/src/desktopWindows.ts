@@ -36,9 +36,9 @@ async function besideMainWindow(): Promise<{ x: number; y: number } | null> {
 /**
  * Opens the live card in its own borderless window next to the main one, or brings it forward if
  * it's already open. It has no title bar, so it sits next to LiveSplit or under a stream capture
- * without a frame. Resolves once the window exists, and rejects if it couldn't be made.
+ * without a frame, and stays above other windows when `onTop` is set. Resolves once the window exists, and rejects if it couldn't be made.
  */
-export async function openOverlayWindow(): Promise<void> {
+export async function openOverlayWindow(onTop: boolean): Promise<void> {
   const open = await WebviewWindow.getByLabel(OVERLAY_LABEL);
   if (open) return open.setFocus();
   const place = await besideMainWindow();
@@ -50,6 +50,7 @@ export async function openOverlayWindow(): Promise<void> {
     minWidth: 220,
     minHeight: 160,
     decorations: false,
+    alwaysOnTop: onTop,
     ...place,
   });
   await new Promise<void>((resolve, reject) => {
@@ -57,6 +58,9 @@ export async function openOverlayWindow(): Promise<void> {
     void overlay.once<unknown>("tauri://error", (e) => reject(new Error(String(e.payload))));
   });
 }
+
+/** Keeps this window above other windows, or lets them cover it again. */
+export const keepThisWindowOnTop = (onTop: boolean) => getCurrentWebviewWindow().setAlwaysOnTop(onTop);
 
 /** Moves the borderless window with the mouse, as its missing title bar would. */
 export const dragThisWindow = () => getCurrentWebviewWindow().startDragging();

@@ -13,6 +13,8 @@ export interface LiveConfig {
   timing: TimingMethod;
   stats: StatChoice[];
   style: CardStyle;
+  /** Whether the desktop app's overlay window stays above other windows, such as LiveSplit or a game. */
+  onTop: boolean;
 }
 
 const KEY = "speedrunner.live.v1";
@@ -35,6 +37,7 @@ export function loadLiveConfig(): LiveConfig {
     timing: saved.timing === "GameTime" ? "GameTime" : "RealTime",
     stats: normalizeChoices(saved.stats),
     style: normalizeStyle(saved.style),
+    onTop: saved.onTop !== false,
   };
 }
 

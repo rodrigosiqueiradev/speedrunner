@@ -127,7 +127,7 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
   const openOverlay = () => {
     const url = `${window.location.pathname}${window.location.search}#live-overlay`;
     // The desktop app opens its own borderless window; a browser opens a pop-up.
-    if (isDesktop) openOverlayWindow().catch(() => setError("The overlay window didn't open. Try again, or restart the app."));
+    if (isDesktop) openOverlayWindow(config.onTop).catch(() => setError("The overlay window didn't open. Try again, or restart the app."));
     else window.open(url, "speedrunner-live", "popup,width=360,height=560");
   };
 
@@ -351,6 +351,12 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
           )}
           <p className="live-preview-foot">
             <button onClick={openOverlay}>Open as overlay</button>
+            {isDesktop && (
+              <label className="live-on-top">
+                <input type="checkbox" checked={config.onTop} onChange={(e) => update({ onTop: e.target.checked })} />
+                Keep the overlay on top of other windows
+              </label>
+            )}
             <span>
               {isDesktop
                 ? "A borderless window to keep next to LiveSplit or capture in OBS. Drag it anywhere to move it, and press Esc in it to close it."

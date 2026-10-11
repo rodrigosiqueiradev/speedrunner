@@ -692,6 +692,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .live-sync[data-state="missing"] { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s2); padding: var(--s3); border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); }
 .live-preview-foot { display: flex; flex-direction: column; gap: var(--s2); margin: var(--s3) 0 0; font-size: 0.875rem; color: var(--ink-2); }
 .live-preview-foot button { align-self: flex-start; }
+.live-on-top { display: flex; align-items: center; gap: var(--s2); color: var(--ink); cursor: pointer; }
 .live-how { margin-top: var(--s6); }
 
 /*

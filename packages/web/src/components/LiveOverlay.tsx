@@ -3,7 +3,7 @@ import { LIVE_CONFIG_EVENT, LIVE_RUN_KEY, isLiveConfigKey, loadLiveConfig, saveL
 import { useSplitsSync } from "../live/useSplitsSync";
 import { useLive } from "../live/useLive";
 import { loadSplitFiles, type StoredSplit } from "../splitFiles";
-import { closeThisWindow, dragThisWindow, isOverlayWindow } from "../desktopWindows";
+import { closeThisWindow, dragThisWindow, isOverlayWindow, keepThisWindowOnTop } from "../desktopWindows";
 import { ActionLink } from "./Controls";
 import { CloseIcon } from "./Icons";
 import { LiveCard, liveTitle } from "./LiveCard";
@@ -37,6 +37,10 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
   }, [onBack]);
 
   const borderless = isOverlayWindow();
+  // Follows the setting on the live page, even while this window is open.
+  useEffect(() => {
+    if (borderless) void keepThisWindowOnTop(config.onTop);
+  }, [borderless, config.onTop]);
   const view = useLive(file?.xml ?? null, config);
   const run = view.ctx?.run;
   // The overlay follows LiveSplit's splits too, since in the desktop app the live page isn't open.
