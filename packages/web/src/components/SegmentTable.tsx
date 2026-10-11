@@ -2,6 +2,7 @@ import { ANALYSIS_DEFAULTS, formatTime, type LuckSuggestion, type SegmentStats }
 import { METRICS, type MetricDoc } from "../explain";
 import { formatSave } from "../format";
 import { MetricHeader } from "./Metric";
+import { TableWrap } from "./Layout";
 
 const pct = (x: number | null) => (x == null ? "-" : `${Math.round(x * 100)}%`);
 
@@ -32,7 +33,7 @@ export function SegmentTable({
 }) {
   const suggested = new Map(luck?.suggestions.map((x) => [x.index, x]));
   return (
-    <div className="table-wrap">
+    <TableWrap>
       <table className="segments">
         <thead>
           <tr>
@@ -83,7 +84,7 @@ export function SegmentTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </TableWrap>
   );
 }
 

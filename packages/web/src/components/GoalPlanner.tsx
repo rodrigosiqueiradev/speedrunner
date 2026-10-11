@@ -28,7 +28,7 @@ import { GOAL_DOCS } from "../goal-explain";
 import { PB_ODDS_METRICS } from "../pbExplain";
 import { isDesktop } from "../platform";
 import { InfoTip } from "./InfoTip";
-import { ErrorMessage, Section } from "./Layout";
+import { ErrorMessage, Section, TableWrap } from "./Layout";
 import { MetricLabel } from "./Metric";
 
 interface Props {
@@ -156,7 +156,7 @@ function GoalOdds({ odds, goal }: { odds: PbOdds; goal: number }) {
 
 function PlanTable({ plan }: { plan: GoalPlan }) {
   return (
-    <div className="table-wrap goal-table">
+    <TableWrap className="goal-table">
       <table>
         <thead>
           <tr>
@@ -187,7 +187,7 @@ function PlanTable({ plan }: { plan: GoalPlan }) {
             ))}
         </tbody>
       </table>
-    </div>
+    </TableWrap>
   );
 }
 

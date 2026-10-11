@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { InfoTip, type TipDoc } from "./InfoTip";
 
 /** A page's intro before anything is loaded: a big title and one lede paragraph. */
@@ -102,5 +102,32 @@ export function ErrorMessage({ children }: { children: ReactNode }) {
     <p className="error" role="alert">
       {children}
     </p>
+  );
+}
+
+/**
+ * The box around a table. Its header row sticks to the top of the window while the page scrolls, which
+ * needs a box that doesn't scroll. When the window is too narrow for the table, the box scrolls sideways
+ * instead, so no column is cut off.
+ */
+export function TableWrap({ className, children }: { className?: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useLayoutEffect(() => {
+    const wrap = ref.current;
+    const table = wrap?.querySelector("table");
+    if (!wrap || !table || typeof ResizeObserver === "undefined") return;
+    const check = () => setOverflowing(table.offsetWidth > wrap.clientWidth);
+    const observer = new ResizeObserver(check);
+    observer.observe(wrap);
+    observer.observe(table);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className={["table-wrap", overflowing && "overflowing", className].filter(Boolean).join(" ")}>
+      {children}
+    </div>
   );
 }

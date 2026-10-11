@@ -369,6 +369,7 @@ button.primary:hover { background: var(--accent-fill-hover); border-color: var(-
 }
 .infotip-panel a { font-size: 0.8125rem; font-weight: 500; }
 th .infotip-panel { left: auto; right: -10px; }
+th:last-child .infotip-panel { right: 0; }
 @keyframes pop { from { opacity: 0; transform: translateY(-4px); } }
 
 /* Advice: a ranked list */
@@ -408,18 +409,31 @@ th .infotip-panel { left: auto; right: -10px; }
 .tooltip b { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 500; }
 
 /* Tables */
-/* Long tables scroll inside a box that fits under the shell and run tabs, so the header row stays in view. */
-.table-wrap { overflow: auto; max-height: calc(100vh - 120px); scroll-padding-top: 44px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+/*
+ * The header row sticks under the shell (and the run tabs on a run page) while the page scrolls. That only
+ * works when nothing between the table and the page scrolls, so the wrap doesn't scroll, and long segment
+ * names wrap to keep the table inside it.
+ */
+.table-wrap { --sticky-top: 56px; overflow-x: clip; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.tab-panel .table-wrap { --sticky-top: 102px; }
+/* Too narrow to fit (TableWrap measures it): scroll sideways, and the header stays at the top of the table. */
+.table-wrap.overflowing { --sticky-top: 0px; overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 0.9375rem; }
 th, td { text-align: right; padding: 10px var(--s3); border-bottom: 1px solid var(--line); white-space: nowrap; }
 tbody tr:last-child > * { border-bottom: none; }
 td { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 0.875rem; }
-thead th { color: var(--ink-2); font-weight: 500; font-size: 0.8125rem; background: var(--surface-sunk); vertical-align: bottom; position: sticky; top: 0; z-index: 2; }
+thead th { color: var(--ink-2); font-weight: 500; font-size: 0.8125rem; background: var(--surface-sunk); vertical-align: bottom; position: sticky; top: var(--sticky-top); z-index: 2; }
 /* Collapsed borders stay behind when the header sticks, so its rule is drawn on the cells. */
 thead th { border-bottom: none; box-shadow: inset 0 -1px 0 var(--line); }
 .th-inner { display: inline-flex; align-items: center; gap: 2px; }
 table.segments th:first-child { text-align: left; position: sticky; left: 0; z-index: 1; background: var(--surface); }
 table.segments thead th:first-child { background: var(--surface-sunk); z-index: 3; }
+table.segments tbody th { white-space: normal; min-width: 8rem; }
+/* Narrower windows: tighter cells and two-line headers, so the whole table still fits. */
+@media (max-width: 1100px) {
+  table.segments th, table.segments td { padding-inline: var(--s2); }
+  table.segments thead th { white-space: normal; }
+}
 tbody th { font-weight: 500; }
 tbody tr:hover > * { background: var(--hover); }
 tbody tr.selected > * { background: var(--accent-wash); }

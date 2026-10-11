@@ -8,7 +8,7 @@ import { SAVED_FILES_DOC } from "../saved-files-explain";
 import { FilePicker, type FilePickerHandle } from "./FilePicker";
 import { Entry, ScoreEntries } from "./HowItWorks";
 import { InfoTip } from "./InfoTip";
-import { HowSection, Landing, PageHead, Section } from "./Layout";
+import { HowSection, Landing, PageHead, Section, TableWrap } from "./Layout";
 import { MetricHeader, MetricLabel, StatRow } from "./Metric";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 
@@ -108,7 +108,7 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
         title="Categories"
         note="Each score only uses that category's split file. Pick a category to see how its score is made up."
       >
-        <div className="table-wrap">
+        <TableWrap>
           <table className="segments profile-table">
             <thead>
               <tr>
@@ -134,7 +134,7 @@ export const Profile = forwardRef<FilePickerHandle, Props>(function Profile(
               ))}
             </tbody>
           </table>
-        </div>
+        </TableWrap>
       </Section>
 
       <Section

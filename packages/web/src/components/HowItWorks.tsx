@@ -6,6 +6,7 @@ import { PB_ODDS_METRICS } from "../pbExplain";
 import { PRACTICE_ENTRIES } from "../practice-explain";
 import { GOAL_ENTRIES } from "../goal-explain";
 import { SESSION_ENTRIES } from "../session-explain";
+import { TableWrap } from "./Layout";
 
 const SUMMARY = ["personalBest", "realisticTarget", "sumOfBest", "attempts"];
 const SEGMENT = ["pbTime", "gold", "median", "timeSaveVsGold", "realisticTimeSave", "variability", "resetRate", "luck"];
@@ -45,7 +46,7 @@ export function HowItWorks({
             Every segment is checked against four rules. Advice is ranked by the time it is estimated to be worth,
             biggest first.
           </p>
-          <div className="table-wrap">
+          <TableWrap>
             <table className="rules">
               <thead>
                 <tr>
@@ -64,7 +65,7 @@ export function HowItWorks({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         </div>
       </details>
 

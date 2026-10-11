@@ -5,6 +5,7 @@ import { describeResetAfter, PB_ODDS_METRICS as M } from "../pbExplain";
 import { TextButton, Toggle } from "./Controls";
 import { InfoTip } from "./InfoTip";
 import { MetricHeader, StatRow } from "./Metric";
+import { TableWrap } from "./Layout";
 
 /** PB odds per attempt and a forecast of how many attempts a PB takes. */
 export function PbOddsSummary({ odds }: { odds: PbOdds }) {
@@ -87,7 +88,7 @@ export function ResetCoach({ odds }: { odds: PbOdds }) {
         </TextButton>
       </p>
       {showSplits && (
-        <div className="table-wrap">
+        <TableWrap>
           <table className="segments pb-splits">
             <thead>
               <tr>
@@ -116,7 +117,7 @@ export function ResetCoach({ odds }: { odds: PbOdds }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableWrap>
       )}
     </>
   );

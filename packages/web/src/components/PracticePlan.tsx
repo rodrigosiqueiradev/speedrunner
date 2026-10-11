@@ -5,6 +5,7 @@ import { PRACTICE_DOCS as D } from "../practice-explain";
 import { TextButton, Toggle } from "./Controls";
 import { InfoTip } from "./InfoTip";
 import { MetricHeader } from "./Metric";
+import { TableWrap } from "./Layout";
 
 const SESSIONS = [30, 60, 90, 120].map((m) => ({ value: m, label: `${m} min` }));
 const TOP = 10;
@@ -132,7 +133,7 @@ export function PracticePlan({
       <h3 className="plan-subhead" id="roi-title">
         Time saved per hour of practice
       </h3>
-      <div className="table-wrap">
+      <TableWrap>
         <table className="roi" aria-labelledby="roi-title">
           <thead>
             <tr>
@@ -165,7 +166,7 @@ export function PracticePlan({
             ))}
           </tbody>
         </table>
-      </div>
+      </TableWrap>
       {plan.ranking.length > TOP && (
         <p className="section-foot">
           <TextButton aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
