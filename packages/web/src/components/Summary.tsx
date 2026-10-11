@@ -1,5 +1,5 @@
 import { formatTime, type RunAnalysis } from "@speedrunner/core";
-import { METRICS } from "../explain";
+import { METRICS, luckChance } from "../explain";
 import { formatSave } from "../format";
 import { StatRow } from "./Metric";
 
@@ -28,7 +28,11 @@ export function Summary({ analysis: a }: { analysis: RunAnalysis }) {
         doc={METRICS.sumOfBest}
         value={formatTime(a.sumOfBest)}
         delta={delta(a.sumOfBest)}
-        note="Every segment at its gold"
+        note={
+          a.luckNeeded
+            ? `Every segment at its gold, needing good luck in ${a.luckNeeded.segments} segment${a.luckNeeded.segments === 1 ? "" : "s"} (${luckChance(a.luckNeeded.chance)} of runs get it)`
+            : "Every segment at its gold"
+        }
       />
     </div>
   );

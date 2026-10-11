@@ -192,6 +192,11 @@ export interface FormSegment {
   weights: Float64Array;
   /** True when the samples come only from runs that reached the end. */
   fromFinishedRuns: boolean;
+  /**
+   * Marked as luck-based: left out of each attempt's form (a lucky segment isn't a good day) and
+   * sampled as it is, without the form of the day.
+   */
+  luck: boolean;
   samples: number;
 }
 
@@ -236,9 +241,12 @@ export function buildFormModel(run: Run, options: Pick<SegmentModelOptions, "min
 
   const typical = samples.map(({ times }) => weightedMedian(times.map(([, t]) => t), recencyWeights(times.length)));
 
-  // Each attempt's form: the mean log ratio of its segment times to typical.
+  // Each attempt's form: the mean log ratio of its segment times to typical. Luck isn't form, so
+  // luck-based segments are left out (unless every segment is one).
+  const luck = run.segments.map((s) => !!s.luck && !run.segments.every((x) => x.luck));
   const ratios = new Map<number, number[]>();
   samples.forEach(({ times }, i) => {
+    if (luck[i]) return;
     for (const [id, t] of times) {
       if (id <= 0) continue;
       const list = ratios.get(id) ?? [];
@@ -246,7 +254,7 @@ export function buildFormModel(run: Run, options: Pick<SegmentModelOptions, "min
       ratios.set(id, list);
     }
   });
-  const minSegments = Math.max(1, Math.ceil(n * S.formCoverage));
+  const minSegments = Math.max(1, Math.ceil(luck.filter((x) => !x).length * S.formCoverage));
   const byId = [...ratios].sort((a, b) => a[0] - b[0]);
   let formAttempts = byId.filter(([, r]) => r.length >= minSegments);
   if (formAttempts.length < S.minFormAttempts) formAttempts = byId;
@@ -258,9 +266,10 @@ export function buildFormModel(run: Run, options: Pick<SegmentModelOptions, "min
     index: i,
     name: run.segments[i].name,
     typical: typical[i],
-    residuals: Float64Array.from(times.map(([id, t]) => Math.log(t / typical[i]) - (formOf.get(id) ?? 0))),
+    residuals: Float64Array.from(times.map(([id, t]) => Math.log(t / typical[i]) - (luck[i] ? 0 : formOf.get(id) ?? 0))),
     weights: cumulativeRecency(times.length),
     fromFinishedRuns: finished,
+    luck: luck[i],
     samples: times.length,
   }));
 
@@ -280,7 +289,7 @@ export function sampleRun(model: FormModel, random: () => number, out: Float64Ar
   const form = model.forms[pickWeighted(model.formWeights, random())] + model.trend;
   let total = 0;
   for (const s of model.segments) {
-    const t = s.typical * Math.exp(form + s.residuals[pickWeighted(s.weights, random())]);
+    const t = s.typical * Math.exp((s.luck ? 0 : form) + s.residuals[pickWeighted(s.weights, random())]);
     out[s.index] = t;
     total += t;
   }

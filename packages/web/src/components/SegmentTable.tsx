@@ -1,4 +1,4 @@
-import { ANALYSIS_DEFAULTS, formatTime, type SegmentStats } from "@speedrunner/core";
+import { ANALYSIS_DEFAULTS, formatTime, type LuckSuggestion, type SegmentStats } from "@speedrunner/core";
 import { METRICS, type MetricDoc } from "../explain";
 import { formatSave } from "../format";
 import { MetricHeader } from "./Metric";
@@ -15,7 +15,22 @@ const COLUMNS: Array<{ doc: MetricDoc; cell: (s: SegmentStats) => string }> = [
   { doc: METRICS.resetRate, cell: (s) => pct(s.resetRate) },
 ];
 
-export function SegmentTable({ segments, selected }: { segments: SegmentStats[]; selected: number | null }) {
+export interface LuckControls {
+  /** Segments whose times look luck-based, for the runner to confirm. */
+  suggestions: LuckSuggestion[];
+  onToggle: (segmentName: string, on: boolean) => void;
+}
+
+export function SegmentTable({
+  segments,
+  selected,
+  luck,
+}: {
+  segments: SegmentStats[];
+  selected: number | null;
+  luck?: LuckControls;
+}) {
+  const suggested = new Map(luck?.suggestions.map((x) => [x.index, x]));
   return (
     <div className="table-wrap">
       <table className="segments">
@@ -25,6 +40,7 @@ export function SegmentTable({ segments, selected }: { segments: SegmentStats[];
             {COLUMNS.map((c) => (
               <MetricHeader key={c.doc.id} doc={c.doc} />
             ))}
+            {luck && <MetricHeader doc={METRICS.luck} />}
           </tr>
         </thead>
         <tbody>
@@ -38,14 +54,45 @@ export function SegmentTable({ segments, selected }: { segments: SegmentStats[];
                   </span>
                 )}
                 {s.samples < ANALYSIS_DEFAULTS.minSamples && <span className="flag muted">few attempts</span>}
+                {s.luck && (
+                  <span className="seg-note" title="How often luck went your way here recently, and what bad luck typically costs">
+                    Good luck {pct(s.luck.goodShare)}
+                    {s.luck.cost != null && ` · bad luck +${formatSave(s.luck.cost)}`}
+                  </span>
+                )}
+                {luck && !s.luckMarked && suggested.has(s.index) && (
+                  <span className="seg-note suggest" title={suggestionTitle(suggested.get(s.index)!)}>
+                    Looks like luck
+                  </span>
+                )}
               </th>
               {COLUMNS.map((c) => (
                 <td key={c.doc.id}>{c.cell(s)}</td>
               ))}
+              {luck && (
+                <td className="luck-cell">
+                  <input
+                    type="checkbox"
+                    checked={s.luckMarked}
+                    aria-label={`Luck decides ${s.name}`}
+                    onChange={(e) => luck.onToggle(s.name, e.target.checked)}
+                  />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
     </div>
   );
+}
+
+function suggestionTitle(x: LuckSuggestion): string {
+  const odds =
+    x.goodShare != null && x.cost != null
+      ? ` Good luck in ${pct(x.goodShare)} of your attempts; bad luck typically costs ${formatSave(x.cost)}.`
+      : "";
+  return x.reason === "name"
+    ? `Its name says RNG.${odds} Tick it if luck decides this segment.`
+    : `Your times here fall into a fast and a slow group that don't streak or improve over time, as luck does.${odds} Tick it if luck decides this segment.`;
 }

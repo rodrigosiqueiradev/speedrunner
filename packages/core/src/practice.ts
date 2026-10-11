@@ -111,7 +111,8 @@ export function planPractice(
       continue;
     }
     const times = cleanTimes(run, s.index);
-    const gap = Math.max(0, s.median - s.p25);
+    // For a luck segment only the spread within each outcome can be practised away, not the luck.
+    const gap = Math.max(0, s.luck ? s.luck.executionGap : s.median - s.p25);
     const repTime = s.median + P.repOverheadMs;
     const measuredPerDoubling = learningPerDoubling(times);
     const ownWeight = measuredPerDoubling == null ? 0 : times.length;

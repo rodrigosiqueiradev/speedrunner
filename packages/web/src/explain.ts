@@ -1,6 +1,7 @@
 import {
   ADVICE_THRESHOLDS,
   ANALYSIS_DEFAULTS,
+  LUCK_SETTINGS,
   SCORE_SETTINGS,
   formatTime,
   type CategoryScore,
@@ -72,11 +73,14 @@ export const METRICS: Record<string, MetricDoc> = {
     how: [
       "Add up the gold of every segment. It is the theoretical best run with what you have already done, but every segment going perfectly in the same run is very unlikely.",
       "Theoretical save = PB minus sum of best.",
+      "With segments marked as luck, it also says how much luck it needs: the share of your recent attempts with good luck in each marked segment, multiplied together. That's how often one run gets good luck in all of them.",
     ],
     example: (a) =>
       a.sumOfBest == null
         ? null
-        : `${a.segments.length} golds added together = ${formatTime(a.sumOfBest)}, which is ${formatSave(a.possibleTimeSave)} under your PB.`,
+        : `${a.segments.length} golds added together = ${formatTime(a.sumOfBest)}, which is ${formatSave(a.possibleTimeSave)} under your PB.${
+            a.luckNeeded ? ` It needs good luck in ${a.luckNeeded.segments} marked segment${a.luckNeeded.segments === 1 ? "" : "s"}: ${luckChance(a.luckNeeded.chance)} of runs get it in all of them.` : ""
+          }`,
   },
   attempts: {
     id: "attempts",
@@ -126,6 +130,7 @@ export const METRICS: Record<string, MetricDoc> = {
     how: [
       `PB segment minus your good-day time (${ordinal(D.goodDayPercentile)} percentile of your recent clean times), never below zero.`,
       "Zero means your PB already had a good or better-than-good version of this segment.",
+      "For a segment marked as luck, the good-day time is taken only from attempts with the same luck your PB had there. Better luck isn't a save you can earn.",
     ],
   },
   variability: {
@@ -135,6 +140,7 @@ export const METRICS: Record<string, MetricDoc> = {
     how: [
       `Take ${RECENT_TIMES}. The gap between your 25th and 75th percentile (the middle half of your attempts), divided by your median.`,
       "0% would be identical every time. 10% on a 2 minute segment means the middle half of your attempts spans about 12 seconds.",
+      "For a segment marked as luck, it's measured within good-luck and bad-luck attempts separately and averaged, so only your own execution counts.",
     ],
   },
   resetRate: {
@@ -147,28 +153,44 @@ export const METRICS: Record<string, MetricDoc> = {
       "It counts every reset, including runs you reset for being behind pace. Runs die here only looks at runs that were going well.",
     ],
   },
+  luck: {
+    id: "luck",
+    label: "Luck",
+    short: "Tick segments where luck decides the time (a boss pattern, a minigame). Advice and practice plans then only count what you control.",
+    how: [
+      "A luck segment's times fall into a good and a bad outcome. The app finds the split between them: the cut that best separates your times into a fast group and a slow group, each holding at least a tenth of them.",
+      `Marked segments then: measure variability within each outcome; take the good-day save from attempts with your PB's luck; compare your gold with your typical good-luck time; plan practice only for the spread within each outcome; and in the goal planner, tag "needs luck" on targets faster than any of your bad-luck times there. PB odds keep sampling your real times, so luck comes up as often as it really does, but a lucky segment no longer counts as a good day for the rest of the run.`,
+      `Suggested segments look like luck in your own times: at least ${LUCK_SETTINGS.minSuggestSamples} clean times split into two clear groups, the slow one at least ${pct(LUCK_SETTINGS.minCostRatio - 1)} slower, good luck in ${pct(LUCK_SETTINGS.goodShareRange[0])} to ${pct(LUCK_SETTINGS.goodShareRange[1])} of attempts, and no streaks or drift over time (a change of strat makes old attempts slow and new ones fast; luck doesn't). Segments with "RNG" in their name are suggested too.`,
+      "Times can't prove luck: a trick that fails a third of the time looks the same. So nothing changes until you tick a segment. Marks are kept in this app per game and category, by segment name.",
+    ],
+  },
 };
+
+/** "48%", or "1 in 140" once it's under 1%. */
+export function luckChance(p: number): string {
+  return p >= 0.01 ? pct(p) : `1 in ${Math.round(1 / p).toLocaleString("en-US")}`;
+}
 
 export const ADVICE_RULES: Array<{ tag: string; when: string; worth: string }> = [
   {
     tag: "Slow in PB",
-    when: "Your PB's time for the segment was slower than your typical time.",
+    when: "Your PB's time for the segment was slower than your typical time (for a segment marked as luck, your typical time with the luck the PB had).",
     worth: "PB segment minus your good-day time.",
   },
   {
     tag: "Inconsistent",
-    when: `Variability is above ${pct(T.inconsistent)}.`,
+    when: `Variability is above ${pct(T.inconsistent)} (for a segment marked as luck, within each outcome).`,
     worth: "Half the gap between your 25th and 75th percentile times.",
   },
   {
     tag: "Gold is rare",
     when: `Your typical time is more than ${pct(T.goldGap)} slower than your gold.`,
-    worth: "The smaller of save to gold and typical minus gold.",
+    worth: "The smaller of save to gold and typical minus gold. For a segment marked as luck, your typical good-luck time is used.",
   },
   {
     tag: "Runs die here",
     when: `Runs that were going well (in your faster half at the split before) reset here at least ${T.resetHazardRatio} times as often per minute as in the rest of the run, with at least ${T.minResets} such resets and ${T.minReachedForResets} such runs reaching it. Runs reset for being behind pace don't count, and neither does the first segment, where resets are mostly bad starts. Per minute, so a long segment isn't flagged for being long.`,
-    worth: "The segment's good-day save.",
+    worth: "The segment's good-day save. For a segment marked as luck, the advice says these may be resets on bad luck rather than mistakes.",
   },
 ];
 
@@ -211,6 +233,7 @@ export const SCORE_METRICS: Record<"category" | ComponentKey | "provisional" | "
     short: "How close your PB is to your sum of best.",
     how: [
       "Gap = (PB − sum of best) ÷ sum of best.",
+      "Where your PB had bad luck in a segment marked as luck, the sum of best uses your best bad-luck time there, so a PB isn't marked down for its luck.",
       `Efficiency = 100 × (1 − gap ÷ ${pct(S.efficiencyZeroGap)}). A PB equal to your sum of best scores 100, a 5% gap scores 50, and a gap of ${pct(S.efficiencyZeroGap)} or more scores 0.`,
     ],
     example: (s) =>

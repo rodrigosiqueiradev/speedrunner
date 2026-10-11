@@ -50,7 +50,10 @@ export interface CategoryScore {
   efficiency: {
     score: number | null;
     personalBest: Ms | null;
+    /** The sum of best compared with, at the PB's luck in segments marked as luck (see RunAnalysis.sumOfBestWithPbLuck). */
     sumOfBest: Ms | null;
+    /** True when the PB had bad luck in a marked segment, so `sumOfBest` is slower than the plain sum of best. Missing in older saved scores. */
+    luckAdjusted?: boolean;
     /** (PB - sum of best) / sum of best. */
     gap: number | null;
   };
@@ -102,11 +105,16 @@ export function scoreRun(run: Run, analysis: RunAnalysis = analyzeRun(run)): Cat
   const S = SCORE_SETTINGS;
   const a = analysis;
 
-  const gap =
-    a.personalBest != null && a.sumOfBest != null && a.sumOfBest > 0
-      ? Math.max(0, (a.personalBest - a.sumOfBest) / a.sumOfBest)
-      : null;
-  const efficiency = { score: gap == null ? null : scale(1 - gap / S.efficiencyZeroGap), personalBest: a.personalBest, sumOfBest: a.sumOfBest, gap };
+  // Luck-based segments count at their best with the luck the PB had, so a PB isn't marked down for bad luck or up for good luck.
+  const best = a.sumOfBestWithPbLuck ?? a.sumOfBest;
+  const gap = a.personalBest != null && best != null && best > 0 ? Math.max(0, (a.personalBest - best) / best) : null;
+  const efficiency = {
+    score: gap == null ? null : scale(1 - gap / S.efficiencyZeroGap),
+    personalBest: a.personalBest,
+    sumOfBest: best,
+    luckAdjusted: a.sumOfBestWithPbLuck != null && a.sumOfBestWithPbLuck !== a.sumOfBest,
+    gap,
+  };
 
   let weightSum = 0;
   let weighted = 0;

@@ -16,6 +16,7 @@ export const GOAL_DOCS: Record<"plan" | "pace" | "balanced" | "recentGolds" | "c
       "So the plan asks every segment for the same pace, as a share of your recent clean times, and picks the most relaxed pace whose segment times add up to the goal.",
       `A segment keeps its PB time when the PB is already faster than that pace, or when it has fewer than ${D.minSamples} clean times.`,
       "The plan finishes a hundredth under the goal, so LiveSplit shows it as sub.",
+      "A segment marked as luck is tagged \"needs luck\" when its planned time is faster than any time you've had there with bad luck.",
       "When even your best recent time in every segment isn't enough, each segment moves from its recent best towards its gold by the same fraction. When the goal is faster than every segment at its gold, it needs new golds first.",
     ],
   },

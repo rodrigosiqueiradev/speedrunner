@@ -2,9 +2,11 @@ import {
   analyzeRun,
   analyzeSessions,
   hasGameTime,
+  markLuck,
   parseLss,
   pbOdds,
   scoreRun,
+  suggestLuckSegments,
   type CategoryScore,
   type TimingMethod,
 } from "@speedrunner/core";
@@ -40,6 +42,7 @@ import { closeThisWindow, isOverlayWindow } from "./desktopWindows";
 import { isDesktop } from "./platform";
 import { categoryKey, loadProfile, saveProfile, upsertEntry, type ProfileEntry } from "./profile";
 import { deleteSplitFile, loadSplitFiles, putSplitFile, type StoredSplit } from "./splitFiles";
+import { loadLuckMarks, saveLuckMarks, toggleLuck, type LuckMarks } from "./luckMarks";
 import { NO_RECAP_CHOICES, type RecapChoices } from "./components/YearInRuns";
 
 interface Loaded {
@@ -70,6 +73,8 @@ export function App() {
   const [view, setView] = useState<View>(viewFromHash);
   const [tab, setTab] = useState<Tab>(tabFromHash);
   const [profile, setProfile] = useState<ProfileEntry[]>(loadProfile);
+  // Segments the runner marked as luck-based, per category.
+  const [luckMarks, setLuckMarks] = useState<LuckMarks>(loadLuckMarks);
   // The split file behind each profile category, so other pages can open it without choosing it again.
   const [profileFiles, setProfileFiles] = useState<Record<string, StoredSplit>>({});
   // Files added or removed on Year in runs, kept while the app is open.
@@ -83,6 +88,7 @@ export function App() {
   const updates = useUpdates(isDesktop && view !== "overlay");
 
   useEffect(() => saveProfile(profile), [profile]);
+  useEffect(() => saveLuckMarks(luckMarks), [luckMarks]);
   useEffect(() => {
     let live = true;
     void loadSplitFiles().then((stored) => {
@@ -118,11 +124,13 @@ export function App() {
   const result = useMemo(() => {
     if (!loaded) return null;
     try {
-      const run = parseLss(loaded.xml, timing ? { timingMethod: timing } : {});
+      const parsed = parseLss(loaded.xml, timing ? { timingMethod: timing } : {});
+      const run = markLuck(parsed, luckMarks[categoryKey(parsed)] ?? []);
       const analysis = analyzeRun(run);
       return {
         run,
         analysis,
+        luckSuggestions: suggestLuckSegments(parsed),
         score: scoreRun(run, analysis),
         odds: pbOdds(run),
         sessions: analyzeSessions(run),
@@ -131,7 +139,7 @@ export function App() {
     } catch {
       return { error: true as const };
     }
-  }, [loaded, timing]);
+  }, [loaded, timing, luckMarks]);
 
   const backFromOverlay = useCallback(() => {
     // A pop-up or desktop overlay window closes; a main window showing the overlay goes back to the live page.
@@ -178,13 +186,35 @@ export function App() {
     void deleteSplitFile(key);
   };
 
+  /** Scores a split file with the luck marks saved for its category. */
+  const scoreWithLuck = (xml: string, method: TimingMethod | null, marks: LuckMarks = luckMarks) => {
+    const run = parseLss(xml, method ? { timingMethod: method } : {});
+    return scoreRun(markLuck(run, marks[categoryKey(run)] ?? []));
+  };
+
+  const markSegmentLuck = (category: string, segmentName: string, on: boolean) => {
+    const next = toggleLuck(luckMarks, category, segmentName, on);
+    setLuckMarks(next);
+    // A profile category's saved score follows its marks.
+    const entry = profile.find((e) => e.key === category);
+    const file = profileFiles[category];
+    if (entry && file) {
+      try {
+        const score = scoreWithLuck(file.xml, hasGameTime(file.xml) ? entry.score.timingMethod : null, next);
+        setProfile((p) => p.map((e) => (e.key === category ? { ...e, score } : e)));
+      } catch {
+        // The stored file no longer parses; its old score stays.
+      }
+    }
+  };
+
   const addToProfile = (fileName: string, xml: string) => {
     try {
       // A file replacing one in the profile keeps the timing method chosen for that category.
       const run = parseLss(xml);
       const before = profile.find((e) => e.key === categoryKey(run))?.score.timingMethod;
       const method = before && before !== run.timingMethod && hasGameTime(xml) ? before : null;
-      keepInProfile(scoreRun(method ? parseLss(xml, { timingMethod: method }) : run), fileName, xml);
+      keepInProfile(scoreWithLuck(xml, method), fileName, xml);
     } catch {
       setError(notSplitsAdded(fileName));
     }
@@ -435,7 +465,14 @@ export function App() {
                   </>
                 }
               >
-                <SegmentTable segments={a.segments} selected={selected} />
+                <SegmentTable
+                  segments={a.segments}
+                  selected={selected}
+                  luck={{
+                    suggestions: ok.luckSuggestions,
+                    onToggle: (name, on) => markSegmentLuck(categoryKey(ok.run), name, on),
+                  }}
+                />
               </Section>
             </TabPanel>
 

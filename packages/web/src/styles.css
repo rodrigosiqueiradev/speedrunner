@@ -426,6 +426,11 @@ tbody tr.selected > * { background: var(--accent-wash); }
 tbody tr.selected th { box-shadow: inset 3px 0 0 var(--accent); }
 .flag { display: inline-block; margin-left: var(--s2); padding: 0 6px; border-radius: 4px; font-family: var(--sans); font-size: 0.75rem; font-weight: 500; color: var(--gold-ink); background: var(--gold-wash); }
 .flag.muted { color: var(--ink-3); background: var(--surface-sunk); }
+/* A second line under a segment's name: its luck odds, or a suggestion to mark it. */
+.seg-note { display: block; margin-top: 2px; font-size: 0.75rem; font-weight: 400; color: var(--ink-3); }
+.seg-note.suggest { color: var(--gold-ink); font-weight: 500; }
+td.luck-cell { text-align: center; }
+td.luck-cell input { vertical-align: middle; accent-color: var(--accent); width: 16px; height: 16px; margin: 0; cursor: pointer; }
 table.rules td { font-family: var(--sans); font-size: 0.9375rem; white-space: normal; text-align: left; vertical-align: top; color: var(--ink-2); }
 table.rules td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
 table.rules th { text-align: left; }

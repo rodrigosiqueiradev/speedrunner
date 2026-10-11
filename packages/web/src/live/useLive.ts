@@ -4,6 +4,7 @@ import {
   hasGameTime,
   liveContext,
   liveStats,
+  markLuck,
   parseLss,
   pbOdds,
   trackSession,
@@ -14,6 +15,8 @@ import {
   type TimingMethod,
 } from "@speedrunner/core";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLuckMarks } from "../luckMarks";
+import { categoryKey } from "../profile";
 import type { LiveConfig } from "./config";
 import { connectLiveSplit, startDemo, type FeedStatus } from "./feeds";
 
@@ -40,15 +43,17 @@ export function useLive(xml: string | null, config: Pick<LiveConfig, "source" | 
   // A file without game times can only be read in real time.
   const method: TimingMethod = choice ? wanted : "RealTime";
 
+  const luckMarks = useLuckMarks();
   const parsed = useMemo(() => {
     if (!xml) return null;
     try {
-      const run = parseLss(xml, choice ? { timingMethod: method } : {});
+      const plain = parseLss(xml, choice ? { timingMethod: method } : {});
+      const run = markLuck(plain, luckMarks[categoryKey(plain)] ?? []);
       return { ctx: liveContext(run, pbOdds(run)) };
     } catch {
       return { error: true as const };
     }
-  }, [xml, method, choice]);
+  }, [xml, method, choice, luckMarks]);
   const ctx: LiveContext | null = (parsed && "ctx" in parsed ? parsed.ctx : null) ?? null;
   const ctxRef = useRef(ctx);
   ctxRef.current = ctx;

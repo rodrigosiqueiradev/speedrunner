@@ -6,6 +6,7 @@ import {
   describeChance,
   formatTime,
   parseLss,
+  markLuck,
   planGoal,
   realisticTargetSplits,
   recentGoldSplits,
@@ -174,6 +175,7 @@ function PlanTable({ plan }: { plan: GoalPlan }) {
                 <th scope="row">
                   {s.name}
                   <span className="flag muted">{s.kind === "consistency" ? "a typical attempt" : "better than usual"}</span>
+                  {s.needsLuck && <span className="flag">needs luck</span>}
                 </th>
                 <td>{formatTime(s.pbTime)}</td>
                 <td>{formatTime(s.target)}</td>
@@ -232,7 +234,9 @@ function ExportComparisons({ run, analysis, xml, fileName, plan }: Props & { pla
       // Realistic target and recent golds go in for every timing method the file has times for;
       // the goal plan only for the one it was worked out in.
       const perMethod = (["RealTime", "GameTime"] as TimingMethod[]).map((m) => {
-        const r = m === run.timingMethod ? run : parseLss(xml, { timingMethod: m });
+        // The other clock's times keep this run's luck marks.
+        const luckNames = run.segments.filter((s) => s.luck).map((s) => s.name);
+        const r = m === run.timingMethod ? run : markLuck(parseLss(xml, { timingMethod: m }), luckNames);
         const a = m === run.timingMethod ? analysis : analyzeRun(r);
         return { m, realistic: realisticTargetSplits(a), recent: recentGoldSplits(r) };
       });

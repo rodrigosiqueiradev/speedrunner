@@ -45,6 +45,7 @@ export const PRACTICE_DOCS: Record<"plan" | "expected" | "perHour" | "gap" | "re
     how: [
       "Typical time (median) minus good-day time (25th percentile) of your recent clean times.",
       "A segment that varies a lot has a wider gap, so it has more room to gain from practice.",
+      "For a segment marked as luck, the gap is measured within good-luck and bad-luck attempts separately, weighted by how often each happens. The time luck costs can't be practised away.",
     ],
   },
   rep: {

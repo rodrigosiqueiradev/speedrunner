@@ -8,7 +8,7 @@ import { GOAL_ENTRIES } from "../goal-explain";
 import { SESSION_ENTRIES } from "../session-explain";
 
 const SUMMARY = ["personalBest", "realisticTarget", "sumOfBest", "attempts"];
-const SEGMENT = ["pbTime", "gold", "median", "timeSaveVsGold", "realisticTimeSave", "variability", "resetRate"];
+const SEGMENT = ["pbTime", "gold", "median", "timeSaveVsGold", "realisticTimeSave", "variability", "resetRate", "luck"];
 
 export function HowItWorks({
   analysis,

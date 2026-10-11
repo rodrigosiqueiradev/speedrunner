@@ -56,6 +56,33 @@ describe("App", () => {
     expect(screen.getByRole("table", { name: "Pace by how long you'd been playing" })).toBeTruthy();
   });
 
+  it("lets the runner mark luck-based segments, saved per category", async () => {
+    localStorage.clear();
+    render(<App />);
+    fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
+    fireEvent.click(await screen.findByRole("tab", { name: "Segments" }));
+    const box = screen.getByRole("checkbox", { name: "Luck decides RNG Roulette" }) as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    // Its name says RNG, so it's suggested; nothing else is.
+    expect(screen.getAllByText("Looks like luck").length).toBe(1);
+
+    fireEvent.click(box);
+    await waitFor(() => expect(box.checked).toBe(true));
+    expect(screen.queryByText("Looks like luck")).toBeNull();
+    expect(screen.getByText(/Good luck \d+%/)).toBeTruthy();
+    expect(JSON.parse(localStorage.getItem("speedrunner.luck.v1")!)).toEqual({ "dishonored|any%": ["RNG Roulette"] });
+    fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
+    expect(screen.getByText(/needing good luck in 1 segment \(\d+% of runs get it\)/)).toBeTruthy();
+
+    // The mark comes back with the file.
+    cleanup();
+    render(<App />);
+    fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });
+    fireEvent.click(await screen.findByRole("tab", { name: "Segments" }));
+    expect((screen.getByRole("checkbox", { name: "Luck decides RNG Roulette" }) as HTMLInputElement).checked).toBe(true);
+    localStorage.clear();
+  });
+
   it("explains how each number is calculated", async () => {
     render(<App />);
     fireEvent.change(screen.getByTestId("file-input"), { target: { files: [new File([sample], "d.lss")] } });

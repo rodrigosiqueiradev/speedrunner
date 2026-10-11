@@ -55,6 +55,42 @@ Example (Dishonored sample, real time): PB 40:01.52 − 12.15s of good-day saves
 | **Variability** | (75th percentile − 25th percentile) ÷ median, over your recent clean times. 10% on a 2 minute segment means the middle half of your attempts spans about 12 seconds. |
 | **Reset rate** | Attempts that reached the segment but have no time for it ÷ attempts that reached it. A high rate on the first segment is normal. It counts every reset, including runs you reset for being behind pace. |
 
+## Luck-based segments
+
+Some segments depend on luck: a boss pattern, a minigame, a cycle. Their times fall into a good and a bad outcome you
+don't control, so the usual stats would read the gap between them as shaky execution and suggest practising it away.
+Tick **Luck** on the Segments tab to mark one. Marks are kept in the app per game and category, by segment name (not
+in the split file, which LiveSplit rewrites on every save), and the profile score, live page and overlay use them too.
+
+**Outcomes.** A marked segment's clean times are split where they best separate into a fast and a slow group (Otsu's
+method on log times), each holding at least a tenth of them. The segment shows how often luck goes your way recently
+and what bad luck typically costs. With fewer than 10 clean times it's treated like any other segment.
+
+**What changes for a marked segment:**
+
+| Number | With a luck mark |
+| --- | --- |
+| **Variability** and **Inconsistent** | Measured within each outcome and averaged, so only execution counts. |
+| **Good-day save** and **Slow in PB** | Compared with your times with the luck the PB had there. Better luck isn't a save you can earn. |
+| **Gold is rare** | Your gold against your typical good-luck time. |
+| **Runs die here** | Says these may be resets on bad luck, and points to the reset coach. |
+| **Practice plan** | The gap practice can close is typical − good-day time within each outcome, weighted by how often each happens. |
+| **Sum of best** | Also says how much luck it needs: the share of recent attempts with good luck in each marked segment, multiplied. |
+| **Efficiency** | Where the PB had bad luck in a marked segment, the sum of best uses your best bad-luck time there, so luck counts on neither side. |
+| **Goal planner** | A target faster than any time you've had there with bad luck is tagged "needs luck". |
+| **PB odds** | Still samples your real times, so luck comes up as often as it really does, but a lucky segment no longer counts towards an attempt's form of the day. |
+
+**Suggestions.** Times can't prove luck: a trick that fails a third of the time looks the same. So the app only
+suggests ("looks like luck") and nothing changes until you tick it. A segment is suggested when, over at least 20
+clean times, the two groups are clearly apart (Ashman's D of 2 or more on log times), the slow one is at least 10%
+slower, good luck happens in 20% to 80% of attempts, and the outcomes don't streak or drift over time (a runs test
+within 3 standard deviations, and the good share moving less than 20 points between the older and newer half). A
+change of strat makes old attempts slow and new ones fast; luck doesn't. Segments with "RNG" in their name are
+suggested too. Every rule is a share or ratio of your own times, so it works the same for any run length.
+
+On the reference files it suggests boss knights in Shovel Knight Any%, the chest minigame in OoT 100%, and DDD Skip in
+SM64 0 Star. Marking them moved PB odds calibration (where real finishes land in the predicted spread, ideally 50%) by at most 4 points on every file with 7 or more finishes to check.
+
 ## Practice advice
 
 Every segment is checked against four rules. Advice is grouped by segment and ranked by its estimated worth, biggest first.

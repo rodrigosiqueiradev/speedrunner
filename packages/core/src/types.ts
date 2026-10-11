@@ -28,6 +28,11 @@ export interface Segment {
    * that attempt; a missing key means the attempt never reached this segment.
    */
   history: Map<number, Ms | null>;
+  /**
+   * The runner marked this segment as luck-based (see luck.ts): its times split into a good and a
+   * bad outcome they don't control. Never set by the parser; the app applies the runner's marks.
+   */
+  luck?: boolean;
 }
 
 export interface Run {

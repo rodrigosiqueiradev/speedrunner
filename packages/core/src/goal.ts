@@ -33,6 +33,8 @@ export interface GoalSegment {
   hitRate: number | null;
   /** Recent clean times the plan was worked out from. */
   samples: number;
+  /** A segment marked as luck whose target is faster than any of your bad-luck times there. */
+  needsLuck: boolean;
 }
 
 export interface GoalPlan {
@@ -120,6 +122,8 @@ export function planGoal(run: Run, goal: Ms, options: AnalyzeOptions = {}, analy
         kind: cut <= 0 ? "none" : s.median != null && target! >= s.median ? "consistency" : "faster",
         hitRate: times.length && target != null ? times.filter((t) => t <= target).length / times.length : null,
         samples: times.length,
+        // Faster than any time you've had with bad luck there: only good luck gets it.
+        needsLuck: s.luck?.badBest != null && target != null && cut > 0 && target < s.luck.badBest,
       };
     });
 
