@@ -178,17 +178,31 @@ describe("up next and vs goal", () => {
     expect(liveStats(far, at([pb[0]], pb[0] + 1000)).lastSplit!.vsGoal).toBeNull();
   });
 
-  it("counts vs PB and vs goal up live once the timer passes the split's comparison", () => {
+  it("ticks vs PB and vs goal with the timer during a segment, ahead or behind", () => {
     const splits = realisticTargetSplits(ctx.analysis)!;
-    // Still under both comparisons for segment 3: the deltas stay at the last split.
-    const early = liveStats(ctx, at([pb[0], pb[1]], Math.min(pb[2], splits[2]) - 1));
-    expect(early.liveVsPb).toBeNull();
-    expect(early.liveVsGoal).toBeNull();
+    const ahead = liveStats(ctx, at([pb[0], pb[1]], pb[2] - 3000));
+    expect(ahead.liveVsPb).toBe(-3000);
+    expect(ahead.liveVsGoal).toBe(pb[2] - 3000 - splits[2]);
     const late = liveStats(ctx, at([pb[0], pb[1]], pb[2] + 4000));
     expect(late.liveVsPb).toBe(4000);
     expect(late.liveVsGoal).toBe(pb[2] + 4000 - splits[2]);
     // Never between runs or once the run ends.
+    expect(liveStats(ctx, IDLE_SNAPSHOT).liveVsPb).toBeNull();
     expect(liveStats(ctx, { phase: "Ended", splitIndex: pb.length, currentTime: pb.at(-1)! + 9000, splitTimes: pb }).liveVsPb).toBeNull();
+  });
+
+  it("lowers the PB chance and turns to reset live once a segment has run long", () => {
+    const splits = [pb[0], pb[1]];
+    const atSplit = liveStats(ctx, at(splits, pb[1] + 1000));
+    const longer = (extra: number) => liveStats(ctx, at(splits, pb[2] + extra));
+    // Early in the segment nothing moves.
+    expect(atSplit.pbChance).toBe(liveStats(ctx, at(splits, pb[1])).pbChance);
+    // Far past the PB split the chance can only fall, never rise, and the advice turns to reset.
+    const way = longer(120_000);
+    expect(way.pbChance!).toBeLessThan(atSplit.pbChance!);
+    expect(way.pbChanceBefore).toBe(atSplit.pbChance);
+    expect(longer(240_000).pbChance!).toBeLessThanOrEqual(way.pbChance!);
+    expect(way.advice?.verdict).toBe("reset");
   });
 
   it("reads the same for a 10 minute and a 6 hour category", () => {

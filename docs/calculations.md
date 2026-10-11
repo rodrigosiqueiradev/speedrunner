@@ -1216,14 +1216,13 @@ with split times $x_1, \dots, x_j$ and $\theta$ on the timer.
 
 ### 13.1 Split comparisons
 
-- **vs PB**: $x_j - S_j$ (negative is ahead). While segment $j+1$ is being played and $\theta > S_{j+1}$, it shows
-  $\theta - S_{j+1}$ instead: the run is behind at that split whatever happens now, so the delta counts up live, as
-  LiveSplit's delta column does.
+- **vs PB**: $x_j - S_j$ (negative is ahead). While segment $j+1$ is being played it shows
+  $\theta - S_{j+1}$ instead, ticking with the timer: the delta the run would have if it split now.
 - **vs goal**: $x_j - C_j$ (negative is ahead), where $C_j$ is the comparison's cumulative split. Until the runner
   sets a goal, $C_j = \sum_{i \le j} \min(p_i, q^{-}_i)$, the realistic target's splits (§2, §12). With a goal $G$,
   $C_j$ is the goal plan's cumulative target (§8), the same splits as the **Sub $G$ (balanced)** comparison. A goal
   that is out of reach has no plan, so there is no comparison. Both are sums of the runner's own segment times, so
-  the difference scales with the run like vs PB does. It counts up live the same way, with $C_{j+1}$ in place of
+  the difference scales with the run like vs PB does. It ticks the same way, with $C_{j+1}$ in place of
   $S_{j+1}$.
 - **Last segment**: $d_j = x_j - x_{j-1}$, shown as $d_j - u_j$ and as the share $(d_j - u_j)/u_j$, so a 2 second loss
   in a 30 second segment and a 2 minute loss in a 1 hour segment read the same. It is a **gold** when $d_j < g_j$.
@@ -1234,7 +1233,10 @@ with split times $x_1, \dots, x_j$ and $\theta$ on the timer.
 ### 13.2 PB chance and advice
 
 The PB chance is $\hat p_{\text{fin}}\,\Sigma_1$ before the first split and $c_j(x_j)$ (Definition 7.6) at split $j$.
-The arrow compares it with the chance one split earlier. At the end it is 1 if the final time beat the PB (and every
+The arrow compares it with the chance one split earlier.
+While segment $j+1$ is being played, the split can only come at $\theta$ or later and $c_{j+1}$ falls as its time
+grows, so when $c_{j+1}(\theta) < c_j(x_j)$ the chance shown is $c_{j+1}(\theta)$, with the arrow from $c_j(x_j)$.
+**Keep going?** likewise shows reset as soon as Theorem 7.9 says reset at split $j+1$ with time $\theta$. At the end it is 1 if the final time beat the PB (and every
 PB already set this session) and 0 otherwise. **Keep going?** applies Theorem 7.9 at the last split, from the first
 split until the second to last.
 

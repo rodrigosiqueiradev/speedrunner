@@ -66,7 +66,8 @@ export const LIVE_STATS: LiveStatDef[] = [
       how: [
         `Uses the same ${PB_ODDS_SETTINGS.simulations.toLocaleString("en-US")} simulated runs as Your PB odds. At each split it looks at the simulated runs that reached that split at about your time and counts how many went on to beat your PB, allowing for a run-ending mistake later on.`,
         "Before the first split it's the chance a run you play to the end beats your PB.",
-        "The arrow shows how the last segment moved it.",
+        "During a segment it drops live once even splitting right now would leave less chance than at the last split, since the split can only come later.",
+        "The arrow shows how the last segment, or the one you're on, moved it.",
       ],
     },
     view: (s) => {
@@ -90,7 +91,7 @@ export const LIVE_STATS: LiveStatDef[] = [
       short: "Whether playing on or starting over gets you to a PB sooner, from your reset rules.",
       how: [
         "The same rule as Should you reset: keep going when the chance of a PB from here, per minute of the run you have left, is at least what fresh attempts give you per minute of play.",
-        "It never resets for you. It's shown from the first split until the last.",
+        "It never resets for you. It's shown from the first split until the last. During a segment it turns to Reset as soon as splitting right now would already say reset.",
       ],
     },
     view: (s) =>
@@ -112,7 +113,7 @@ export const LIVE_STATS: LiveStatDef[] = [
       short: "How far ahead (−) or behind (+) your PB's time you were at the last split.",
       how: [
         "Your time at the latest split minus your PB's time at the same split. Splits your PB skipped have no comparison.",
-        "Once the timer passes your PB's time for the split you're on, it counts up live from there, as LiveSplit's delta does.",
+        "During a segment it ticks with the timer: the time on the timer minus your PB's time at the split you're on, so it shows what the delta would be if you split now.",
       ],
     },
     view: (s) =>
@@ -132,7 +133,7 @@ export const LIVE_STATS: LiveStatDef[] = [
       how: [
         "Until you set a goal it compares with your realistic target: each segment at your good-day time or your PB time, whichever is faster.",
         "With a goal set, here or in What does your goal take?, it compares with the goal planner's splits for it: the same times as the balanced comparison it saves for LiveSplit.",
-        "Once the timer passes the goal's time for the split you're on, it counts up live from there, as LiveSplit's delta does.",
+        "During a segment it ticks with the timer, like vs PB: what the delta would be if you split now.",
         "A goal faster than every segment at its gold has no splits, so nothing shows.",
       ],
     },

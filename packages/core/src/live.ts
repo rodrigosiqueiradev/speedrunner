@@ -145,9 +145,8 @@ export interface LiveStats {
   /** What "vs goal" compares with (see LiveContext). */
   goal: LiveGoal | null;
   /**
-   * The timer against the PB's and the goal's split for the segment being played, once the timer
-   * has passed it: you're behind at that split whatever happens now, so the delta counts up live,
-   * as LiveSplit's delta column does. Null until then.
+   * The timer against the PB's and the goal's split for the segment being played, ticking with the
+   * timer: what the delta would be if you split now. Null outside a segment or without that split.
    */
   liveVsPb: Ms | null;
   liveVsGoal: Ms | null;
@@ -198,10 +197,10 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
     endsRuns: ctx.endsRuns[i],
   });
   const current = ci == null ? null : segment(ci);
-  const behind = (split: Ms | null | undefined) =>
-    ci == null || split == null || snap.currentTime == null || snap.currentTime <= split ? null : snap.currentTime - split;
-  const liveVsPb = behind(ci == null ? null : ctx.run.segments[ci].pbSplit);
-  const liveVsGoal = behind(ci == null ? null : goalSplits?.[ci]);
+  const now = ci == null ? null : snap.currentTime;
+  const against = (split: Ms | null | undefined) => (now == null || split == null ? null : now - split);
+  const liveVsPb = against(ci == null ? null : ctx.run.segments[ci].pbSplit);
+  const liveVsGoal = against(ci == null ? null : goalSplits?.[ci]);
   const nextIndex = snap.phase === "NotRunning" ? 0 : ci == null ? null : ci + 1;
   const next = nextIndex != null && nextIndex < n ? segment(nextIndex) : null;
 
@@ -226,6 +225,21 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
     const prev = at - 1;
     pbChanceBefore = at < 0 ? null : chanceAt(prev, prev < 0 ? null : splits[prev]);
     if (ctx.odds && lastSplit && lastSplit.index < n - 1) advice = resetAdvice(ctx.odds, lastSplit.index, lastSplit.time);
+    // The split ahead can only come at the time on the timer or later, and later only lowers the
+    // chance there. Once even splitting now would give less than at the last split, the segment
+    // has already cost chance, so it counts down live from the last split's value.
+    if (ctx.odds && ci != null && now != null) {
+      const ifSplitNow = pbChanceFrom(ctx.odds, ci, now);
+      if (pbChance != null && ifSplitNow < pbChance) {
+        pbChanceBefore = pbChance;
+        pbChance = ifSplitNow;
+      }
+      // Likewise, a reset verdict for splitting now holds for any later split.
+      if (advice && ci < n - 1 && advice.verdict === "keep-going") {
+        const live = resetAdvice(ctx.odds, ci, now);
+        if (live.verdict === "reset") advice = live;
+      }
+    }
   }
 
   // Projections from the last known split, never earlier than the time already on the timer.
