@@ -118,7 +118,8 @@ jobs:
       - name: Check this is the newest version
         id: newest
         run: |
-          newest=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          set -euo pipefail
+          newest=$(git tag --list 'v*' --sort=-v:refname | sed -n 1p)
           if [ ! -d releases-repo ]; then
             echo "::notice::$RELEASE_TAG has no releases-repo folder, so the manual on $RELEASES_REPO stays as it is."
           elif [ "$RELEASE_TAG" = "$newest" ]; then
@@ -136,6 +137,7 @@ jobs:
         if: steps.newest.outputs.update == 'true'
         working-directory: releases
         run: |
+          set -euo pipefail
           cp ../releases-repo/README.md README.md
           rm -rf docs && cp -R ../releases-repo/docs docs
           git add -A README.md docs
@@ -146,4 +148,5 @@ jobs:
           git config user.name "Rodrigo Siqueira"
           git config user.email "rodrigo.siqueira.dev@gmail.com"
           git commit -m "Update the manual for $RELEASE_TAG"
-          git push
+          # The checkout is on the releases repo's default branch, so this pushes straight to it.
+          git push origin HEAD
