@@ -1217,9 +1217,16 @@ with split times $x_1, \dots, x_j$ and $\theta$ on the timer.
 ### 13.1 Split comparisons
 
 - **vs PB**: $x_j - S_j$ (negative is ahead).
+- **vs goal**: $x_j - C_j$ (negative is ahead), where $C_j$ is the comparison's cumulative split. Until the runner
+  sets a goal, $C_j = \sum_{i \le j} \min(p_i, q^{-}_i)$, the realistic target's splits (§2, §12). With a goal $G$,
+  $C_j$ is the goal plan's cumulative target (§8), the same splits as the **Sub $G$ (balanced)** comparison. A goal
+  that is out of reach has no plan, so there is no comparison. Both are sums of the runner's own segment times, so
+  the difference scales with the run like vs PB does.
 - **Last segment**: $d_j = x_j - x_{j-1}$, shown as $d_j - u_j$ and as the share $(d_j - u_j)/u_j$, so a 2 second loss
   in a 30 second segment and a 2 minute loss in a 1 hour segment read the same. It is a **gold** when $d_j < g_j$.
 - **Golds this run**: the number of segments with $d_i < g_i$.
+- **Up next**: segment $j+2$ (the one after the segment being played; segment 1 before the run starts) with $u_{j+2}$,
+  $g_{j+2}$ and its good-run reset rate (§3.5). Nothing is shown during the last segment or after the run ends.
 
 ### 13.2 PB chance and advice
 

@@ -76,7 +76,7 @@ and each tab has its own address (`#practise`, `#segments`, `#sessions`, `#how-i
 | **What to practise first** | Every piece of advice, grouped by segment and ranked by estimated worth. The four kinds are **Slow in PB**, **Inconsistent**, **Gold is rare** and **Runs die here**. Click a segment to see it in the table. | [§4](calculations.md#4-practice-advice) |
 | **Practice plan** | A practice session (30, 60, 90 or 120 minutes) split into blocks for single segments and time for playing them in context: full runs when one fits, otherwise a stretch of the route around the top segment. Each block shows minutes, reps and its expected save. A ranking table shows each segment's gap to good day, rep time, learning per doubling and expected save per hour. | [§9](calculations.md#9-practice-plan) |
 | **Should I reset?** (reset coach) | Pick a split and how far behind PB pace you are (seconds, or `m:ss` for long runs) to get the PB chance from there and a verdict: keep going or reset. A table lists, for every split, the PB chance on pace and the deficit at which to reset, in seconds and as a share of the split time. The **PB hunting / Practising** switch hides the reset verdicts for runners who play every run out. | [§7.7–7.9](calculations.md#77-pb-chance-from-a-split) |
-| **Goal planner** | Type a goal such as `sub 40:00` (a round goal just under the PB is suggested). The plan gives every segment a target time at one shared pace, says how often you hit those times now, marks segments that need luck, and gives the chance a finished run and an attempt beat the goal. | [§8](calculations.md#8-goal-planner) |
+| **Goal planner** | Type a goal such as `sub 40:00` (a round goal just under the PB is suggested; a goal you type is kept per category and shared with Live stats' **vs goal**). The plan gives every segment a target time at one shared pace, says how often you hit those times now, marks segments that need luck, and gives the chance a finished run and an attempt beat the goal. | [§8](calculations.md#8-goal-planner) |
 | **Race these in LiveSplit** | Saves a copy of your split file with up to three comparisons added: **Realistic target**, **Sub X (balanced)** from the goal plan, and **Recent golds**. Your original file is never changed, and saving again from a copy replaces these comparisons instead of adding them twice. | [§12](calculations.md#12-livesplit-comparisons) |
 
 ### 3.3 Segments tab
@@ -168,14 +168,19 @@ A recap of one calendar year across every split file you include, drawn as a 108
 | PB chance | How often a run where yours is now still beats your PB, with an arrow showing how the last segment moved it. Shows **New PB** or **No PB** at the end. | [§13.2](calculations.md#132-pb-chance-and-advice) |
 | Keep going? | Keep going or reset, by the reset coach's rule. Shown from the first split until the last. | [§7.9](calculations.md#79-the-reset-rule) |
 | vs PB | Ahead (−) or behind (+) your PB's time at the last split. | [§13.1](calculations.md#131-split-comparisons) |
+| vs goal | Ahead (−) or behind (+) at the last split, against your realistic target until you set a goal, then against the goal planner's splits for it. A goal faster than every segment at its gold shows **Out of reach**. | [§13.1](calculations.md#131-split-comparisons) |
 | Last segment | The segment just finished against your usual time for it, in time and as a share, or **Gold**. | [§13.1](calculations.md#131-split-comparisons) |
 | Likely finish | Where the run ends if every segment left goes at your usual pace. | [§13.3](calculations.md#133-projections) |
 | Best possible | Where the run ends if every segment left is a gold. | [§13.3](calculations.md#133-projections) |
 | This segment | Your usual time for the current segment, with its gold and PB time. | |
+| Up next | The next segment (the first one before a run starts): your usual time for it, its gold and how often good runs die there. | [§3.5](calculations.md#35-reset-rates) |
 | Runs die here | How often runs that reached this segment going well were reset in it. | [§3.5](calculations.md#35-reset-rates) |
 | Golds this run | Segments in this attempt that beat their gold. | |
 | This session | Attempts, finishes, PBs and best time since the page opened. | [§13.4](calculations.md#134-session-tracking) |
 
+- **Goal.** While **vs goal** is on the card, a **vs goal: sub** field under the chosen stats sets the goal. It is the
+  same goal as the goal planner's, kept per game and category, so setting it in one place sets it in the other.
+  Clearing it, or **Use realistic target**, goes back to the realistic target.
 - **Card style.** Colours (background, values, labels, ahead/keep going, golds, PB chance falling) and the sizes of
   values (14 to 48 px) and labels (11 to 22 px). The preview and the overlay use the same style.
 - **Open as overlay.** In a browser this opens a small pop-up window; in the desktop app, a borderless window you can
@@ -226,6 +231,7 @@ prints PB, sum of best, realistic target, the category score, a per-segment tabl
 | Saved split files | IndexedDB on this device | per category |
 | Luck marks | Local storage, per game and category, by segment name | `speedrunner.luck.v1` |
 | Live stats settings | Local storage | `speedrunner.live.v1` |
+| Goals (goal planner and vs goal) | Local storage, per game and category | `speedrunner.goals.v1` |
 | Theme | Local storage | `speedrunner.theme` |
 | Update check choice, dismissed version | Local storage (desktop app) | `speedrunner.updates.*` |
 
