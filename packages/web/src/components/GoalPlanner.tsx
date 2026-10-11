@@ -25,6 +25,8 @@ import { copyName, saveTextFile } from "../download";
 import { formatSave, parseTypedTime } from "../format";
 import { METRICS, type MetricDoc } from "../explain";
 import { GOAL_DOCS } from "../goal-explain";
+import { loadGoals, saveGoal } from "../goals";
+import { categoryKey } from "../profile";
 import { PB_ODDS_METRICS } from "../pbExplain";
 import { isDesktop } from "../platform";
 import { InfoTip } from "./InfoTip";
@@ -43,7 +45,12 @@ interface Props {
 /** "What does sub-X take?" plus saving a copy of the splits with comparisons for LiveSplit. */
 export function GoalPlanner({ run, analysis, xml, fileName, odds }: Props) {
   const pb = analysis.personalBest;
-  const [typed, setTyped] = useState(() => (pb != null ? formatTime(suggestGoal(pb), 0) : ""));
+  const category = categoryKey(run);
+  // A goal set here or on the live page is kept for the category; otherwise a round one just under the PB.
+  const [typed, setTyped] = useState(() => {
+    const saved = loadGoals()[category];
+    return saved != null ? formatTime(saved, saved % 1000 === 0 ? 0 : 2) : pb != null ? formatTime(suggestGoal(pb), 0) : "";
+  });
   const goal = parseTypedTime(typed);
   const plan = useMemo(() => (goal != null ? planGoal(run, goal, {}, analysis) : null), [run, analysis, goal]);
 
@@ -65,7 +72,11 @@ export function GoalPlanner({ run, analysis, xml, fileName, odds }: Props) {
               placeholder="1:00:00"
               aria-invalid={typed.trim() !== "" && goal == null}
               aria-describedby="goal-help"
-              onChange={(e) => setTyped(e.target.value)}
+              onChange={(e) => {
+                setTyped(e.target.value);
+                const next = parseTypedTime(e.target.value);
+                if (next != null || e.target.value.trim() === "") saveGoal(category, next);
+              }}
             />
             <span id="goal-help" className="goal-help">
               Type a time like 59:30 or 1:00:00.

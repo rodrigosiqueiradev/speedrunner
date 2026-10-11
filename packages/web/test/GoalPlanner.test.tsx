@@ -11,6 +11,8 @@ afterEach(() => {
   cleanup();
   // Tabs live in the URL hash; start each test on the overview.
   history.replaceState(null, "", "/");
+  // A goal typed in one test is kept for the category; start each test without one.
+  localStorage.clear();
   vi.restoreAllMocks();
 });
 

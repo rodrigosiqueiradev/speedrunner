@@ -1,4 +1,6 @@
 import { analyzeRun, type RunAnalysis } from "./analyze.js";
+import { realisticTargetSplits } from "./comparisons.js";
+import { planGoal, type GoalStatus } from "./goal.js";
 import { pbChanceFrom, resetAdvice, type PbOdds, type ResetAdvice } from "./pb-odds.js";
 import { recentSlice } from "./recency.js";
 import type { Ms, Run } from "./types.js";
@@ -42,9 +44,23 @@ export interface LiveContext {
   /** Sum of `typical` / `gold` from each segment to the end (index n is 0). Null if any is missing. */
   typicalFrom: Array<Ms | null>;
   goldFrom: Array<Ms | null>;
+  /**
+   * What "vs goal" compares with: the goal planner's cumulative splits for your goal, or your
+   * realistic target's splits when you haven't set one. Null when neither exists.
+   */
+  goal: LiveGoal | null;
 }
 
-export function liveContext(run: Run, odds: PbOdds | null, analysis: RunAnalysis = analyzeRun(run)): LiveContext {
+export type LiveGoal =
+  | { kind: "goal"; time: Ms; status: GoalStatus; splits: Ms[] | null }
+  | { kind: "realistic"; time: Ms; splits: Ms[] };
+
+export function liveContext(
+  run: Run,
+  odds: PbOdds | null,
+  analysis: RunAnalysis = analyzeRun(run),
+  goal: Ms | null = null,
+): LiveContext {
   const seg = analysis.segments;
   const typical = seg.map((s) => s.median ?? s.pbTime);
   const gold = seg.map((s) => s.gold);
@@ -65,7 +81,17 @@ export function liveContext(run: Run, odds: PbOdds | null, analysis: RunAnalysis
     endsRuns: seg.map((s) => s.goodRunResetRate ?? s.resetRate),
     typicalFrom: suffix(typical),
     goldFrom: suffix(gold),
+    goal: liveGoal(run, analysis, goal),
   };
+}
+
+function liveGoal(run: Run, analysis: RunAnalysis, time: Ms | null): LiveGoal | null {
+  if (time != null) {
+    const plan = planGoal(run, time, {}, analysis);
+    return { kind: "goal", time, status: plan.status, splits: plan.splits };
+  }
+  const splits = realisticTargetSplits(analysis);
+  return splits && analysis.realisticTarget != null ? { kind: "realistic", time: analysis.realisticTarget, splits } : null;
 }
 
 export interface LiveSplitResult {
@@ -75,6 +101,8 @@ export interface LiveSplitResult {
   time: Ms;
   /** Ahead (negative) or behind (positive) your PB's time at this split, or null if the PB skipped it. */
   vsPb: Ms | null;
+  /** The same against the goal planner's split for your goal, or null without a plan for it. */
+  vsGoal: Ms | null;
   /** The segment's own time, when the split before it is known too. */
   segmentTime: Ms | null;
   /** Segment time minus your usual time for it, and the same as a share of your usual. */
@@ -84,11 +112,23 @@ export interface LiveSplitResult {
   gold: boolean;
 }
 
+/** A segment of the run with your usual time, gold, PB time, and how often good runs end in it. */
+export interface SegmentView {
+  index: number;
+  name: string;
+  typical: Ms | null;
+  gold: Ms | null;
+  pb: Ms | null;
+  endsRuns: number | null;
+}
+
 export interface LiveStats {
   phase: TimerPhase;
   segmentCount: number;
   /** The segment being played (null before the run starts or after it ends). */
-  current: { index: number; name: string; typical: Ms | null; gold: Ms | null; pb: Ms | null; endsRuns: number | null } | null;
+  current: SegmentView | null;
+  /** The segment after the one being played, or the first one before the run starts. */
+  next: SegmentView | null;
   currentTime: Ms | null;
   /** The latest split with a time, or null before the first one. */
   lastSplit: LiveSplitResult | null;
@@ -102,6 +142,8 @@ export interface LiveStats {
   bestPossible: Ms | null;
   /** Segments in this attempt that beat their gold. */
   golds: number;
+  /** What "vs goal" compares with (see LiveContext). */
+  goal: LiveGoal | null;
 }
 
 /**
@@ -113,6 +155,7 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
   const running = snap.phase === "Running" || snap.phase === "Paused";
   const splits = snap.splitTimes.slice(0, Math.max(0, Math.min(n, snap.splitIndex)));
 
+  const goalSplits = ctx.goal?.splits;
   let last: LiveSplitResult | null = null;
   let golds = 0;
   splits.forEach((time, i) => {
@@ -129,6 +172,7 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
       name: ctx.run.segments[i].name,
       time,
       vsPb: pbSplit == null ? null : time - pbSplit,
+      vsGoal: goalSplits?.[i] == null ? null : time - goalSplits[i],
       segmentTime,
       vsTypical: segmentTime != null && typical != null ? segmentTime - typical : null,
       vsTypicalShare: segmentTime != null && typical ? (segmentTime - typical) / typical : null,
@@ -138,17 +182,17 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
   const lastSplit = last as LiveSplitResult | null;
 
   const ci = running && snap.splitIndex >= 0 && snap.splitIndex < n ? snap.splitIndex : null;
-  const current =
-    ci == null
-      ? null
-      : {
-          index: ci,
-          name: ctx.run.segments[ci].name,
-          typical: ctx.typical[ci],
-          gold: ctx.gold[ci],
-          pb: ctx.pbSegment[ci],
-          endsRuns: ctx.endsRuns[ci],
-        };
+  const segment = (i: number): SegmentView => ({
+    index: i,
+    name: ctx.run.segments[i].name,
+    typical: ctx.typical[i],
+    gold: ctx.gold[i],
+    pb: ctx.pbSegment[i],
+    endsRuns: ctx.endsRuns[i],
+  });
+  const current = ci == null ? null : segment(ci);
+  const nextIndex = snap.phase === "NotRunning" ? 0 : ci == null ? null : ci + 1;
+  const next = nextIndex != null && nextIndex < n ? segment(nextIndex) : null;
 
   // The chance at a split; -1 is the start of the run.
   const chanceAt = (i: number, time: Ms | null): number | null => {
@@ -197,6 +241,7 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
     phase: snap.phase,
     segmentCount: n,
     current,
+    next,
     currentTime: snap.currentTime,
     lastSplit,
     pbChance,
@@ -205,6 +250,7 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
     likelyFinish,
     bestPossible,
     golds,
+    goal: ctx.goal,
   };
 }
 

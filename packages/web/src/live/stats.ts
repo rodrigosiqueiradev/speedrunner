@@ -118,6 +118,28 @@ export const LIVE_STATS: LiveStatDef[] = [
         : { value: signed(s.lastSplit.vsPb), detail: `at ${s.lastSplit.name}`, tone: tone(s.lastSplit.vsPb) },
   },
   {
+    id: "goal",
+    standard: false,
+    doc: {
+      id: "live-goal",
+      label: "vs goal",
+      short: "How far ahead (−) or behind (+) your goal's splits you were at the last split.",
+      how: [
+        "Until you set a goal it compares with your realistic target: each segment at your good-day time or your PB time, whichever is faster.",
+        "With a goal set, here or in What does your goal take?, it compares with the goal planner's splits for it: the same times as the balanced comparison it saves for LiveSplit.",
+        "A goal faster than every segment at its gold has no splits, so nothing shows.",
+      ],
+    },
+    view: (s) => {
+      const g = s.goal;
+      if (!g) return null;
+      const target = g.kind === "goal" ? `sub ${formatTime(g.time, g.time % 1000 === 0 ? 0 : 2)}` : "realistic target";
+      if (!g.splits) return { value: "Out of reach", detail: `${target} needs new golds`, word: true };
+      const vs = s.lastSplit?.vsGoal;
+      return vs == null ? null : { value: signed(vs), detail: `${target} · at ${s.lastSplit!.name}`, tone: tone(vs) };
+    },
+  },
+  {
     id: "lastSegment",
     standard: true,
     doc: {
@@ -183,6 +205,28 @@ export const LIVE_STATS: LiveStatDef[] = [
             value: formatTime(s.current.typical, 1),
             detail: `gold ${formatTime(s.current.gold, 1)} · PB ${formatTime(s.current.pb, 1)}`,
           },
+  },
+  {
+    id: "next",
+    standard: false,
+    doc: {
+      id: "live-next",
+      label: "Up next",
+      short: "The segment after this one: your usual time for it, its gold, and how often good runs die in it.",
+      how: [
+        `Usual is the median of ${RECENT_TIMES}. Gold is your best ever time for it.`,
+        "The share is the same as Runs die here: of your attempts that reached it going well, how many were reset in it.",
+        "Before the run starts it shows the first segment.",
+      ],
+    },
+    view: (s) => {
+      const n = s.next;
+      if (!n) return null;
+      const parts = [n.name];
+      if (n.gold != null) parts.push(`gold ${formatTime(n.gold, 1)}`);
+      if (n.endsRuns != null) parts.push(`${Math.round(n.endsRuns * 100)}% die here`);
+      return { value: n.typical == null ? "—" : formatTime(n.typical, 1), detail: parts.join(" · ") };
+    },
   },
   {
     id: "risk",

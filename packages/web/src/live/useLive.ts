@@ -1,5 +1,6 @@
 import {
   EMPTY_SESSION,
+  analyzeRun,
   IDLE_SNAPSHOT,
   hasGameTime,
   liveContext,
@@ -15,6 +16,7 @@ import {
   type TimingMethod,
 } from "@speedrunner/core";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useGoals } from "../goals";
 import { useLuckMarks } from "../luckMarks";
 import { categoryKey } from "../profile";
 import type { LiveConfig } from "./config";
@@ -48,13 +50,21 @@ export function useLive(xml: string | null, config: Pick<LiveConfig, "source" | 
     if (!xml) return null;
     try {
       const plain = parseLss(xml, choice ? { timingMethod: method } : {});
-      const run = markLuck(plain, luckMarks[categoryKey(plain)] ?? []);
-      return { ctx: liveContext(run, pbOdds(run)) };
+      const category = categoryKey(plain);
+      const run = markLuck(plain, luckMarks[category] ?? []);
+      return { run, category, odds: pbOdds(run), analysis: analyzeRun(run) };
     } catch {
       return { error: true as const };
     }
   }, [xml, method, choice, luckMarks]);
-  const ctx: LiveContext | null = (parsed && "ctx" in parsed ? parsed.ctx : null) ?? null;
+  // The goal is worked into the context apart from the file, so typing one doesn't re-read the file.
+  const read = parsed && !("error" in parsed) ? parsed : null;
+  const goals = useGoals();
+  const goal = read ? (goals[read.category] ?? null) : null;
+  const ctx: LiveContext | null = useMemo(
+    () => (read ? liveContext(read.run, read.odds, read.analysis, goal) : null),
+    [read, goal],
+  );
   const ctxRef = useRef(ctx);
   ctxRef.current = ctx;
 
@@ -64,13 +74,14 @@ export function useLive(xml: string | null, config: Pick<LiveConfig, "source" | 
   const last = useRef<TimerSnapshot>(IDLE_SNAPSHOT);
 
   // A new file or clock means new targets: count the session afresh.
-  useEffect(() => setSession(EMPTY_SESSION), [ctx]);
+  useEffect(() => setSession(EMPTY_SESSION), [parsed]);
 
   // LiveSplit is followed by its segment names, not the parsed file, so switching clocks
   // re-reads the file without dropping the connection.
   // LiveSplit reports names as the file has them, subsplit markers included.
   const names = ctx ? JSON.stringify(ctx.run.segments.map((s) => s.rawName)) : null;
-  const demoCtx = config.source === "demo" ? ctx : null;
+  // The demo restarts with a new file or clock, not a new goal.
+  const demoRun = config.source === "demo" ? parsed : null;
   useEffect(() => {
     if (names == null) return;
     last.current = IDLE_SNAPSHOT;
@@ -88,11 +99,11 @@ export function useLive(xml: string | null, config: Pick<LiveConfig, "source" | 
     };
     const feed =
       config.source === "demo"
-        ? demoCtx && startDemo(demoCtx, config.speed, onUpdate)
+        ? demoRun && ctxRef.current && startDemo(ctxRef.current, config.speed, onUpdate)
         : connectLiveSplit(config.url, JSON.parse(names) as string[], onUpdate);
     return () => feed?.stop();
-  }, [names, demoCtx, config.source, config.url, config.speed]);
+  }, [names, demoRun, config.source, config.url, config.speed]);
 
   const stats = useMemo(() => (ctx ? liveStats(ctx, snap, session) : null), [ctx, snap, session]);
-  return { ctx, error: !!parsed && !ctx, stats, session, status, timing: { method, fromLiveSplit, choice } };
+  return { ctx, error: !!parsed && "error" in parsed, stats, session, status, timing: { method, fromLiveSplit, choice } };
 }

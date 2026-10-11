@@ -1,4 +1,4 @@
-import type { TimingMethod } from "@speedrunner/core";
+import { formatTime, type Run, type TimingMethod } from "@speedrunner/core";
 import { useEffect, useRef, useState } from "react";
 import { LIVE_RUN_KEY, loadLiveConfig, saveLiveConfig, saveLiveRun, type LiveConfig } from "../live/config";
 import { useSplitsSync, type SplitsSync } from "../live/useSplitsSync";
@@ -14,6 +14,9 @@ import {
   type CardStyle,
 } from "../live/style";
 import { useLive } from "../live/useLive";
+import { parseTypedTime } from "../format";
+import { saveGoal, useGoals } from "../goals";
+import { categoryKey } from "../profile";
 import { openOverlayWindow } from "../desktopWindows";
 import { isDesktop } from "../platform";
 import { loadSplitFiles, type StoredSplit } from "../splitFiles";
@@ -295,6 +298,7 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
                 })}
               </ol>
             )}
+            {run && shown.some((c) => c.id === "goal") && <GoalField key={categoryKey(run)} run={run} />}
             {hidden.length > 0 && (
               <>
                 <h3 className="live-more-title">More stats</h3>
@@ -456,5 +460,48 @@ function SyncNote({ sync, onChoose, onUse }: { sync: SplitsSync; onChoose: () =>
     <p className="live-sync" role="status">
       {sync.state === "switched" ? "Switched to" : "Matches"} <strong>{sync.name}</strong>, the splits open in LiveSplit.
     </p>
+  );
+}
+
+/** The goal "vs goal" compares with, shared with the goal planner. Empty means the realistic target. */
+function GoalField({ run }: { run: Run }) {
+  const category = categoryKey(run);
+  const saved = useGoals()[category];
+  const shownTime = (ms: number | undefined) => (ms == null ? "" : formatTime(ms, ms % 1000 === 0 ? 0 : 2));
+  const [typed, setTyped] = useState(() => shownTime(saved));
+  // Follow a goal set in the goal planner while this page is open, unless it's what's typed already.
+  useEffect(() => {
+    if (parseTypedTime(typed) !== (saved ?? null)) setTyped(shownTime(saved));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved]);
+  const invalid = typed.trim() !== "" && parseTypedTime(typed) == null;
+  return (
+    <div className="live-speed live-goal">
+      <label className="live-speed-label" htmlFor="live-goal">
+        vs goal: sub
+      </label>
+      <input
+        id="live-goal"
+        value={typed}
+        inputMode="decimal"
+        placeholder="realistic target"
+        aria-invalid={invalid}
+        onChange={(e) => {
+          setTyped(e.target.value);
+          const next = parseTypedTime(e.target.value);
+          if (next != null || e.target.value.trim() === "") saveGoal(category, next);
+        }}
+      />
+      {saved != null && (
+        <TextButton
+          onClick={() => {
+            setTyped("");
+            saveGoal(category, null);
+          }}
+        >
+          Use realistic target
+        </TextButton>
+      )}
+    </div>
   );
 }

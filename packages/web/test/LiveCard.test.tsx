@@ -27,6 +27,26 @@ describe("live stats card", () => {
     expect(screen.getByText("Demo")).toBeTruthy();
   });
 
+  it("shows the next segment and the run against the realistic target or a goal", () => {
+    const pb = run.segments.map((s) => s.pbSplit!);
+    const snap = { phase: "Running" as const, splitIndex: 2, currentTime: pb[1] + 1000, splitTimes: [pb[0], pb[1]] };
+    const choices = [{ id: "next", shown: true }, { id: "goal", shown: true }];
+    const card = (c = ctx) => (
+      <LiveCard title="Dishonored · Any%" stats={liveStats(c, snap)} session={EMPTY_SESSION} status={{ kind: "demo", attempt: 1 }} choices={choices} />
+    );
+    render(card());
+    expect(screen.getAllByRole("term").map((t) => t.textContent)).toEqual(["Up next", "vs goal"]);
+    expect(screen.getByText(new RegExp(`^${run.segments[3].name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} · gold `))).toBeTruthy();
+    expect(screen.getByText(/^realistic target · at /)).toBeTruthy();
+    cleanup();
+    render(card(liveContext(run, ctx.odds, ctx.analysis, 2_400_000)));
+    expect(screen.getByText(/^sub 40:00 · at /)).toBeTruthy();
+    cleanup();
+    // A goal past every gold has no splits.
+    render(card(liveContext(run, ctx.odds, ctx.analysis, 60_000)));
+    expect(screen.getByText("Out of reach")).toBeTruthy();
+  });
+
   it("says why nothing moves when LiveSplit isn't answering", () => {
     render(
       <LiveCard

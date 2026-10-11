@@ -2,6 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_SESSION,
+  analyzeRun,
+  planGoal,
+  realisticTargetSplits,
   IDLE_SNAPSHOT,
   liveContext,
   liveStats,
@@ -136,6 +139,71 @@ describe("liveStats", () => {
     expect(b.advice!.verdict).toBe(a.advice!.verdict);
     expect(b.lastSplit!.vsTypicalShare!).toBeCloseTo(a.lastSplit!.vsTypicalShare!, 4);
     expect(b.likelyFinish! / k / a.likelyFinish!).toBeCloseTo(1, 4);
+  });
+});
+
+describe("up next and vs goal", () => {
+  const ctx = liveContext(short, pbOdds(short, { simulations: 1000 }));
+  const pb = short.segments.map((s) => s.pbSplit!);
+
+  it("shows the first segment before the run and the one after the current segment during it", () => {
+    expect(liveStats(ctx, IDLE_SNAPSHOT).next?.index).toBe(0);
+    const s = liveStats(ctx, at([pb[0], pb[1]], pb[1] + 1000));
+    expect(s.current?.index).toBe(2);
+    expect(s.next).toMatchObject({ index: 3, name: short.segments[3].name, typical: ctx.typical[3], gold: ctx.gold[3] });
+    expect(s.next!.endsRuns).toBe(ctx.endsRuns[3]);
+    // No segment after the last one, and none once the run ends.
+    const n = pb.length;
+    expect(liveStats(ctx, at(pb.slice(0, n - 1), pb[n - 2] + 1000)).next).toBeNull();
+    expect(liveStats(ctx, { phase: "Ended", splitIndex: n, currentTime: pb[n - 1], splitTimes: pb }).next).toBeNull();
+  });
+
+  it("compares with the realistic target until a goal is set", () => {
+    const splits = realisticTargetSplits(ctx.analysis)!;
+    const s = liveStats(ctx, at([pb[0], pb[1]], pb[1] + 1000));
+    expect(s.goal).toMatchObject({ kind: "realistic", time: ctx.analysis.realisticTarget });
+    expect(s.lastSplit!.vsGoal).toBe(pb[1] - splits[1]);
+  });
+
+  it("compares with the goal planner's splits for a goal", () => {
+    const goal = Math.round(pb.at(-1)! * 0.99);
+    const gctx = liveContext(short, ctx.odds, ctx.analysis, goal);
+    const plan = planGoal(short, goal, {}, ctx.analysis);
+    expect(gctx.goal).toMatchObject({ kind: "goal", time: goal, status: plan.status });
+    const s = liveStats(gctx, at([pb[0], pb[1]], pb[1] + 1000));
+    expect(s.lastSplit!.vsGoal).toBe(pb[1] - plan.splits![1]);
+    // A goal faster than every gold has no splits to compare with.
+    const far = liveContext(short, ctx.odds, ctx.analysis, Math.round(pb.at(-1)! * 0.5));
+    expect(far.goal).toMatchObject({ kind: "goal", splits: null });
+    expect(liveStats(far, at([pb[0]], pb[0] + 1000)).lastSplit!.vsGoal).toBeNull();
+  });
+
+  it("reads the same for a 10 minute and a 6 hour category", () => {
+    const k = 36;
+    const long = scaled(short, k);
+    const lctx = liveContext(long, pbOdds(long, { simulations: 1000 }), analyzeRun(long), Math.round(pb.at(-1)! * 0.99) * k);
+    const sctx = liveContext(short, ctx.odds, ctx.analysis, Math.round(pb.at(-1)! * 0.99));
+    const splits = [pb[0] + 500, pb[1] + 3000];
+    const a = liveStats(sctx, at(splits, splits[1] + 1000));
+    const b = liveStats(lctx, at(splits.map((t) => t * k), (splits[1] + 1000) * k));
+    expect(b.lastSplit!.vsGoal! / k).toBeCloseTo(a.lastSplit!.vsGoal!, -1);
+    expect(b.next!.typical! / k).toBeCloseTo(a.next!.typical!, 0);
+    expect(b.next!.endsRuns).toBeCloseTo(a.next!.endsRuns!, 6);
+  });
+
+  it.skipIf(!existsSync(REFERENCE))("works on the multi-hour Twilight Princess file", () => {
+    const run = parseLss(readFileSync(REFERENCE, "utf8"));
+    const odds = pbOdds(run, { simulations: 500 });
+    const real = liveContext(run, odds);
+    expect(real.goal?.kind).toBe("realistic");
+    const pbs = run.segments.map((s) => s.pbSplit);
+    const mid = Math.floor(pbs.length / 2);
+    const splits = pbs.slice(0, mid + 1) as number[];
+    const s = liveStats(real, at(splits, splits[mid] + 60_000));
+    expect(s.next?.index).toBe(mid + 2);
+    expect(s.lastSplit!.vsGoal).toBeGreaterThanOrEqual(0); // the PB is never faster than the realistic target
+    const goal = liveContext(run, odds, real.analysis, Math.round(real.personalBest! * 0.99));
+    expect(liveStats(goal, at(splits, splits[mid] + 60_000)).lastSplit!.vsGoal).not.toBeNull();
   });
 });
 

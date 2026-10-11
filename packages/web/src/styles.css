@@ -693,6 +693,8 @@ button:disabled { opacity: 0.5; cursor: default; }
 .live-url input { min-height: 36px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 0 var(--s3); background: var(--surface); color: var(--ink); font-family: var(--mono); font-size: 0.875rem; }
 .live-speed { display: flex; align-items: center; gap: var(--s3); margin-top: var(--s4); }
 .live-timing-note { font-size: 0.875rem; }
+.live-goal input { width: 160px; min-height: 36px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 0 var(--s3); background: var(--surface); color: var(--ink); font-family: var(--mono); font-size: 0.875rem; }
+.live-goal input[aria-invalid="true"] { border-color: var(--error); }
 .live-stats-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); max-width: 560px; }
 .live-stats-head .text-link { font-size: 0.875rem; }
 .live-choices { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); max-width: 560px; }
