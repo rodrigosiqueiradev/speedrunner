@@ -76,6 +76,11 @@ an existing tag, run the **Desktop app** workflow by hand from the Actions tab a
 Publishing needs a `RELEASES_TOKEN` secret in this repo: a fine-grained token with **Contents**
 read and write access to `speedrunner-releases` only.
 
+The releases repo's README and user manual are kept in `releases-repo/` here. Publishing the newest
+version copies them over, replacing what's there, so the manual matches the version people download.
+Edit them here rather than on the releases repo, and keep them free of anything private: no build
+steps, source paths or code names. Rebuilding an older tag leaves the manual alone.
+
 The apps aren't signed with a developer certificate yet, so both Windows and macOS warn on first launch:
 
 - **Windows:** on the SmartScreen prompt, choose **More info**, then **Run anyway**.

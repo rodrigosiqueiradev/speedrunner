@@ -112,3 +112,38 @@ jobs:
             gh release create "$RELEASE_TAG" out/* --repo "$RELEASES_REPO" \
               --title "Speedrunner $RELEASE_TAG" --notes-file notes.md
           fi
+      # The releases repo's README and user manual live in releases-repo/ here, and each release copies them
+      # over, so the manual always describes the version people download. Edits made directly in the releases
+      # repo are overwritten, so make them in releases-repo/. Rebuilding an older tag leaves the manual alone.
+      - name: Check this is the newest version
+        id: newest
+        run: |
+          newest=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          if [ ! -d releases-repo ]; then
+            echo "::notice::$RELEASE_TAG has no releases-repo folder, so the manual on $RELEASES_REPO stays as it is."
+          elif [ "$RELEASE_TAG" = "$newest" ]; then
+            echo "update=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$RELEASE_TAG is older than $newest, so the manual on $RELEASES_REPO stays as it is."
+          fi
+      - uses: actions/checkout@v6
+        if: steps.newest.outputs.update == 'true'
+        with:
+          repository: ${{ env.RELEASES_REPO }}
+          token: ${{ secrets.RELEASES_TOKEN }}
+          path: releases
+      - name: Update the manual on the releases repo
+        if: steps.newest.outputs.update == 'true'
+        working-directory: releases
+        run: |
+          cp ../releases-repo/README.md README.md
+          rm -rf docs && cp -R ../releases-repo/docs docs
+          git add -A README.md docs
+          if git diff --cached --quiet; then
+            echo "The manual on $RELEASES_REPO is already up to date."
+            exit 0
+          fi
+          git config user.name "Rodrigo Siqueira"
+          git config user.email "rodrigo.siqueira.dev@gmail.com"
+          git commit -m "Update the manual for $RELEASE_TAG"
+          git push
