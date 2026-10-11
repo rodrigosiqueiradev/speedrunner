@@ -205,16 +205,36 @@ describe("up next and vs goal", () => {
     expect(way.advice?.verdict).toBe("reset");
   });
 
-  it("keeps the PB chance in the last segment until the timer passes the PB", () => {
+  it("lowers the PB chance as the last segment runs long, down to 0% past the PB", () => {
     const n = pb.length;
     const splits = pb.slice(0, n - 1);
     const before = liveStats(ctx, at(splits, pb[n - 2])).pbChance!;
     expect(before).toBeGreaterThan(0);
     // Entering the last segment doesn't drop it to 0%.
-    expect(liveStats(ctx, at(splits, pb[n - 2] + 1000)).pbChance).toBe(before);
-    expect(liveStats(ctx, at(splits, pb[n - 1] - 1)).pbChance).toBe(before);
+    expect(liveStats(ctx, at(splits, pb[n - 2] + 100)).pbChance!).toBeCloseTo(before, 2);
+    // It falls steadily while the segment runs, never rising.
+    const times = [0.25, 0.5, 0.75, 0.95].map((f) => pb[n - 2] + f * (pb[n - 1] - pb[n - 2]));
+    const chances = times.map((t) => liveStats(ctx, at(splits, t)).pbChance!);
+    for (let i = 1; i < chances.length; i++) expect(chances[i]).toBeLessThanOrEqual(chances[i - 1]);
+    expect(chances.at(-1)!).toBeLessThan(before);
+    // Just under the PB time it's at most what the segment's slowest simulated finishes allow.
+    expect(liveStats(ctx, at(splits, pb[n - 1] - 1)).pbChance!).toBeLessThanOrEqual(chances.at(-1)!);
     // Past the PB time, no split can beat it.
     expect(liveStats(ctx, at(splits, pb[n - 1] + 1)).pbChance).toBe(0);
+  });
+
+  it.skipIf(!existsSync(REFERENCE))("lowers the PB chance during segments of the multi-hour Twilight Princess file", () => {
+    const run = parseLss(readFileSync(REFERENCE, "utf8"));
+    const lctx = liveContext(run, pbOdds(run, { simulations: 1000 }));
+    const p = run.segments.map((s) => s.pbSplit!);
+    for (const k of [1, Math.floor(p.length / 2), p.length - 1]) {
+      const splits = p.slice(0, k);
+      const atSplit = liveStats(lctx, at(splits, p[k - 1])).pbChance!;
+      const mid = liveStats(lctx, at(splits, (p[k - 1] + p[k]) / 2)).pbChance!;
+      const late = liveStats(lctx, at(splits, p[k] + (p[k] - p[k - 1]))).pbChance!;
+      expect(mid).toBeLessThanOrEqual(atSplit);
+      expect(late).toBeLessThanOrEqual(mid);
+    }
   });
 
   it("reads the same for a 10 minute and a 6 hour category", () => {

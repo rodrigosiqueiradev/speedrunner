@@ -163,7 +163,7 @@ A recap of one calendar year across every split file you include, drawn as a 108
 | --- | --- | --- |
 | Split | Which segment you are on, of how many. | |
 | Run time | The time on LiveSplit's timer. | |
-| PB chance | How often a run where yours is now still beats your PB, with an arrow showing how the last segment moved it. During a segment it drops live once even splitting now would leave less chance than at the last split. Shows **New PB** or **No PB** at the end. | [§13.2](mathematics.md#132-pb-chance-and-advice) |
+| PB chance | How often a run where yours is now still beats your PB, with an arrow showing how the last segment moved it. During a segment it falls as the segment runs longer than your runs usually take there, and is 0% once the timer passes the PB. Shows **New PB** or **No PB** at the end. | [§13.2](mathematics.md#132-pb-chance-and-advice) |
 | Keep going? | Keep going or reset, by the reset coach's rule. Shown from the first split until the last; during a segment it turns to reset as soon as splitting now would already say reset. | [§7.9](mathematics.md#79-the-reset-rule) |
 | vs PB | Ahead (−) or behind (+) your PB's time at the last split. During a segment it ticks with the timer: what the delta would be if you split now. | [§13.1](mathematics.md#131-split-comparisons) |
 | vs goal | Ahead (−) or behind (+) at the last split, against your realistic target until you set a goal, then against the goal planner's splits for it. It ticks with the timer during a segment like vs PB. A goal faster than every segment at its gold shows **Out of reach**. | [§13.1](mathematics.md#131-split-comparisons) |

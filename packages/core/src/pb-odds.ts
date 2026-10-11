@@ -260,6 +260,39 @@ export function pbChanceFrom(odds: PbOdds, split: number, timeAtSplit: Ms): numb
 }
 
 /**
+ * The chance of a PB part way through a segment: the run reached `split` (-1 for the start) at
+ * `timeAtSplit` and has spent `elapsed` in the segment after it. Among the simulated runs near that
+ * split time (all of them at the start), only those whose next segment took longer than `elapsed`
+ * still look like this run, so the chance falls as the segment runs long. With `elapsed` 0 it is
+ * the chance at the split. Once no simulated run took that long it is 0: in the simulation, a run
+ * this slow here never got a PB.
+ */
+export function pbChanceDuring(odds: PbOdds, split: number, timeAtSplit: Ms, elapsed: Ms): number {
+  const n = odds.survival.length;
+  const sims = odds.simulations;
+  const c = odds.cumulative;
+  const next = split + 1;
+  const width = split < 0 ? 0 : odds.nearWidth[split];
+  let nearest = Infinity;
+  if (split >= 0) for (let s = 0; s < sims; s++) nearest = Math.min(nearest, Math.abs(c[s * n + split] - timeAtSplit));
+  let weight = 0;
+  let hit = 0;
+  for (let s = 0; s < sims; s++) {
+    const at = split < 0 ? 0 : c[s * n + split];
+    if (c[s * n + next] - at <= elapsed) continue;
+    let w = 1;
+    if (split >= 0) {
+      const z1 = (at - timeAtSplit) / width;
+      const z0 = nearest / width;
+      w = Math.exp(-0.5 * (z1 * z1 - z0 * z0));
+    }
+    weight += w;
+    if (timeAtSplit + (c[s * n + n - 1] - at) < odds.target) hit += w;
+  }
+  return weight > 0 ? (hit / weight) * (split < 0 ? odds.survival[0] : odds.survival[split]) : 0;
+}
+
+/**
  * Odds of beating some other time (a goal, say) from the same simulated runs, without simulating
  * again: the chance if you finish, and per attempt at your recent finish rate.
  */

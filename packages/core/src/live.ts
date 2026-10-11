@@ -1,7 +1,7 @@
 import { analyzeRun, type RunAnalysis } from "./analyze.js";
 import { realisticTargetSplits } from "./comparisons.js";
 import { planGoal, type GoalStatus } from "./goal.js";
-import { pbChanceFrom, resetAdvice, type PbOdds, type ResetAdvice } from "./pb-odds.js";
+import { pbChanceDuring, pbChanceFrom, resetAdvice, type PbOdds, type ResetAdvice } from "./pb-odds.js";
 import { recentSlice } from "./recency.js";
 import type { Ms, Run } from "./types.js";
 
@@ -225,18 +225,21 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
     const prev = at - 1;
     pbChanceBefore = at < 0 ? null : chanceAt(prev, prev < 0 ? null : splits[prev]);
     if (ctx.odds && lastSplit && lastSplit.index < n - 1) advice = resetAdvice(ctx.odds, lastSplit.index, lastSplit.time);
-    // The split ahead can only come at the time on the timer or later, and later only lowers the
-    // chance there. Once even splitting now would give less than at the last split, the segment
-    // has already cost chance, so it counts down live from the last split's value.
+    // During a segment the chance keeps moving: the longer the segment runs, the fewer simulated
+    // runs still look like this one (pbChanceDuring). Past the target nothing can PB.
     if (ctx.odds && ci != null && now != null) {
-      // Splitting the last segment ends the run: it's a PB exactly when the timer is still under
-      // the target, so there's nothing to look up (and no simulated spread at the final split).
-      const ifSplitNow = ci === n - 1 ? (now < ctx.odds.target ? 1 : 0) : pbChanceFrom(ctx.odds, ci, now);
-      if (pbChance != null && ifSplitNow < pbChance) {
+      const from = lastSplit?.index ?? -1;
+      const base = lastSplit?.time ?? 0;
+      let live: number | null;
+      if (now >= ctx.odds.target) live = 0;
+      else if (from === ci - 1) live = pbChanceDuring(ctx.odds, from, base, now - base);
+      // After a skipped split, splitting now is the best the run can still do.
+      else live = ci === n - 1 ? null : pbChanceFrom(ctx.odds, ci, now);
+      if (pbChance != null && live != null && live < pbChance) {
         pbChanceBefore = pbChance;
-        pbChance = ifSplitNow;
+        pbChance = live;
       }
-      // Likewise, a reset verdict for splitting now holds for any later split.
+      // A reset verdict for splitting now holds for any later split too.
       if (advice && ci < n - 1 && advice.verdict === "keep-going") {
         const live = resetAdvice(ctx.odds, ci, now);
         if (live.verdict === "reset") advice = live;
