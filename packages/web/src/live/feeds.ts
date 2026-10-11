@@ -20,6 +20,15 @@ export type FeedStatus =
       mismatch: string | null;
       /** The splits file LiveSplit has open, when its server can say (newer LiveSplit versions). */
       splitsPath: string | null;
+      /**
+       * LiveSplit's attempt and finished counts as they were when its splits were loaded: read
+       * between attempts, and only updated when they change with no attempt in between, which is
+       * what opening other splits does. Released LiveSplit can't say which file is open, so these
+       * and the split names below are how the page spots a switch there.
+       */
+      loadedCounts: { attempts: number; completed: number } | null;
+      /** The split names LiveSplit reported during this attempt, by split index. Empty between attempts. */
+      runSplitNames: (string | undefined)[];
       /** The clock LiveSplit compares against, when its server can say (newer LiveSplit versions). */
       timingMethod: TimingMethod | null;
     }
@@ -62,6 +71,12 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
   let pathAskedAt = 0;
   let timingMethod: TimingMethod | null = null;
   let methodSupported: boolean | null = null;
+  let loadedCounts: { attempts: number; completed: number } | null = null;
+  let lastCounts: { attempts: number; completed: number } | null = null;
+  let countsSupported: boolean | null = null;
+  // Whether an attempt ran since the counts were last read, so a change in them came from it.
+  let ranSinceCounts = false;
+  let runSplitNames: (string | undefined)[] = [];
 
   const open = () => {
     if (stopped) return;
@@ -105,13 +120,18 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
 
     pathSupported = null;
     methodSupported = null;
+    countsSupported = null;
+    loadedCounts = null;
+    lastCounts = null;
     const poll = async () => {
       while (!stopped && ws.readyState === WebSocket.OPEN) {
         // Between attempts, check which splits LiveSplit has open and which clock it compares
         // against, so the page can follow a switch of either.
         const idle = snap.phase === "NotRunning" || snap.phase === "Ended";
         const recheck = idle && Date.now() - pathAskedAt > SPLITS_PATH_MS;
-        if (pathSupported === null || methodSupported === null || recheck) pathAskedAt = Date.now();
+        if (pathSupported === null || methodSupported === null || (pathSupported === false && countsSupported === null) || recheck) {
+          pathAskedAt = Date.now();
+        }
         if (pathSupported !== false && (pathSupported === null || recheck)) {
           const path = await askOptional("getsplitspath");
           pathSupported = path != null;
@@ -121,6 +141,20 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
           const method = await askOptional("gettimingmethod");
           methodSupported = method != null;
           timingMethod = method === "GameTime" || method === "RealTime" ? method : null;
+        }
+        // Only needed where the server can't name the file.
+        if (pathSupported === false && countsSupported !== false && (countsSupported === null || recheck)) {
+          const attempts = await askOptional("getattemptcount");
+          const completed = attempts == null ? null : await askOptional("getcompletedcount");
+          countsSupported = attempts != null && completed != null;
+          const counts = countsSupported ? { attempts: Number(attempts), completed: Number(completed) } : null;
+          if (counts && Number.isFinite(counts.attempts) && Number.isFinite(counts.completed)) {
+            const changed = counts.attempts !== lastCounts?.attempts || counts.completed !== lastCounts?.completed;
+            // The first reading, or a change no attempt explains: LiveSplit loaded these splits.
+            if (!lastCounts || (changed && !ranSinceCounts)) loadedCounts = counts;
+            lastCounts = counts;
+          }
+          ranSinceCounts = !idle;
         }
         const phaseText = await ask("getcurrenttimerphase");
         const phase = PHASES.find((p) => p === phaseText) ?? "NotRunning";
@@ -132,15 +166,25 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
           splitTimes = [...splitTimes, ...new Array<null>(index - splitTimes.length).fill(null)];
           splitTimes[index - 1] = parseClock(await ask("getlastsplittime"));
         }
-        if (index !== snap.splitIndex && index >= 0 && index < segmentNames.length && phase !== "Ended") {
+        if (phase !== "NotRunning") ranSinceCounts = true;
+        else runSplitNames = [];
+        if (index !== snap.splitIndex && index >= 0 && phase !== "Ended") {
           const name = await ask("getcurrentsplitname");
+          if (name && name !== "-") {
+            runSplitNames = [...runSplitNames];
+            runSplitNames[index] = name;
+          }
           mismatch =
-            name && name !== "-" && name !== segmentNames[index]
-              ? `LiveSplit is on "${name}" but this split file's split ${index + 1} is "${segmentNames[index]}". Load the same splits in both.`
-              : null;
+            !name || name === "-"
+              ? null
+              : index >= segmentNames.length
+                ? `LiveSplit is on split ${index + 1}, "${name}", but this split file has ${segmentNames.length} splits. Load the same splits in both.`
+                : name !== segmentNames[index]
+                  ? `LiveSplit is on "${name}" but this split file's split ${index + 1} is "${segmentNames[index]}". Load the same splits in both.`
+                  : null;
         }
         snap = { phase, splitIndex: Number.isFinite(index) ? index : -1, currentTime, splitTimes };
-        onUpdate(snap, { kind: "connected", mismatch, splitsPath, timingMethod });
+        onUpdate(snap, { kind: "connected", mismatch, splitsPath, timingMethod, loadedCounts, runSplitNames });
         await new Promise((r) => setTimeout(r, POLL_MS));
       }
     };

@@ -34,9 +34,12 @@ LiveSplit's built-in server on your own computer (in LiveSplit, right-click › 
 WebSocket Server; it listens on `ws://localhost:16834/livesplit` unless you change the port). It never
 splits or resets for you.
 
-When LiveSplit's server can say which splits file it has open, the page follows it: if your profile
-has a file with the same name it switches to that, and otherwise it tells you which file to choose. A
-file you pick by hand stays picked until LiveSplit opens a different one.
+The page follows the splits LiveSplit has open and switches to the matching file in your profile.
+LiveSplit's development builds say which file is open, so the page matches it by name and otherwise
+tells you which file to choose. Released LiveSplit (1.8.37) can't say, so the page matches by the
+attempt and finished counts LiveSplit loaded, which works while your profile copy is up to date, and
+otherwise by the split names once an attempt starts. A file you pick by hand stays picked until
+LiveSplit opens different splits.
 
 Without LiveSplit, pick **Demo** to replay your own recent attempts from the split file, or run a
 pretend LiveSplit server that replays one attempt:
