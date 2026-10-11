@@ -458,6 +458,7 @@ table.rules th { text-align: left; }
 .how-example span { font-family: var(--sans); font-weight: 600; margin-right: var(--s1); }
 
 .footer { margin-top: var(--s7); text-align: center; font-size: 0.875rem; color: var(--ink-3); }
+.theme-switch { display: inline-flex; align-items: center; gap: var(--s2); margin-left: var(--s4); }
 
 @media (max-width: 640px) {
   .app { padding-top: var(--s5); }

@@ -22,6 +22,7 @@ import { YearInRuns } from "./components/YearInRuns";
 import { LiveOverlay } from "./components/LiveOverlay";
 import { LivePage } from "./components/LivePage";
 import { UploadIcon } from "./components/Icons";
+import { ThemeSwitch } from "./components/ThemeSwitch";
 import { UpdateBanner, useUpdates, VersionNote } from "./components/UpdateBanner";
 import { SHOW_PANEL } from "./components/InfoTip";
 import { ActionLink, ExplainLink, Toggle } from "./components/Controls";
@@ -459,6 +460,7 @@ export function App() {
         <footer className="footer">
           Your splits never leave {isDesktop ? "your computer" : "your browser"}.
           {updates.version && <VersionNote version={updates.version} checking={updates.checking} onChange={updates.setChecking} />}
+          <ThemeSwitch />
         </footer>
       </div>
     </>
