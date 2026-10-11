@@ -45,6 +45,21 @@ describe("live stats card", () => {
     // A goal past every gold has no splits.
     render(card(liveContext(run, ctx.odds, ctx.analysis, 60_000)));
     expect(screen.getByText("Out of reach")).toBeTruthy();
+    cleanup();
+    // Past the comparison's time for the current split, both count up live.
+    const late = { ...snap, currentTime: pb[2] + 5000 };
+    render(
+      <LiveCard
+        title="Dishonored · Any%"
+        stats={liveStats(ctx, late)}
+        session={EMPTY_SESSION}
+        status={{ kind: "demo", attempt: 1 }}
+        choices={[{ id: "delta", shown: true }, { id: "goal", shown: true }]}
+      />,
+    );
+    expect(screen.getByText("+5.00s")).toBeTruthy();
+    expect(screen.getByText(`live · ${run.segments[2].name}`)).toBeTruthy();
+    expect(screen.getByText("realistic target · live")).toBeTruthy();
   });
 
   it("says why nothing moves when LiveSplit isn't answering", () => {

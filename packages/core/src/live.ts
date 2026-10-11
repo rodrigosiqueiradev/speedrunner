@@ -144,6 +144,13 @@ export interface LiveStats {
   golds: number;
   /** What "vs goal" compares with (see LiveContext). */
   goal: LiveGoal | null;
+  /**
+   * The timer against the PB's and the goal's split for the segment being played, once the timer
+   * has passed it: you're behind at that split whatever happens now, so the delta counts up live,
+   * as LiveSplit's delta column does. Null until then.
+   */
+  liveVsPb: Ms | null;
+  liveVsGoal: Ms | null;
 }
 
 /**
@@ -191,6 +198,10 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
     endsRuns: ctx.endsRuns[i],
   });
   const current = ci == null ? null : segment(ci);
+  const behind = (split: Ms | null | undefined) =>
+    ci == null || split == null || snap.currentTime == null || snap.currentTime <= split ? null : snap.currentTime - split;
+  const liveVsPb = behind(ci == null ? null : ctx.run.segments[ci].pbSplit);
+  const liveVsGoal = behind(ci == null ? null : goalSplits?.[ci]);
   const nextIndex = snap.phase === "NotRunning" ? 0 : ci == null ? null : ci + 1;
   const next = nextIndex != null && nextIndex < n ? segment(nextIndex) : null;
 
@@ -251,6 +262,8 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
     bestPossible,
     golds,
     goal: ctx.goal,
+    liveVsPb,
+    liveVsGoal,
   };
 }
 

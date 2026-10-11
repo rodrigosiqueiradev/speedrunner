@@ -167,8 +167,8 @@ A recap of one calendar year across every split file you include, drawn as a 108
 | Run time | The time on LiveSplit's timer. | |
 | PB chance | How often a run where yours is now still beats your PB, with an arrow showing how the last segment moved it. Shows **New PB** or **No PB** at the end. | [§13.2](calculations.md#132-pb-chance-and-advice) |
 | Keep going? | Keep going or reset, by the reset coach's rule. Shown from the first split until the last. | [§7.9](calculations.md#79-the-reset-rule) |
-| vs PB | Ahead (−) or behind (+) your PB's time at the last split. | [§13.1](calculations.md#131-split-comparisons) |
-| vs goal | Ahead (−) or behind (+) at the last split, against your realistic target until you set a goal, then against the goal planner's splits for it. A goal faster than every segment at its gold shows **Out of reach**. | [§13.1](calculations.md#131-split-comparisons) |
+| vs PB | Ahead (−) or behind (+) your PB's time at the last split. Once the timer passes the PB's time for the split you're on, it counts up live, as LiveSplit's delta does. | [§13.1](calculations.md#131-split-comparisons) |
+| vs goal | Ahead (−) or behind (+) at the last split, against your realistic target until you set a goal, then against the goal planner's splits for it. It counts up live mid-segment like vs PB. A goal faster than every segment at its gold shows **Out of reach**. | [§13.1](calculations.md#131-split-comparisons) |
 | Last segment | The segment just finished against your usual time for it, in time and as a share, or **Gold**. | [§13.1](calculations.md#131-split-comparisons) |
 | Likely finish | Where the run ends if every segment left goes at your usual pace. | [§13.3](calculations.md#133-projections) |
 | Best possible | Where the run ends if every segment left is a gold. | [§13.3](calculations.md#133-projections) |

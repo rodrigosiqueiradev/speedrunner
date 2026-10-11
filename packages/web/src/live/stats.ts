@@ -110,12 +110,17 @@ export const LIVE_STATS: LiveStatDef[] = [
       id: "live-delta",
       label: "vs PB",
       short: "How far ahead (−) or behind (+) your PB's time you were at the last split.",
-      how: ["Your time at the latest split minus your PB's time at the same split. Splits your PB skipped have no comparison."],
+      how: [
+        "Your time at the latest split minus your PB's time at the same split. Splits your PB skipped have no comparison.",
+        "Once the timer passes your PB's time for the split you're on, it counts up live from there, as LiveSplit's delta does.",
+      ],
     },
     view: (s) =>
-      s.lastSplit?.vsPb == null
-        ? null
-        : { value: signed(s.lastSplit.vsPb), detail: `at ${s.lastSplit.name}`, tone: tone(s.lastSplit.vsPb) },
+      s.liveVsPb != null
+        ? { value: signed(s.liveVsPb), detail: `live · ${s.current!.name}`, tone: tone(s.liveVsPb) }
+        : s.lastSplit?.vsPb == null
+          ? null
+          : { value: signed(s.lastSplit.vsPb), detail: `at ${s.lastSplit.name}`, tone: tone(s.lastSplit.vsPb) },
   },
   {
     id: "goal",
@@ -127,6 +132,7 @@ export const LIVE_STATS: LiveStatDef[] = [
       how: [
         "Until you set a goal it compares with your realistic target: each segment at your good-day time or your PB time, whichever is faster.",
         "With a goal set, here or in What does your goal take?, it compares with the goal planner's splits for it: the same times as the balanced comparison it saves for LiveSplit.",
+        "Once the timer passes the goal's time for the split you're on, it counts up live from there, as LiveSplit's delta does.",
         "A goal faster than every segment at its gold has no splits, so nothing shows.",
       ],
     },
@@ -135,6 +141,7 @@ export const LIVE_STATS: LiveStatDef[] = [
       if (!g) return null;
       const target = g.kind === "goal" ? `sub ${formatTime(g.time, g.time % 1000 === 0 ? 0 : 2)}` : "realistic target";
       if (!g.splits) return { value: "Out of reach", detail: `${target} needs new golds`, word: true };
+      if (s.liveVsGoal != null) return { value: signed(s.liveVsGoal), detail: `${target} · live`, tone: tone(s.liveVsGoal) };
       const vs = s.lastSplit?.vsGoal;
       return vs == null ? null : { value: signed(vs), detail: `${target} · at ${s.lastSplit!.name}`, tone: tone(vs) };
     },
