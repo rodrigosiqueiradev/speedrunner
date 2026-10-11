@@ -94,6 +94,25 @@ npm run dev -w packages/desktop   # desktop window with live reload
 npm run app                       # portable app in packages/desktop/src-tauri/target/release
 ```
 
+### Building on Windows
+
+1. Install [Build Tools for Visual Studio](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+   with the **Desktop development with C++** workload, which brings MSVC and the Windows SDK.
+2. Install Rust with [rustup](https://rustup.rs), keeping the default `x86_64-pc-windows-msvc` toolchain.
+3. Install Node 24 (the version in `.nvmrc`), which comes with npm 11.
+4. WebView2 already ships with Windows 10 and 11, so there is nothing to install for it.
+
+Then, from the repository root in a new terminal:
+
+```sh
+npm install
+npm run dev -w packages/desktop                 # desktop window with live reload
+npm run app -w packages/desktop -- --no-bundle  # packages\desktop\src-tauri\target\release\speedrunner.exe
+```
+
+The bundle targets are only for Linux and macOS, so on Windows the build skips bundling, like the
+**Desktop app** workflow does. The `.exe` it makes is the portable app, with nothing to install.
+
 The sample run (`packages/web/public/sample.lss`) comes from the MIT-licensed
 [livesplit-core](https://github.com/LiveSplit/livesplit-core) test suite.
 
