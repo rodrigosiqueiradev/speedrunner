@@ -229,7 +229,9 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
     // chance there. Once even splitting now would give less than at the last split, the segment
     // has already cost chance, so it counts down live from the last split's value.
     if (ctx.odds && ci != null && now != null) {
-      const ifSplitNow = pbChanceFrom(ctx.odds, ci, now);
+      // Splitting the last segment ends the run: it's a PB exactly when the timer is still under
+      // the target, so there's nothing to look up (and no simulated spread at the final split).
+      const ifSplitNow = ci === n - 1 ? (now < ctx.odds.target ? 1 : 0) : pbChanceFrom(ctx.odds, ci, now);
       if (pbChance != null && ifSplitNow < pbChance) {
         pbChanceBefore = pbChance;
         pbChance = ifSplitNow;

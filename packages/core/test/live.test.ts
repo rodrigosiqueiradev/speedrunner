@@ -205,6 +205,18 @@ describe("up next and vs goal", () => {
     expect(way.advice?.verdict).toBe("reset");
   });
 
+  it("keeps the PB chance in the last segment until the timer passes the PB", () => {
+    const n = pb.length;
+    const splits = pb.slice(0, n - 1);
+    const before = liveStats(ctx, at(splits, pb[n - 2])).pbChance!;
+    expect(before).toBeGreaterThan(0);
+    // Entering the last segment doesn't drop it to 0%.
+    expect(liveStats(ctx, at(splits, pb[n - 2] + 1000)).pbChance).toBe(before);
+    expect(liveStats(ctx, at(splits, pb[n - 1] - 1)).pbChance).toBe(before);
+    // Past the PB time, no split can beat it.
+    expect(liveStats(ctx, at(splits, pb[n - 1] + 1)).pbChance).toBe(0);
+  });
+
   it("reads the same for a 10 minute and a 6 hour category", () => {
     const k = 36;
     const long = scaled(short, k);

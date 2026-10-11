@@ -1232,7 +1232,8 @@ with split times $x_1, \dots, x_j$ and $\theta$ on the timer.
 The PB chance is $\hat p_{\text{fin}}\,\Sigma_1$ before the first split and $c_j(x_j)$ (Definition 7.6) at split $j$.
 The arrow compares it with the chance one split earlier.
 While segment $j+1$ is being played, the split can only come at $\theta$ or later and $c_{j+1}$ falls as its time
-grows, so when $c_{j+1}(\theta) < c_j(x_j)$ the chance shown is $c_{j+1}(\theta)$, with the arrow from $c_j(x_j)$.
+grows, so when $c_{j+1}(\theta) < c_j(x_j)$ the chance shown is $c_{j+1}(\theta)$, with the arrow from $c_j(x_j)$. In the last segment splitting ends the run, so
+$c_n(\theta)$ is 1 while $\theta$ is under the PB and 0 once it passes it.
 **Keep going?** likewise shows reset as soon as Theorem 7.9 says reset at split $j+1$ with time $\theta$.
 At the end it is 1 if the final time beat the PB (and every
 PB already set this session) and 0 otherwise. **Keep going?** applies Theorem 7.9 at the last split, from the first
