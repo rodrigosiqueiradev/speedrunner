@@ -52,9 +52,9 @@ precise and lists the few deliberate exceptions.
 
 - Times are in milliseconds. A *segment* is the stretch between two splits; the run has $n$ segments, numbered
   $1,\dots,n$ in this paper (the code counts from 0).
-- $\operatorname{clamp}_{[a,b]}(x) = \min(b, \max(a, x))$.
+- $\mathrm{clamp}_{[a,b]}(x) = \min(b, \max(a, x))$.
 - For a finite multiset $X$, $\lvert X\rvert$ is its size, $\min X$ its least element and $Q(X; q)$ its quantile
-  (Definition 1.4). $\operatorname{med} X = Q(X; \tfrac12)$.
+  (Definition 1.4). $\mathrm{med}\, X = Q(X; \tfrac12)$.
 - $\mathbf 1[\cdot]$ is the indicator function. $\lceil\cdot\rceil$ and $\lfloor\cdot\rfloor$ round up and down.
 - "Recent" always means the window of Definition 1.7 unless stated otherwise.
 
@@ -97,7 +97,7 @@ segments. Requiring $H_{i-1}(a)$ to be a duration is therefore necessary and suf
 alone. *(Assumption: LiveSplit's storage rule as just described, which holds for versions 1.0 to current.)* $\square$
 
 **Definition 1.3 (mis-split floor and clean times).** Let $K_i$ be the candidates of segment $i$. If
-$\lvert K_i\rvert \ge 5$, the floor is $\varphi_i = 0.6 \cdot \operatorname{med}\lbrace t : (a,t)\in K_i\rbrace$,
+$\lvert K_i\rvert \ge 5$, the floor is $\varphi_i = 0.6 \cdot \mathrm{med}\,\lbrace t : (a,t)\in K_i\rbrace$,
 otherwise $\varphi_i = 0$. The **clean times** are $C_i = \lbrace (a,t) \in K_i : t \ge \varphi_i\rbrace$, ordered by
 attempt id (oldest first). Every per-segment statistic in this paper uses $C_i$.
 
@@ -137,7 +137,7 @@ fortnight of a 10 minute category and years of a 6 hour one.
 **Definition 1.6 (half-life and weights).** For a history of $m$ samples ordered oldest first,
 
 ```math
-h(m) = \operatorname{clamp}_{[5,\,25]}\!\left(\tfrac{m}{4}\right), \qquad
+h(m) = \mathrm{clamp}_{[5,\,25]}\!\left(\tfrac{m}{4}\right), \qquad
 w_k = 2^{-(m-1-k)/h(m)}, \quad k = 0,\dots,m-1 .
 ```
 
@@ -277,7 +277,7 @@ and the runner chose to start over, as the reset coach of §7.9 often recommends
 the segment.
 
 **Definition 3.3 (split times and good runs).** Let $X_j(a)$ be attempt $a$'s cumulative time at split $j$, defined
-when every segment $1..j$ has a duration in $a$. For $i \ge 2$ let $D_i = \lbrace a \in A_i : X_{i-1}(a) \text{ defined}\rbrace$ and $M = \operatorname{med}\lbrace X_{i-1}(a) : a \in D_i\rbrace$. The **good runs** at segment $i$
+when every segment $1..j$ has a duration in $a$. For $i \ge 2$ let $D_i = \lbrace a \in A_i : X_{i-1}(a) \text{ defined}\rbrace$ and $M = \mathrm{med}\,\lbrace X_{i-1}(a) : a \in D_i\rbrace$. The **good runs** at segment $i$
 are $G_i = \lbrace a \in D_i : X_{i-1}(a) \le M\rbrace$, the attempts in the faster half of times at the split before.
 The **good-run reset rate** is $\rho^{\mathrm{good}}_i$, the share of $G_i$ that reset in $i$. It is undefined for
 $i=1$, which has no split before it.
@@ -438,10 +438,10 @@ Segments whose name contains the word "RNG" are suggested too.
 the number of runs $U$ (maximal blocks of equal outcomes) has
 
 ```math
-E[U] = \frac{2N_1N_2}{N} + 1, \qquad \operatorname{Var}[U] = \frac{2N_1N_2\,(2N_1N_2 - N)}{N^2(N-1)},
+E[U] = \frac{2N_1N_2}{N} + 1, \qquad \mathrm{Var}[U] = \frac{2N_1N_2\,(2N_1N_2 - N)}{N^2(N-1)},
 ```
 
-and $z = (U - E[U])/\sqrt{\operatorname{Var}[U]}$ is approximately standard normal for moderate $N$.
+and $z = (U - E[U])/\sqrt{\mathrm{Var}[U]}$ is approximately standard normal for moderate $N$.
 
 *Why rules 3 and 4.* Luck is independent from attempt to attempt; a change of strategy is not: old attempts are slow,
 new ones fast. A strategy change produces few long runs (strongly negative $z$) and a large drift in the good share.
@@ -494,7 +494,7 @@ Let $B$ be the sum of best at the PB's luck (§5.3; equal to SoB without marks).
 $\gamma = \max\bigl(0, (\mathrm{PB} - B)/B\bigr)$ and
 
 ```math
-E = \operatorname{clamp}_{[0,100]}\!\left(100\left(1 - \frac{\gamma}{0.10}\right)\right).
+E = \mathrm{clamp}_{[0,100]}\!\left(100\left(1 - \frac{\gamma}{0.10}\right)\right).
 ```
 
 A PB equal to the sum of best scores 100; a PB 10% or more above it scores 0. The gap measures how much of the
@@ -503,7 +503,7 @@ runner's demonstrated ability (their golds) the PB already captures.
 ### 6.2 Consistency (weight 0.25)
 
 **Definition 6.1.** Over segments with a variability, $\bar v = \sum_i v_i m_i / \sum_i m_i$ and
-$C = \operatorname{clamp}_{[0,100]}\bigl(100(1 - \bar v/0.20)\bigr)$.
+$C = \mathrm{clamp}_{[0,100]}\bigl(100(1 - \bar v/0.20)\bigr)$.
 
 **Proposition 6.1.** $\bar v = \sum_i \mathrm{IQR}_i \big/ \sum_i m_i$: the run's total interquartile spread over its
 total typical time.
@@ -537,7 +537,7 @@ of $f_{F-2w+1..F-w}$ and $M_{\text{rec}}$ the median of $f_{F-w+1..F}$,
 
 ```math
 \Delta = \frac{M_{\text{prev}} - M_{\text{rec}}}{M_{\text{prev}}}, \qquad
-I = \operatorname{clamp}_{[0,100]}\!\left(50 + 50\,\frac{\Delta}{0.03}\right).
+I = \mathrm{clamp}_{[0,100]}\!\left(50 + 50\,\frac{\Delta}{0.03}\right).
 ```
 
 No change scores 50, 3% faster scores 100, 3% slower scores 0. The window is counted in finishes rather than days, so a
@@ -548,7 +548,7 @@ category with a dozen finishes gets a score like one with hundreds.
 Let $K$ be the set of parts that could be computed, $s_k$ their scores and $\omega_k$ their weights. Then
 
 ```math
-\mathrm{Score} = \operatorname{round}\!\left(\frac{\sum_{k \in K} \omega_k s_k}{\sum_{k \in K} \omega_k}\right).
+\mathrm{Score} = \mathrm{round}\!\left(\frac{\sum_{k \in K} \omega_k s_k}{\sum_{k \in K} \omega_k}\right).
 ```
 
 **Proposition 6.2.** The score lies in $[0, 100]$ and is the weighted mean of the available parts with their weights
@@ -648,15 +648,15 @@ including the long right tail of a segment that sometimes goes badly.
 
 #### 7.3.1 Why a shared form is necessary
 
-**Proposition 7.2.** Write $\sigma_F^2 = \operatorname{Var}\Phi$ and $\sigma_i^2 = \operatorname{Var} E_i$, and
+**Proposition 7.2.** Write $\sigma_F^2 = \mathrm{Var}\,\Phi$ and $\sigma_i^2 = \mathrm{Var}\, E_i$, and
 suppose deviations are small enough that $e^x \approx 1 + x$. Then
 
 ```math
-\frac{\operatorname{Var} T}{\bigl(\sum_i \tau_i\bigr)^2} \approx \sigma_F^2 + \frac{\sum_i \tau_i^2 \sigma_i^2}{\bigl(\sum_i\tau_i\bigr)^2}.
+\frac{\mathrm{Var}\, T}{\bigl(\sum_i \tau_i\bigr)^2} \approx \sigma_F^2 + \frac{\sum_i \tau_i^2 \sigma_i^2}{\bigl(\sum_i\tau_i\bigr)^2}.
 ```
 
 *Proof.* $T \approx \sum_i \tau_i + \Phi\sum_i \tau_i + \sum_i \tau_i E_i$ with $\Phi$ and the $E_i$ independent, so
-$\operatorname{Var}T \approx (\sum\tau_i)^2\sigma_F^2 + \sum \tau_i^2\sigma_i^2$. $\square$
+$\mathrm{Var}\,T \approx (\sum\tau_i)^2\sigma_F^2 + \sum \tau_i^2\sigma_i^2$. $\square$
 
 **Corollary.** For $n$ equal segments with equal residual spread $\sigma$, the relative spread of the total is
 $\sqrt{\sigma_F^2 + \sigma^2/n}$. Without a shared form ($\sigma_F = 0$) it shrinks like $1/\sqrt n$, so a 56 segment
@@ -775,7 +775,7 @@ dependent through the shared form, so conditioning on a slow split time shifts t
 
 *Argument.* Both $X_i = \sum_{j \le i} T_j$ and $R_i = \sum_{j > i} T_j$ are increasing functions of the
 independent variables $\Phi, E_1, \dots, E_n$. Increasing functions of independent variables are positively
-associated (Harris–FKG inequality [7]), so $\operatorname{Cov}(X_i, R_i) \ge 0$. More precisely, $R_i$ depends on
+associated (Harris–FKG inequality [7]), so $\mathrm{Cov}(X_i, R_i) \ge 0$. More precisely, $R_i$ depends on
 $X_i$ only through $\Phi$, because the residuals before and after split $i$ are independent (Assumption 7.1). If the
 distribution of $X_i$ given $\Phi$ has a monotone likelihood ratio in $\Phi$ (true, for example, when the residual
 distributions are log-concave), the posterior of $\Phi$ given $X_i = x$ is stochastically increasing in $x$ [10],
@@ -1077,10 +1077,10 @@ $2u$, so a pause does not swamp the rest), its usual time $u$, and its *minutes 
 the session plus the time on its earlier segments. The **pace** of a set of plays is
 
 ```math
-\operatorname{pace} = \frac{\sum t}{\sum u} - 1 .
+\mathrm{pace} = \frac{\sum t}{\sum u} - 1 .
 ```
 
-**Proposition 10.1.** $\operatorname{pace} = \sum_k \frac{u_k}{\sum u}\bigl(\frac{t_k}{u_k} - 1\bigr)$: the mean
+**Proposition 10.1.** $\mathrm{pace} = \sum_k \frac{u_k}{\sum u}\bigl(\frac{t_k}{u_k} - 1\bigr)$: the mean
 relative slowdown, weighted by usual time.
 
 *Proof.* Expand the right-hand side: $\sum_k (t_k - u_k)/\sum u$. $\square$
