@@ -28,6 +28,7 @@ const fixture = (name: string) =>
 
 // Smaugy's Twilight Princess file is kept outside the repo and must never be committed.
 const REFERENCE = "/mnt/project-files/reference-splits/twilight-princess-jp-glitchless-any-smaugy.lss";
+const SHORT_REFERENCE = "/mnt/project-files/reference-splits/sm64-0-star-cj-0712-greensuigi.lss";
 
 const jitter = (seg: number, id: number) => {
   let h = Math.imul(seg * 7919 + id, 2654435761) >>> 0;
@@ -223,8 +224,10 @@ describe("up next and vs goal", () => {
     expect(liveStats(ctx, at(splits, pb[n - 1] + 1)).pbChance).toBe(0);
   });
 
-  it.skipIf(!existsSync(REFERENCE))("lowers the PB chance during segments of the multi-hour Twilight Princess file", () => {
-    const run = parseLss(readFileSync(REFERENCE, "utf8"));
+  // The 6 hour Twilight Princess file and a 6 minute Super Mario 64 file with 35k attempts.
+  it.each([REFERENCE, SHORT_REFERENCE])("lowers the PB chance during segments of %s", (file) => {
+    if (!existsSync(file)) return;
+    const run = parseLss(readFileSync(file, "utf8"));
     const lctx = liveContext(run, pbOdds(run, { simulations: 1000 }));
     const p = run.segments.map((s) => s.pbSplit!);
     for (const k of [1, Math.floor(p.length / 2), p.length - 1]) {
