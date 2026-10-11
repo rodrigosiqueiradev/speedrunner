@@ -131,7 +131,9 @@ const analysis = analyzeRun(parseLss(xmlText), { recentWindow: 50 });
 
 ## What the analysis reports
 
-For a full, plain-language explanation of every number, see [docs/how-it-works.md](docs/how-it-works.md).
+For a full, plain-language explanation of every number, see [docs/how-it-works.md](docs/how-it-works.md). Every feature
+is described in the [feature guide](docs/features.md), and every calculation is written out with its derivation and
+assumptions in [The mathematics of Speedrunner](docs/calculations.md).
 
 | Field | Meaning |
 | --- | --- |

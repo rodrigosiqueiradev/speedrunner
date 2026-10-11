@@ -4,6 +4,9 @@ Everything is worked out from your LiveSplit split file (`.lss`), in your browse
 The app shows the same explanations next to each number (the **?** buttons) and in its
 "How it's calculated" section, with examples taken from the run you load.
 
+For what each feature does and where to find it, see the [feature guide](features.md). For every formula written out
+with definitions, derivations and the assumptions behind it, see [The mathematics of Speedrunner](calculations.md).
+
 Defaults below come from `ANALYSIS_DEFAULTS` and `ADVICE_THRESHOLDS` in
 [`packages/core/src/analyze.ts`](../packages/core/src/analyze.ts).
 
@@ -41,7 +44,7 @@ Every per-segment stat below uses clean times only.
 | **Theoretical save** | PB minus sum of best. |
 | **Attempts** | LiveSplit's attempt counter. **Finished** counts attempts with a time on the final segment. |
 
-Example (Dishonored sample, real time): PB 40:01.52 − 12.15s of good-day saves from 4 segments = realistic target 39:49.37.
+Example (Dishonored sample, real time): PB 40:01.51 − 12.15s of good-day saves from 4 segments = realistic target 39:49.37.
 
 ## Per segment
 
@@ -184,7 +187,7 @@ point and the real finish placed within its predicted spread. 50% means well cal
 (about 40 minutes, 15 finishes checked) it came out at 48%; on a 6 hour Twilight Princess file (5 finishes) at 54%.
 The model before this one gave 21% and 0%: it didn't follow improvement, and long runs came out too tight.
 
-Example (Dishonored sample, real time): 10% of finished runs beat the PB (40:01.52), and 8% of recent attempts
+Example (Dishonored sample, real time): 10% of finished runs beat the PB (40:01.51), and 8% of recent attempts
 finished, so about 1 in 130 attempts PBs. At Try Not Falling? the coach says reset when more than 6.9s behind PB pace
 (1.1% of the split time); at Not At Fault, 56.6s (3.1%).
 
@@ -238,7 +241,7 @@ segment's minutes are expected to save. Segments with fewer than 5 clean times a
 ## Goal planner
 
 You type a goal such as sub 40:00. The suggested goal is a round time just under your PB, on the largest round step
-(1 s, 5 s, 10 s, 15 s, 30 s, 1 min, 5 min and so on) that is at most 1% of the PB: 40:01.52 suggests 40:00, and
+(1 s, 5 s, 10 s, 15 s, 30 s, 1 min, 5 min and so on) that is at most 1% of the PB: 40:01.51 suggests 40:00, and
 5:42:54.89 suggests 5:42:00. The plan starts from your PB and finds the least demanding set of segment times
 that finishes under it (a hundredth under, so LiveSplit shows it as sub).
 
