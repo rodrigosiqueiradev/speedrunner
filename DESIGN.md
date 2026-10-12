@@ -193,7 +193,7 @@ The density is moderate. Comfortable reading measures (56–78ch) sit alongside 
 The colours at the top of this file are the default palette, Speedrunner, in light mode. A cool, near-neutral logbook with two meaningful inks: the accent (Split Blue, in that palette) and Gold Split. Other palettes keep every role and change the accent hue. They are specified under Palettes.
 
 ### Primary
-- **Split Blue** (`split-blue`, the `--accent` role): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, text selection, the save bars on the route strip, and the focus ring wherever the ring sits on the page itself. On a dark chrome surface, the ring instead takes that surface's ink — Night Shell Ink on the header — because the page accent doesn't clear 3:1 there. **Split Blue Ink** (`split-blue-ink`, `--accent-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Fill** (`split-blue-fill`, hover `split-blue-fill-hover`; `--accent-fill` and `--accent-fill-hover`) is the slightly deeper step used behind white text on filled controls (the primary button and the pressed toggle), because white on Split Blue only reaches 4.4:1. **Split Blue Wash** (`split-blue-wash`, `--accent-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts. In any palette other than Speedrunner, these roles use that palette's accent, not this blue.
+- **Split Blue** (`split-blue`, the `--accent` role): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, text selection, the save bars on the route strip, and the focus ring wherever the ring sits on the page itself. On a dark chrome surface, the ring instead takes that surface's own ink — Night Shell Ink on the header, the card's value colour on the Live overlay (`--card-ink` at the standard card style) — because the page accent doesn't clear 3:1 there. **Split Blue Ink** (`split-blue-ink`, `--accent-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Fill** (`split-blue-fill`, hover `split-blue-fill-hover`; `--accent-fill` and `--accent-fill-hover`) is the slightly deeper step used behind white text on filled controls (the primary button and the pressed toggle), because white on Split Blue only reaches 4.4:1. **Split Blue Wash** (`split-blue-wash`, `--accent-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts. In any palette other than Speedrunner, these roles use that palette's accent, not this blue.
 
 ### Secondary
 - **Gold Split** (`gold-split`): LiveSplit's gold, used only for gold segments (the gold portion of savings bars and its legend swatch). **Gold Split Ink** and **Gold Split Wash** pair as the small flag that marks gold-related notes in the segment table.
@@ -689,7 +689,7 @@ High contrast also clears **7:1** for ink, ink-2, ink-3, accent-ink, on-accent o
 | High contrast | light | 21.00 | 21.00 | 17.40 | 10.53 | 8.19 | 7.20 | 7.82 | 7.73 |
 | High contrast | dark | 21.00 | 19.80 | 17.37 | 13.62 | 15.41 | 10.16 | 11.85 | 8.72 |
 
-Also checked, all at or above 4.5: ink on accent-wash, accent-ink on ground and on accent-wash, on-accent on accent-fill-hover, gold-ink on gold-wash, error on error-wash, shell-ink and shell-ink-2 on shell. Shell-ink on shell is also the header focus ring's ratio, since the ring takes that colour there. The Live overlay's ring still uses the accent on card-bg and is below 3:1 in some palettes; once that moves to card-ink, its ratio joins this table alongside the header's. Hairline `--line` is structure, not text, and is not required to hit 3:1. High contrast uses stronger lines so the edges of panels stay obvious.
+Also checked, all at or above 4.5: ink on accent-wash, accent-ink on ground and on accent-wash, on-accent on accent-fill-hover, gold-ink on gold-wash, error on error-wash, shell-ink and shell-ink-2 on shell. Shell-ink on shell is also the header focus ring's ratio, since the ring takes that colour there. The Live overlay's ring follows the card's own value colour, so that figure is only the standard card style: `--card-ink` (`#e8edf5`) on `--card-bg` (`#0e1726`) is 15.28:1. A runner who picks a different value colour under "Card style" moves the ring with it, and the live page checks that choice at 4.5:1 against the card background — the same check the value text gets. The `--card-*` defaults are fixed on `:root` and never follow the palette, so the 15.28:1 standard-style figure holds in all ten theme/mode pairs and under a custom theme too. Hairline `--line` is structure, not text, and is not required to hit 3:1. High contrast uses stronger lines so the edges of panels stay obvious.
 
 White on the raw Speedrunner accent `#2a78d6` is 4.42:1, which is why the fill is the deeper `#256abf` (5.39:1). Keep that. Do not put white text on `--accent`.
 
@@ -750,7 +750,7 @@ Dark ladder:
 Light shadow is the Speedrunner shadow with the theme ink's red, green and blue. Dark shadow is always `0 8px 28px rgb(0 0 0 / 0.5)`.
 
 4. Wash. Light: lightness 0.955, chroma clamped between 0.012 and 0.028 at 0.18 times the accent chroma. Dark: lightness 0.255, chroma clamped between 0.03 and 0.055 at 0.30 times the accent chroma. Hue is the accent hue.
-5. Accent (bars, focus ring, tab underline). Light mode: darken until it clears 3.1 on both surface and ground. Dark mode: lighten until it clears 3.1 on the surface. Show the line if the lightness moved.
+5. Accent (bars, focus ring, tab underline). Light mode: darken until it clears 3.1 on surface, ground and wash. Dark mode: lighten until it clears 3.1 on surface, ground and wash. Show the line if the lightness moved.
 6. Fill and the text on it. Prefer white `#ffffff`. In light mode, darken the pick until white clears 4.6. Use that fill with white text when the lightness drop is 0.18 or less and the fill also clears 3.1 on the surface. Otherwise use dark text `#0d1420` (this exact ink, in both modes, because it sits on the fill) and darken the fill until it clears 3.1 on the surface while the dark text still clears 4.6. Show the line when the text is dark or the fill moved. In dark mode, a pick of lightness 0.70 or more uses dark text on a light fill. A darker pick uses white text on a fill that clears both 4.6 for white and 3.1 on the surface. If that pair is impossible, use dark text on a light fill.
 7. Hover. Try one step darker (about 0.045 lightness). Keep it only if the same text colour still clears 4.6 and the fill still clears 3.0 on the surface. Otherwise try one step lighter. If neither passes, hover equals fill. Grove dark and a pale yellow in light mode are cases where hover equals fill.
 8. Accent-ink. Light mode: start at lightness at most 0.48 and chroma at most 0.15, then darken until it clears 4.6 on surface, ground and wash. Dark mode: start at lightness at least 0.74 and chroma at most 0.12, then lighten until the same three pass.
@@ -783,17 +783,17 @@ These are the check for the rules above. Match the accent tokens. Match whether 
 | `#2a78d6` | none | light | no | `#2a78d6` | `#115cb0` | `#e7f1ff` | `#2675d2` | `#1166c1` | `#ffffff` |
 | `#2a78d6` | none | dark | no | `#2a78d6` | `#76adf6` | `#12233a` | `#2675d2` | `#1467c3` | `#ffffff` |
 | `#1f7a47` | none | light | no | `#1f7a48` | `#0e703f` | `#e6f5eb` | `#1f7a48` | `#036b3b` | `#ffffff` |
-| `#1f7a47` | none | dark | no | `#1f7a48` | `#6bc08a` | `#15281b` | `#1f7a48` | `#1f7a48` | `#ffffff` |
-| `#ffe14a` | none | light | yes | `#a08900` | `#6e5d00` | `#f5f1dd` | `#a99100` | `#a99100` | `#0d1420` |
+| `#1f7a47` | none | dark | yes | `#257f4c` | `#6bc08a` | `#15281b` | `#1f7a48` | `#1f7a48` | `#ffffff` |
+| `#ffe14a` | none | light | yes | `#9e8700` | `#6e5d00` | `#f5f1dd` | `#a99100` | `#a99100` | `#0d1420` |
 | `#ffe14a` | none | dark | yes | `#ffe14e` | `#f7e283` | `#292303` | `#ead15d` | `#dbc24f` | `#0d1420` |
 | `#c8c8c8` | none | light | yes | `#3a79ca` | `#1c5cab` | `#e7f1ff` | `#3676c6` | `#2667b6` | `#ffffff` |
 | `#c8c8c8` | none | dark | yes | `#4888d9` | `#76adf6` | `#152337` | `#3676c6` | `#2868b7` | `#ffffff` |
-| `#00ff66` | none | light | yes | `#2b9e49` | `#00722b` | `#e4f6e7` | `#37a651` | `#37a651` | `#0d1420` |
+| `#00ff66` | none | light | yes | `#2a9c47` | `#00722a` | `#e4f6e7` | `#37a651` | `#37a651` | `#0d1420` |
 | `#00ff66` | none | dark | yes | `#85f197` | `#9deba8` | `#112915` | `#8eea9c` | `#7fdb8f` | `#0d1420` |
 | `#6a45c4` | `#916cba` | light | no | `#6a45c4` | `#6148aa` | `#f0eeff` | `#6a45c4` | `#5d35b3` | `#ffffff` |
-| `#6a45c4` | `#916cba` | dark | yes | `#724fce` | `#ac9df1` | `#231d3b` | `#724fce` | `#7d5cdc` | `#ffffff` |
+| `#6a45c4` | `#916cba` | dark | yes | `#7855d6` | `#ac9df1` | `#231d3b` | `#724fce` | `#7d5cdc` | `#ffffff` |
 | `#1f7a47` | `#ffffff` | light | yes | `#1f7a48` | `#0e703f` | `#e6f5eb` | `#1f7a48` | `#036b3b` | `#ffffff` |
-| `#1f7a47` | `#ffffff` | dark | yes | `#1f7a48` | `#6bc08a` | `#15281b` | `#1f7a48` | `#1f7a48` | `#ffffff` |
+| `#1f7a47` | `#ffffff` | dark | yes | `#257f4c` | `#6bc08a` | `#15281b` | `#1f7a48` | `#1f7a48` | `#ffffff` |
 
 
 The tinted violet pick is the check for the ladder. Full tokens:
@@ -844,7 +844,7 @@ The tinted violet pick is the check for the ladder. Full tokens:
 | `--shell` | `#0d0912` |
 | `--shell-ink` | `#eeebf3` |
 | `--shell-ink-2` | `#9a92a5` |
-| `--accent` | `#724fce` |
+| `--accent` | `#7855d6` |
 | `--accent-ink` | `#ac9df1` |
 | `--accent-wash` | `#231d3b` |
 | `--accent-fill` | `#724fce` |
