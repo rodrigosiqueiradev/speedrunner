@@ -66,7 +66,7 @@ and each tab has its own address (`#practise`, `#segments`, `#sessions`, `#how-i
 
 | Feature | What it shows | Maths |
 | --- | --- | --- |
-| **Summary** | Personal best, realistic target (your PB with every segment at your good-day time where that is faster) and sum of best, each with its gap to the PB. When segments are marked as luck, the sum of best also says how often runs get the luck it needs. | [§2](calculations.md#2-run-totals) |
+| **Summary** | Personal best, realistic target (your PB with every segment at your good-day time where that is faster, and a stretch around a split your PB skipped compared as one piece) and sum of best, each with its gap to the PB. When segments are marked as luck, the sum of best also says how often runs get the luck it needs. | [§2](calculations.md#2-run-totals) |
 | **Route strip** | Your PB drawn as its route: one column per segment, as wide as the segment took, with a bar as tall as its good-day save. The three biggest saves are numbered. LiveSplit subsplit sections are labelled underneath. Click a column to open that segment on the Segments tab. | [§3.4](calculations.md#34-saves) |
 | **What to practise first** | The top three pieces of advice, ranked by estimated worth. **Show all** opens the Practise tab. | [§4](calculations.md#4-practice-advice) |
 | **Your PB odds** | Chance a finished run beats your PB, chance per attempt ("1 in N"), the typical and good finish of your current form, and a forecast of attempts and dates until a PB is more likely than not (50%) and very likely (90%). | [§7](calculations.md#7-the-form-model-and-pb-odds) |

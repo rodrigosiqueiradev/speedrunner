@@ -35,7 +35,7 @@ Every per-segment stat below uses clean times only.
 | Number | How it's calculated |
 | --- | --- |
 | **Personal best** | The last split of LiveSplit's "Personal Best" comparison, read straight from the file. |
-| **Realistic target** | PB minus the sum of every segment's good-day save (see below). It answers "what would my PB be if every segment went like a typical good attempt?" |
+| **Realistic target** | PB minus the sum of every segment's good-day save (see below). It answers "what would my PB be if every segment went like a typical good attempt?" Where your PB skipped a split, it only has a time for the whole stretch around it, so that stretch is compared as one piece: its PB time against your good-day times for its segments added up. |
 | **Sum of best** | All segment golds added together. The theoretical best with what you've already done. |
 | **Theoretical save** | PB minus sum of best. |
 | **Attempts** | LiveSplit's attempt counter. **Finished** counts attempts with a time on the final segment. |
@@ -46,7 +46,7 @@ Example (Dishonored sample, real time): PB 40:01.51 − 12.15s of good-day saves
 
 | Column | How it's calculated |
 | --- | --- |
-| **PB** | This segment's split time in the PB minus the previous split's. Blank if the PB skipped a neighbouring split. |
+| **PB** | This segment's split time in the PB minus the previous split's. Blank if the PB skipped a neighbouring split, and so is the good-day save; the realistic target then counts the stretch as one piece (see above). |
 | **Gold** | The fastest of LiveSplit's stored best segment, every clean time in your history, and the PB segment. A stored gold under 60% of your median is treated as a mis-split and ignored (shown as "gold ignored"). |
 | **Typical** | Median of your recent clean times (the latest half, 10 to 50). Used instead of the average so one disaster attempt doesn't drag it. |
 | **Save to gold** | PB segment − gold, never below zero. The most this segment can ever give back. |
@@ -252,7 +252,8 @@ that finishes under it (a hundredth under, so LiveSplit shows it as sub).
 "Race these in LiveSplit" saves a copy of your split file with up to three comparisons added. The original file is
 never changed, and saving again from a copy replaces these comparisons rather than adding them twice.
 
-- **Realistic target**: each segment at its good-day time, or its PB time where that's faster.
+- **Realistic target**: each segment at its good-day time, or its PB time where that's faster. Where your PB skipped a
+  split, the stretch's target is shared out among its segments by their good-day times.
 - **Sub X (balanced)**: the goal plan, split by split. It's written for the timing method the page is showing.
 - **Recent golds**: the best clean time in each segment over its recent times (the latest half, 10 to 50). Unlike the
   sum of best, a gold set long ago and never matched since doesn't count.

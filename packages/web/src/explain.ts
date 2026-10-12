@@ -57,12 +57,18 @@ export const METRICS: Record<string, MetricDoc> = {
       "Where your good-day time is faster than that segment in your PB, the difference is a good-day save. Where your PB segment was already faster, the save is zero.",
       "Realistic target = PB minus the sum of all good-day saves.",
       `Segments with fewer than ${D.minSamples} clean times have no good-day time yet, so they add nothing.`,
+      "Where your PB skipped a split, it only has a time for the whole stretch around it. That stretch is compared as one piece: its PB time against the sum of its segments' good-day times.",
     ],
     example: (a) => {
       if (a.personalBest == null || a.realisticTarget == null) return null;
-      const contributing = a.segments.filter((s) => (s.realisticTimeSave ?? 0) > 0);
-      const top = [...contributing].sort((x, y) => y.realisticTimeSave! - x.realisticTimeSave!).slice(0, 3);
-      const parts = top.map((s) => `${s.name} ${formatSave(s.realisticTimeSave)}`).join(", ");
+      const contributing = [
+        ...a.segments.filter((s) => (s.realisticTimeSave ?? 0) > 0).map((s) => ({ name: s.name, save: s.realisticTimeSave! })),
+        ...a.skippedPbStretches
+          .filter((st) => (st.realisticTimeSave ?? 0) > 0)
+          .map((st) => ({ name: `${a.segments[st.from].name} to ${a.segments[st.to].name}`, save: st.realisticTimeSave! })),
+      ];
+      const top = [...contributing].sort((x, y) => y.save - x.save).slice(0, 3);
+      const parts = top.map((c) => `${c.name} ${formatSave(c.save)}`).join(", ");
       return `${formatTime(a.personalBest)} − ${formatSave(a.personalBest - a.realisticTarget)} from ${contributing.length} segment${contributing.length === 1 ? "" : "s"}${parts ? ` (biggest: ${parts})` : ""} = ${formatTime(a.realisticTarget)}.`;
     },
   },

@@ -16,10 +16,13 @@ export const COMPARISON_NAMES = {
   balanced: (goal: Ms) => `Sub ${formatTime(goal, goal % 1000 === 0 ? 0 : 2)} (balanced)`,
 } as const;
 
-/** Splits of the realistic target: each segment at its PB time or your good-day time, whichever is faster. */
+/**
+ * Splits of the realistic target: each segment at its PB time or your good-day time, whichever is
+ * faster (a stretch the PB skipped a split in counts as one piece, see analyze.ts).
+ */
 export function realisticTargetSplits(analysis: RunAnalysis): Ms[] | null {
-  if (analysis.realisticTarget == null) return null;
-  return cumulative(analysis.segments.map((s) => s.pbTime! - (s.realisticTimeSave ?? 0))) as Ms[];
+  if (analysis.realisticTargetSegments == null) return null;
+  return cumulative(analysis.realisticTargetSegments) as Ms[];
 }
 
 /**

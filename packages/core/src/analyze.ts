@@ -126,10 +126,30 @@ export interface RunAnalysis {
   luckNeeded: { segments: number; chance: number } | null;
   /** PB with each segment replaced by your good-day time where that is faster. */
   realisticTarget: Ms | null;
+  /**
+   * Each segment's time in the realistic target, so its splits add up to it. Inside a skipped
+   * stretch the stretch's target is shared out in proportion to the segments' good-day times.
+   */
+  realisticTargetSegments: Ms[] | null;
+  /**
+   * Runs of segments the PB has no split between because a split was skipped. The PB only says how
+   * long the whole stretch took, so the realistic target compares the stretch as one piece.
+   */
+  skippedPbStretches: SkippedPbStretch[];
   segments: SegmentStats[];
   /** Segments ordered by how much time they could realistically give back, biggest first. */
   biggestOpportunities: SegmentStats[];
   advice: Advice[];
+}
+
+/** Segments from..to (inclusive) that the PB ran without a split between them. */
+export interface SkippedPbStretch {
+  from: number;
+  to: number;
+  /** The PB's time over the whole stretch. */
+  pbTime: Ms;
+  /** The stretch's PB time minus the sum of its segments' good-day times, floored at 0. Null without enough times. */
+  realisticTimeSave: Ms | null;
 }
 
 /** Default analysis settings. Exported so the UI and docs can quote the real numbers. */
@@ -152,6 +172,7 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
 
   const pbTimes = segmentTimesOfPb(run);
   const splitTimes = attemptSplitTimes(run);
+  const goodDays: Array<Ms | null> = [];
 
   const stats: SegmentStats[] = segments.map((segment, i) => {
     const { times: clean, floor, discarded } = cleanSegmentTimes(run, i, { minSamples, outlierFloor });
@@ -174,6 +195,9 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
     const good = i === 0 ? null : fasterHalf(splitTimes[i - 1], reachedIds).ids;
     const goodResets = good ? good.filter((id) => !segment.history.has(id)).length : null;
     const luck = segment.luck ? luckStats(all, recent, pbTime, minSamples) : null;
+    // A luck segment's good day is a good day with the luck the PB had: better luck isn't a save you can earn.
+    const goodDay = p25 == null ? null : luck?.pbOutcome === "bad" && luck.badP25 != null ? luck.badP25 : luck?.pbOutcome === "good" ? luck.goodP25 : p25;
+    goodDays.push(goodDay);
     const variability = luck ? luckVariability(all, recent, luck.cut, minSamples) : median && p25 != null && p75 != null ? (p75 - p25) / median : null;
 
     return {
@@ -191,11 +215,7 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
       p75,
       variability,
       timeSaveVsGold: pbTime != null && gold != null ? Math.max(0, pbTime - gold) : null,
-      // A luck segment's good day is a good day with the luck the PB had: better luck isn't a save you can earn.
-      realisticTimeSave:
-        pbTime == null || p25 == null
-          ? null
-          : Math.max(0, pbTime - (luck?.pbOutcome === "bad" && luck.badP25 != null ? luck.badP25 : luck?.pbOutcome === "good" ? luck.goodP25 : p25)),
+      realisticTimeSave: pbTime == null || goodDay == null ? null : Math.max(0, pbTime - goodDay),
       reached,
       resets,
       resetRate: reached > 0 ? resets / reached : null,
@@ -218,10 +238,9 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
           const l = s.luck;
           return sum + (l?.pbOutcome === "bad" && l.badBest != null ? Math.max(s.gold!, l.badBest) : s.gold!);
         }, 0);
-  const realisticTarget =
-    personalBest != null && stats.every((s) => s.pbTime != null)
-      ? personalBest - stats.reduce((a, s) => a + (s.realisticTimeSave ?? 0), 0)
-      : null;
+  const skippedPbStretches = findSkippedPbStretches(run, goodDays);
+  const realisticTargetSegments = personalBest != null ? targetSegments(stats, skippedPbStretches, goodDays) : null;
+  const realisticTarget = realisticTargetSegments ? realisticTargetSegments.reduce<number>((a, t) => a + t, 0) : null;
 
   const lastSegment = segments.at(-1);
   const finishedAttempts = lastSegment
@@ -240,6 +259,8 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
     sumOfBestWithPbLuck,
     luckNeeded: lucky.length ? { segments: lucky.length, chance: lucky.reduce((p, s) => p * s.luck!.goodShare, 1) } : null,
     realisticTarget,
+    realisticTargetSegments,
+    skippedPbStretches,
     segments: stats,
     biggestOpportunities: [...stats]
       .filter((s) => (s.realisticTimeSave ?? s.timeSaveVsGold ?? 0) > 0)
@@ -423,6 +444,52 @@ function opportunity(s: SegmentStats): number {
 }
 
 /** Segment durations in the PB. A segment after a skipped split gets null. */
+/**
+ * Stretches the PB crossed without splitting: from the segment after the last split it has a time
+ * for to the next one it has. A stretch that never reaches a PB split again (the PB ends on a
+ * skipped split) is left out: the run then has no full PB.
+ */
+function findSkippedPbStretches(run: Run, goodDays: Array<Ms | null>): SkippedPbStretch[] {
+  const stretches: SkippedPbStretch[] = [];
+  let from = 0;
+  let before: Ms = 0;
+  run.segments.forEach((s, i) => {
+    if (s.pbSplit == null) return;
+    if (i > from) {
+      const pbTime = s.pbSplit - before;
+      const days = goodDays.slice(from, i + 1);
+      const goodDay = days.every((d) => d != null) ? days.reduce<number>((a, d) => a + d!, 0) : null;
+      stretches.push({ from, to: i, pbTime, realisticTimeSave: goodDay == null ? null : Math.max(0, pbTime - goodDay) });
+    }
+    from = i + 1;
+    before = s.pbSplit;
+  });
+  return stretches;
+}
+
+/**
+ * Each segment's realistic target time: the PB segment minus its good-day save, and inside a
+ * skipped stretch the stretch's target shared out by good-day time (by gold, then evenly, when
+ * a segment has too few times). Null when a segment has no PB time and no stretch covers it.
+ */
+function targetSegments(stats: SegmentStats[], stretches: SkippedPbStretch[], goodDays: Array<Ms | null>): Ms[] | null {
+  const out: Array<Ms | null> = stats.map((s) => (s.pbTime == null ? null : s.pbTime - (s.realisticTimeSave ?? 0)));
+  for (const st of stretches) {
+    const target = st.pbTime - (st.realisticTimeSave ?? 0);
+    const idx = Array.from({ length: st.to - st.from + 1 }, (_, k) => st.from + k);
+    const weigh = (w: Array<Ms | null>) => (w.every((x) => x != null && x > 0) ? (w as number[]) : null);
+    const weights = weigh(idx.map((i) => goodDays[i])) ?? weigh(idx.map((i) => stats[i].gold)) ?? idx.map(() => 1);
+    const total = weights.reduce((a, w) => a + w, 0);
+    let given = 0;
+    idx.forEach((i, k) => {
+      const share = k === idx.length - 1 ? target - given : Math.round((target * weights[k]) / total);
+      out[i] = share;
+      given += share;
+    });
+  }
+  return out.every((t) => t != null) ? (out as Ms[]) : null;
+}
+
 function segmentTimesOfPb(run: Run): Array<Ms | null> {
   return run.segments.map((s, i) => {
     if (s.pbSplit == null) return null;

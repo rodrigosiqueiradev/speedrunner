@@ -1,6 +1,6 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { analyzeRun, parseLss, quantile, type Run } from "../src/index.js";
+import { analyzeRun, liveContext, parseLss, quantile, realisticTargetSplits, type Run } from "../src/index.js";
 import { synthRun } from "./synth.js";
 
 const small = parseLss(readFileSync(new URL("./fixtures/small.lss", import.meta.url), "utf8"));
@@ -38,6 +38,57 @@ describe("analyzeRun on a small file", () => {
   it("ranks the segments with the most time to give back", () => {
     expect(a.segments.map((s) => s.timeSaveVsGold)).toEqual([5_000, 2_000, 0]);
     expect(a.biggestOpportunities[0].name).toBe("Level 1");
+  });
+});
+
+describe("realistic target with a skipped PB split", () => {
+  // The same rule for a 4 minute and a 2 hour run: the stretch is compared as one piece.
+  for (const [label, scale] of [["short", 1], ["multi-hour", 30]] as const) {
+    it(`compares the stretch around the skipped split as one piece (${label})`, () => {
+      const full = synthRun({
+        base: [60_000, 120_000, 90_000].map((t) => t * scale),
+        noise: (i, id) => Math.round((((id * 7919 + i * 104_729) % 997) / 997) * 0.1 * 60_000 * scale),
+        attempts: 60,
+      });
+      const skipped: Run = { ...full, segments: full.segments.map((s, i) => (i === 1 ? { ...s, pbSplit: null } : s)) };
+      const f = analyzeRun(full);
+      const a = analyzeRun(skipped);
+
+      expect(a.personalBest).toBe(f.personalBest);
+      expect(a.segments[1].pbTime).toBeNull();
+      expect(a.segments[2].pbTime).toBeNull();
+      const stretchPb = f.segments[1].pbTime! + f.segments[2].pbTime!;
+      expect(a.skippedPbStretches).toEqual([
+        { from: 1, to: 2, pbTime: stretchPb, realisticTimeSave: Math.max(0, stretchPb - f.segments[1].p25! - f.segments[2].p25!) },
+      ]);
+      expect(a.realisticTarget).toBe(a.personalBest! - a.segments[0].realisticTimeSave! - a.skippedPbStretches[0].realisticTimeSave!);
+      // Knowing less about the PB never makes the target more ambitious.
+      expect(a.realisticTarget!).toBeGreaterThanOrEqual(f.realisticTarget!);
+
+      const splits = realisticTargetSplits(a)!;
+      expect(splits).toHaveLength(3);
+      expect(splits.at(-1)).toBe(a.realisticTarget);
+      expect(splits[0]).toBe(realisticTargetSplits(f)![0]);
+      expect(splits[1]).toBeGreaterThan(splits[0]);
+      expect(liveContext(skipped, null, a).goal).toMatchObject({ kind: "realistic", time: a.realisticTarget });
+    });
+  }
+
+  it("treats a skipped first split the same way", () => {
+    const full = synthRun({ base: [30_000, 40_000], noise: (i, id) => (id * 31 + i * 17) % 3_000, attempts: 30 });
+    const a = analyzeRun({ ...full, segments: full.segments.map((s, i) => (i === 0 ? { ...s, pbSplit: null } : s)) });
+    expect(a.skippedPbStretches).toMatchObject([{ from: 0, to: 1, pbTime: a.personalBest }]);
+    expect(a.realisticTarget).not.toBeNull();
+  });
+
+  const OOT = "/mnt/project-files/reference-splits/oot-100-glitchless-smaugy.lss";
+  // Reference files stay outside the repo and are never committed.
+  it.skipIf(!existsSync(OOT))("gives OoT 100% Glitchless, which has skipped PB splits, a target", () => {
+    const a = analyzeRun(parseLss(readFileSync(OOT, "utf8")));
+    expect(a.skippedPbStretches.length).toBeGreaterThan(0);
+    expect(a.realisticTarget!).toBeLessThan(a.personalBest!);
+    expect(a.realisticTarget!).toBeGreaterThanOrEqual(a.sumOfBest!);
+    expect(realisticTargetSplits(a)!.at(-1)).toBe(a.realisticTarget);
   });
 });
 

@@ -160,6 +160,8 @@ assumptions in [The mathematics of Speedrunner](docs/calculations.md).
 | `realisticTarget` | The PB with each segment replaced by your good-day time (25th percentile of recent attempts) where that is faster. |
 | `segments[].timeSaveVsGold` | PB segment minus gold. |
 | `segments[].realisticTimeSave` | PB segment minus good-day time. |
+| `skippedPbStretches[]` | Runs of segments the PB skipped a split in: their PB time together and their good-day save as one piece. |
+| `realisticTargetSegments` | Each segment's time in the realistic target, adding up to it. |
 | `segments[].variability` | Interquartile range / median of recent times. Higher means less consistent. |
 | `segments[].resetRate` | Share of attempts reaching the segment that reset during it. |
 | `advice[]` | Ranked suggestions: weak in PB, inconsistent, gold is rare, run killer. |

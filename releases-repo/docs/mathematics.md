@@ -204,17 +204,35 @@ zero (1 ms) are also absolute.
 - **Typical, good-day and bad-day times**: with $R_i$ the recent clean times, if $\lvert R_i\rvert \ge 5$,
   $m_i = Q(R_i;\tfrac12)$, $q^{-}_i = Q(R_i;\tfrac14)$ and $q^{+}_i = Q(R_i;\tfrac34)$; otherwise undefined.
 - **Good-day save**: $s_i = \max(0, p_i - q^{-}_i)$, or 0 when undefined.
-- **Realistic target**: $\mathrm{RT} = \mathrm{PB} - \sum_i s_i$ (when every $p_i$ exists).
+- **Skipped stretch**: when the PB skipped a split, it has no $p_i$ for the segments on either side of it. A skipped
+  stretch $K = \{a, \dots, b\}$ is a maximal run of segments with PB splits $S_{a-1}$ (or $S_0 = 0$) and $S_b$ but none
+  in between. Its PB time is $P_K = S_b - S_{a-1}$, and its save is $s_K = \max\bigl(0, P_K - \sum_{i \in K} q^{-}_i\bigr)$
+  when every $q^-_i$ in it exists, otherwise 0. Inside a stretch the PB's luck is unknown, so $q^-_i$ is taken over all
+  recent clean times even for a segment marked as luck (§5).
+- **Realistic target**: $\mathrm{RT} = \mathrm{PB} - \sum_{i \notin \cup K} s_i - \sum_K s_K$ (when PB exists). Every
+  segment either has its own $p_i$ or lies in exactly one stretch, so this is the PB with each segment, or each
+  stretch, at its good-day time where that is faster.
 - **Theoretical save**: $\mathrm{PB} - \mathrm{SoB}$.
 
 The good-day time $q^{-}_i$ is the time the runner beats in one recent attempt out of four. The realistic target asks
-"what would my PB be if every segment that went worse than a typical good attempt had gone like one?"
+"what would my PB be if every segment that went worse than a typical good attempt had gone like one?" A stretch is
+compared as one piece because the PB only says how long the whole stretch took, not how it was shared out.
 
-**Theorem 2.1 (ordering).** When all quantities exist and the PB has every split, $\mathrm{SoB} \le \mathrm{RT} \le \mathrm{PB}$.
+**Theorem 2.1 (ordering).** When all quantities exist, $\mathrm{SoB} \le \mathrm{RT} \le \mathrm{PB}$, provided each skipped stretch's PB time is at least the sum of its golds, $P_K \ge \sum_{i \in K} g_i$ (the right inequality needs no condition).
 
 *Proof.* With every split present, $\mathrm{PB} = \sum_i p_i$, so $\mathrm{RT} = \sum_i (p_i - s_i) = \sum_i \min(p_i, q^{-}_i)$ (taking $\min(p_i, q^-_i) = p_i$ when $q^-_i$ is undefined). Since $s_i \ge 0$, $\mathrm{RT} \le \mathrm{PB}$. For the left inequality it suffices that $g_i \le \min(p_i, q^{-}_i)$ for each $i$. The gold includes
 $p_i$ in its minimum, so $g_i \le p_i$. And $q^-_i$ lies between the smallest and largest recent time (Lemma 1.2; the
-rounding to whole milliseconds rounds between two integer times and cannot go below the smaller), so $q^-_i \ge \min R_i \ge \min C_i \ge g_i$. $\square$
+rounding to whole milliseconds rounds between two integer times and cannot go below the smaller), so $q^-_i \ge \min R_i \ge \min C_i \ge g_i$.
+
+With skipped stretches, $\mathrm{PB} = \sum_{i \notin \cup K} p_i + \sum_K P_K$, so $\mathrm{RT} = \sum_{i \notin \cup K} \min(p_i, q^-_i) + \sum_K \min\bigl(P_K, \sum_{i \in K} q^-_i\bigr) \le \mathrm{PB}$. Each stretch term is at least $\sum_{i \in K} g_i$: the second argument by $q^-_i \ge g_i$ as above, the first by the proviso. $\square$
+
+The proviso can only fail if the PB played a stretch faster than its golds add up to, which means the golds miss the
+PB's own unrecorded segment times there; without it, $\mathrm{SoB} \le \mathrm{PB}$ could fail for the same reason.
+
+**Corollary 2.1 (a skipped split never makes the target harder).** For the same good-day times, a stretch's term
+$\min(P_K, \sum_{i\in K} q^-_i)$ is at least $\sum_{i \in K}\min(p_i, q^-_i)$, whatever the hidden $p_i$ were, since a
+minimum of sums is at least the sum of minimums. So the target with a skipped split is never faster than it would have
+been had the PB split there.
 
 The same holds with luck marks (§5), because the reference quantile there is taken over a subset of $C_i$.
 
@@ -226,6 +244,10 @@ the chance of actually beating a time is the job of the PB odds (§7).
 **Example (D).** $\mathrm{PB} = 40{:}01.517$, $\mathrm{SoB} = 39{:}06.356$, theoretical save 55.161 s. Four segments
 have a good-day save (WatchYr<3Die 0.198 s, Fuckin Celia 0.192 s, Troubled Waters 9.079 s, Don't Mind Me 2.676 s,
 12.145 s in all), so $\mathrm{RT} = 40{:}01.517 - 12.145\ \mathrm{s} = 39{:}49.372$. **TP**: PB $5{:}42{:}54.89$, RT $5{:}36{:}43.39$, SoB $5{:}31{:}16.98$.
+
+**Example (skipped splits).** An Ocarina of Time 100% Glitchless file (75 segments, PB $5{:}41{:}23.111$) skipped two
+PB splits. FROG HP'S and DIN'S FIRE form a stretch with $P_K = 5{:}57.344$ against good-day times $3{:}54.188 + 1{:}58.625 = 5{:}52.813$, so $s_K = 4.531$ s; GANONDORF and ESCAPE form one with $P_K = 6{:}06.000$ and $s_K = 2.187$ s. With every
+other segment's save, $\mathrm{RT} = 5{:}36{:}27.781$.
 
 ---
 
@@ -1191,14 +1213,22 @@ time over a 10 minute category's short ones.
 
 "Race these in LiveSplit" writes up to three comparisons into a copy of the split file, as cumulative split times.
 
-- **Realistic target**: segment times $\min(p_i, q^-_i) = p_i - s_i$, accumulated.
+- **Realistic target**: segment times $\min(p_i, q^-_i) = p_i - s_i$, accumulated. A skipped stretch's target
+  $T_K = P_K - s_K$ is shared out among its segments in proportion to their good-day times $q^-_i$ (their golds when a
+  good-day time is missing, equal shares when a gold is missing too), each share rounded to the millisecond and the
+  last segment taking the remainder, so the stretch's shares add up to exactly $T_K$.
 - **Recent golds**: segment times $\min R_i$, the best recent clean time, accumulated. A split after a segment with no
   recent times is left empty, and so is every split after it.
 - **Sub $G$ (balanced)**: the goal plan's targets (§8), accumulated.
 
 **Proposition 12.1.** The last split of the realistic target comparison equals the realistic target.
 
-*Proof.* $\sum_i (p_i - s_i) = \mathrm{PB} - \sum_i s_i = \mathrm{RT}$ when the PB has every split. $\square$
+*Proof.* $\sum_i (p_i - s_i) = \mathrm{PB} - \sum_i s_i = \mathrm{RT}$ when the PB has every split. A skipped stretch
+contributes $T_K = P_K - s_K$ instead, and $\sum_{i \notin \cup K} p_i + \sum_K P_K = \mathrm{PB}$, so the last split is
+still $\mathrm{RT}$. $\square$
+
+The split at a skipped PB split is an estimate (the PB has no time there to compare with), but every split at the end
+of a stretch is exact.
 
 Unlike the sum of best, the recent golds comparison drops golds set long ago and never matched since: it is the best
 run the runner has *recently* shown each piece of. The realistic target and recent golds are written for both real and
@@ -1218,7 +1248,8 @@ with split times $x_1, \dots, x_j$ and $\theta$ on the timer.
 - **vs PB**: $x_j - S_j$ (negative is ahead). While segment $j+1$ is being played it shows
   $\theta - S_{j+1}$ instead, ticking with the timer: the delta the run would have if it split now.
 - **vs goal**: $x_j - C_j$ (negative is ahead), where $C_j$ is the comparison's cumulative split. Until the runner
-  sets a goal, $C_j = \sum_{i \le j} \min(p_i, q^{-}_i)$, the realistic target's splits (§2, §12). With a goal $G$,
+  sets a goal, $C_j = \sum_{i \le j} \min(p_i, q^{-}_i)$, the realistic target's splits (§2, §12; a skipped PB split's
+  stretch is shared out as in §12). With a goal $G$,
   $C_j$ is the goal plan's cumulative target (§8), the same splits as the **Sub $G$ (balanced)** comparison. A goal
   that is out of reach has no plan, so there is no comparison. Both are sums of the runner's own segment times, so
   the difference scales with the run like vs PB does. It ticks the same way, with $C_{j+1}$ in place of
@@ -1372,6 +1403,7 @@ Every constant and what kind of quantity it is. *Ratio* and *count* settings are
 | $m_i$, $q^-_i$, $q^+_i$ | median, 25th and 75th percentile of recent times |
 | $v_i$ | variability |
 | $s_i$ | good-day save |
+| $K$, $P_K$, $s_K$ | a skipped stretch of segments, its PB time and its good-day save (§2) |
 | $\rho_i$, $\rho^{\mathrm{good}}_i$ | reset rate, good-run reset rate |
 | $\lambda_i$, $H_i$ | reset hazard, hazard ratio |
 | $\tau_i$ | recency-weighted typical time (form model) |

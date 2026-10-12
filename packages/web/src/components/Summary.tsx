@@ -19,7 +19,7 @@ export function Summary({ analysis: a }: { analysis: RunAnalysis }) {
         delta={delta(a.realisticTarget)}
         note={
           a.realisticTarget == null
-            ? "Needs more attempts per segment"
+            ? "Needs a PB with a final time"
             : "Every segment at your good-day pace"
         }
         lead
