@@ -39,6 +39,16 @@ describe("parseLss", () => {
     expect(run.attempts.map((a) => a.time)).toEqual([190_000, null, 180_000, 185_500]);
   });
 
+  it("leaves out an unreadable time in the history instead of rejecting the file", () => {
+    const broken = small
+      .replace('<Time id="2"><RealTime>00:00:58.0000000</RealTime></Time>', '<Time id="2"><RealTime>oops</RealTime></Time>')
+      .replace("<RealTime>00:03:00.0000000</RealTime>", "<RealTime>3 minutes</RealTime>");
+    const r = parseLss(broken);
+    expect(r.attempts.map((a) => a.time)).toEqual([190_000, null, null, 185_500]);
+    expect([...r.segments.flatMap((s) => [...s.history.entries()])].some(([id, t]) => id === 2 && t === null)).toBe(true);
+    expect(r.segments.map((s) => s.pbSplit)).toEqual(run.segments.map((s) => s.pbSplit));
+  });
+
   it("reads segments, PB splits, golds and history", () => {
     expect(run.segments.map((s) => s.name)).toEqual(["Level 1", "Level 2", "Final Boss"]);
     expect(run.segments.map((s) => s.pbSplit)).toEqual([60_000, 130_000, 180_000]);

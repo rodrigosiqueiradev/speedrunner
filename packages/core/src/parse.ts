@@ -35,12 +35,21 @@ export function parseLss(xml: string, options: ParseOptions = {}): Run {
     }
     return parseTime(text(node[timingMethod]));
   };
+  // One unreadable time in the attempt history is left out rather than rejecting the whole file;
+  // the PB and golds still have to read.
+  const readHistory = (node: any): Ms | null => {
+    try {
+      return read(node);
+    } catch {
+      return null;
+    }
+  };
 
   const attempts: Attempt[] = (run.AttemptHistory?.Attempt ?? []).map((a: any) => ({
     id: Number(a["@id"]),
     started: a["@started"],
     ended: a["@ended"],
-    time: read(a),
+    time: readHistory(a),
   }));
 
   const segments: Segment[] = rawSegments.map((s) => {
@@ -51,7 +60,7 @@ export function parseLss(xml: string, options: ParseOptions = {}): Run {
     for (const t of s.SegmentHistory?.Time ?? []) {
       const id = Number(t["@id"]);
       // LiveSplit stores non-positive ids for imported/merged history; they are not real attempts.
-      if (id > 0) history.set(id, read(t));
+      if (id > 0) history.set(id, readHistory(t));
     }
     const rawName = text(s.Name) ?? "";
     return {
