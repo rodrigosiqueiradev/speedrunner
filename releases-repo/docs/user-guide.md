@@ -147,6 +147,7 @@ A recap of one calendar year across every split file you include, drawn as a 108
   and three highlights: **biggest PB** (or **first finish** when the year brought a category's first finished run),
   **best gold** and **most improved** segment. Highlights compare shares, not seconds, so categories of any length
   compete fairly. **[§11]**
+- **Colours.** The card uses the app's active mode and palette, so a light theme gives a light card.
 - **Save as PNG** or **Copy** the image. It is made on your machine and only leaves it if you share it yourself.
 
 ## 6. Live stats and the overlay
