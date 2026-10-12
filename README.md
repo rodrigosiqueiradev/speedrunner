@@ -7,10 +7,14 @@ and how well they run each category on one 0-100 scale across games.
 
 - `packages/core`: parses LiveSplit `.lss` split files and analyses them. Shared by the web app
   and the desktop app. Runs in Node and the browser.
-- `packages/web`: React web app. Upload an `.lss` file (or try the sample) to see your PB, realistic
+- `packages/web`: React web app. Upload an `.lss` file (or **Try a sample run**) to see your PB, realistic
   target, where time is lost, and what to practise, plus a category score. The Profile page combines the scores of
-  several split files into an overall score. Files are analysed in the browser and never uploaded.
-- `packages/desktop`: the web app packaged as a desktop app for Windows, macOS and Linux.
+  several split files into an overall score. Year in runs draws a recap of one year as an image, and Live stats
+  follows LiveSplit's timer while you run. Luck marks let segments that depend on chance count only what you
+  control. It has colour themes (five presets and a custom one) and, in the desktop app, a banner when a new
+  version is out. Files are analysed on your computer and never uploaded.
+- `packages/desktop`: the web app packaged as a desktop app. It is built and released for Windows only
+  for now.
 
 ## Node and npm
 
@@ -160,9 +164,11 @@ assumptions in [The mathematics of Speedrunner](docs/calculations.md).
 | `segments[].resetRate` | Share of attempts reaching the segment that reset during it. |
 | `advice[]` | Ranked suggestions: weak in PB, inconsistent, gold is rare, run killer. |
 
-`pbOdds(run)` simulates attempts from your recent segment times to give the PB chance per attempt and from
+`pbOdds(run)` simulates attempts from a model of your current form to give the PB chance per attempt and from
 every split, the deficit at each split where a reset finds a PB sooner, and a forecast of attempts (and a date) until a PB.
-Its per-segment sampling model, `buildSegmentModel(run)`, is exported for other features to reuse.
+The runs come from `buildFormModel(run)` and are drawn with `sampleRun`. `buildSegmentModel(run)` only supplies the
+per-segment reset and run-ending mistake rates, and the fallbacks for the finish rate and attempt length when the file
+has no attempt history or dates. All three are exported for other features to reuse.
 
 Data handling choices:
 - A segment time recorded right after a skipped split covers two segments, so it is ignored.

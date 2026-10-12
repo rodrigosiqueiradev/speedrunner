@@ -319,8 +319,16 @@ The live stats card that sits next to LiveSplit or on stream. It's a Night Shell
 
 The live page puts the card's stats first, numbered and in card order with up and down buttons from the icon family, then "More stats" with checkboxes only. Moves are announced to screen readers.
 
+Under the preview, the "Open as overlay" button sits beside a plain checkbox, "Keep the overlay on top of other windows", in Ink. It shows only in the desktop app and is on by default. The overlay window opens on top when it's ticked, and changing it while the overlay is open takes effect straight away.
+
+### Year in runs card
+The recap image is a fixed 1080 × 1350 canvas (4:5). It's drawn from the app's own tokens at the moment it's drawn, so it follows the active mode, the palette and a custom theme: the card ground is Page Surface, the tiles Page Ground, with the theme's ink, accent and gold. It's redrawn whenever the appearance changes. If a token can't be read, it falls back to dark Speedrunner. "Save as PNG" is the primary button, and "Copy image" sits next to it only where the system can copy images.
+
+### Update banner
+Desktop app only. When a newer version is out, a banner sits at the top of every page, under the shell (never in the overlay). It's a row on Split Blue Wash with a 1px Rule Line border and 10px corners: "Speedrunner 0.3.0 is out." in bold, then "You have 0.2.0.", with a primary "Download" button and a "Not now" text button on the right. "Download" opens the release page in the browser. "Not now" hides it until a newer version comes out. The footer shows the version with a "Check for new versions" checkbox; turning it off hides the banner and stops the check.
+
 ### Navigation
-A Night Shell bar, sticky, 56px tall. The wordmark is "Speedrunner" in 600 sans. The right side links to the other views (Analyse a run, Profile, Year in runs). Once a run is loaded it shows the shell "Open file" button; "How it's calculated" for a run is its last tab.
+A Night Shell bar, sticky, 56px tall. The wordmark is "Speedrunner" in 600 sans. The right side links to the other views (Analyse a run, Profile, Year in runs, Live stats). Once a run is loaded it shows the shell "Open file" button; "How it's calculated" for a run is its last tab.
 
 ## Palettes
 

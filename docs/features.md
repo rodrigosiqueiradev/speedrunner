@@ -48,7 +48,7 @@ Three principles shape every feature:
 ## 2. Getting a split file in
 
 - **Choose or drop a file.** The landing page of **Analyse a run** takes one `.lss` file. Any LiveSplit version from
-  1.0 to current works. **Try the sample** loads a Dishonored Any% file from the livesplit-core test suite.
+  1.0 to current works. **Try a sample run** loads a Dishonored Any% file from the livesplit-core test suite.
 - **From your profile.** Categories you have added to your profile are listed on the landing page and open without
   choosing the file again.
 - **Timing method.** Real time is used unless the PB only has game time. When a file has both, a **Real time / Game
@@ -88,7 +88,7 @@ and each tab has its own address (`#practise`, `#segments`, `#sessions`, `#how-i
 | --- | --- | --- |
 | **Where the time is** | A bar per segment: the full bar is the save to gold, the inner bar the good-day save. Sort by biggest save or by route order; the ten biggest are shown until you choose **Show all**. | [§3.4](calculations.md#34-saves) |
 | **All segments** | Per segment: PB time, gold, typical (median of recent clean times), save to gold, good-day save, variability, reset rate and the number of clean times. A gold that looks like a mis-split is shown as "gold ignored". | [§3](calculations.md#3-per-segment-statistics) |
-| **Luck** column | Tick **Luck** on a segment whose time depends on chance (a boss pattern, a minigame). Advice, variability, the practice plan, the goal planner, the score's efficiency and PB odds then only count what you control. Segments whose times look luck-shaped, or whose name says "RNG", show a **looks like luck** suggestion; nothing changes until you tick it. Marks are kept per game and category by segment name, outside the split file. | [§5](calculations.md#5-luck-based-segments) |
+| **Luck** column | Tick **Luck** on a segment whose time depends on chance (a boss pattern, a minigame). Advice, variability, the practice plan, the goal planner, the score's efficiency and PB odds then only count what you control. Live stats' PB chance, **Keep going?** and **vs goal** use the same marks. Segments whose times look luck-shaped, or whose name says "RNG", show a **looks like luck** suggestion; nothing changes until you tick it. Marks are kept per game and category by segment name, outside the split file. | [§5](calculations.md#5-luck-based-segments) |
 
 ### 3.4 Sessions tab
 
@@ -110,8 +110,8 @@ what is missing). An effect is only stated when the data rules out chance **[§1
 ### 3.5 How it's calculated tab
 
 Every number on the page, explained with examples from the run you loaded, grouped like the page: run totals, per
-segment, advice, PB odds, category score, practice plan, goal planner, sessions and Year in runs. Each **?** tooltip
-elsewhere links here.
+segment, advice, PB odds, practice plan, goal planner and LiveSplit comparisons, sessions and category score. Each
+**?** tooltip elsewhere links here. Year in runs explains its own numbers at the bottom of its page.
 
 ## 4. Profile
 
@@ -148,7 +148,7 @@ A recap of one calendar year across every split file you include, drawn as a 108
   **best gold** and **most improved** segment. Highlights compare shares, not seconds, so categories of any length
   compete fairly. **[§11]**
 - **Colours.** The card uses the app's active mode and palette, so a light theme gives a light card.
-- **Save as PNG** or **Copy** the image. It is made on your machine and only leaves it if you share it yourself.
+- **Save as PNG**, or **Copy image** where your system lets the app copy images. The image is made on your machine and only leaves it if you share it yourself.
 
 ## 6. Live stats and the overlay
 
@@ -253,10 +253,14 @@ Everything the app remembers stays on this device:
 | --- | --- | --- |
 | Profile scores | Browser local storage (or the desktop app's) | `speedrunner.profile.v3` |
 | Saved split files | IndexedDB on this device | per category |
+| Saved split files, where IndexedDB isn't available | Local storage | `speedrunner.split-files.v1` |
+| Live stats split file (a copy of the file Live stats follows) | IndexedDB on this device, next to the saved split files | `live:run` |
 | Luck marks | Local storage, per game and category, by segment name | `speedrunner.luck.v1` |
 | Live stats settings | Local storage | `speedrunner.live.v1` |
+| Live stats: the LiveSplit file you switched away from (its path on your computer), so the page doesn't switch back to it | Local storage | `speedrunner.live.kept-choice` |
+| Live stats: when the followed split file last changed, so an open overlay reloads it | Local storage | `speedrunner.live.run-changed` |
 | Goals (goal planner and vs goal) | Local storage, per game and category | `speedrunner.goals.v1` |
-| Theme | Local storage | `speedrunner.theme` |
+| Theme: mode, palette and custom colours | Local storage | `speedrunner.theme`, `speedrunner.palette`, `speedrunner.custom` |
 | Update check choice, dismissed version | Local storage (desktop app) | `speedrunner.updates.*` |
 
 Nothing above is sent anywhere. Recap and share images are made on your machine; a PNG is only shared if you share it.

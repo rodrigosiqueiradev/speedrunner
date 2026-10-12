@@ -1230,7 +1230,8 @@ with split times $x_1, \dots, x_j$ and $\theta$ on the timer.
   in a 30 second segment and a 2 minute loss in a 1 hour segment read the same. It is a **gold** when $d_j < g_j$.
 - **Golds this run**: the number of segments with $d_i < g_i$.
 - **Up next**: segment $j+2$ (the one after the segment being played; segment 1 before the run starts) with $u_{j+2}$,
-  $g_{j+2}$ and its good-run reset rate (§3.5), or the plain reset rate when the good-run rate is undefined (segment 1). Nothing is shown during the last segment or after the run ends.
+  $g_{j+2}$ and its good-run reset rate (§3.5), or the plain reset rate when the good-run rate is undefined (always
+  for segment 1). Nothing is shown during the last segment or after the run ends.
 
 ### 13.2 PB chance and advice
 
@@ -1249,7 +1250,10 @@ $c_j(x_j)$, it falls as the segment runs long, and it is 0 once no simulated run
 PB. The chance shown is the smaller of this and $c_j(x_j)$, with the arrow from $c_j(x_j)$.
 Before the first split there is no split $j$. The same weighted count uses $\Sigma_0$, a time of 0 and an equal weight on every simulated run, and $d_s$ is segment 1's time. At the instant the timer starts, that is $\hat p_{\text{fin}}\,\Sigma_0$.
 
-When a split was skipped, the usual path is undefined and instead it uses the chance of beating the PB from the current split if the run were split now (Definition 7.7). In the last segment, it keeps the split-time chance $c_j(x_j)$ rather than a live one, since there is no segment $j+1$ to play.
+When a split was skipped, the segment being played is not segment $j+1$, so the formula above does not apply. Instead
+it uses $c_k(\theta)$ (Definition 7.6), the chance of beating the PB if the current segment $k$ were split now. If that
+segment is the last one, it keeps the split-time chance $c_j(x_j)$ rather than a live one. Without a skipped split, the
+last segment gets the live chance like any other.
 During a segment **Keep going?** shows reset as soon as Theorem 7.9 says reset at split $j+1$ with time $\theta$.
 At the end it is 1 if the final time beat the PB (and every
 PB already set this session) and 0 otherwise. **Keep going?** applies Theorem 7.9 at the last split, from the first
@@ -1278,7 +1282,7 @@ after a new one.
 The demo replays recent attempts that reached the first split, in random order. An attempt that was reset is shown
 resetting $\max(1\ \mathrm{s},\ u_{k}/2)$ into the segment $k$ it died in (half the usual time, by the reasoning of
 Proposition 7.8). When the usual time $u_k$ for the dying segment is missing, it falls back to that segment's gold time, or to a flat 2 seconds if the gold is also missing. Replay speed is set as the time a whole run takes on screen (real time, 2 minutes or 30 seconds), so
-a 6 hour category demos as fast as a 10 minute one. The speed is a floor: for a category whose PB is under 2 minutes, the calculated rate would be faster than real time, so it plays at real time instead.
+a 6 hour category demos as fast as a 10 minute one. The speed is never slower than real time: when the PB is shorter than the chosen time on screen (under 2 minutes, or under 30 seconds), the demo plays at real time instead.
 
 ---
 
@@ -1330,6 +1334,7 @@ Every constant, where it lives, and what kind of quantity it is. *Ratio* and *co
 | Finished-run samples | ≥ 5 | count | `FORM_MODEL_SETTINGS.minFinishedSamples` |
 | Form coverage | ≥ 25% of segments | ratio | `FORM_MODEL_SETTINGS.formCoverage` |
 | Trend share | 0.5, never a slowdown | ratio | `FORM_MODEL_SETTINGS.trendShare` |
+| Attempts with a form for a trend | ≥ 5, else every attempt's form and no trend | count | `FORM_MODEL_SETTINGS.minFormAttempts` |
 | Goal step | largest round step ≤ 1% of PB | ratio | `GOAL_STEP_SHARE` |
 | Practice session | 60 min (30/90/120) | human | `PRACTICE_SETTINGS.sessionMinutes` |
 | Practice block | 5 min | human | `PRACTICE_SETTINGS.blockMinutes` |
@@ -1343,13 +1348,18 @@ Every constant, where it lives, and what kind of quantity it is. *Ratio* and *co
 | Pace cap | 2 × usual | ratio | `SESSION_INSIGHT_SETTINGS.paceCap` |
 | Evidence | 8 sessions, 15 events | count | `SESSION_INSIGHT_SETTINGS` |
 | Warm-up | 20 min | human | `SESSION_INSIGHT_SETTINGS.warmupMinutes` |
+| Segment times each side (warm-up, fatigue pace) | ≥ 3 | count | `SESSION_INSIGHT_SETTINGS.minSegmentsPerSide` |
+| Attempts each side (fatigue resets) | ≥ 3 | count | `SESSION_INSIGHT_SETTINGS.fatigueMinAttemptsPerSide` |
 | Session reach | 90th percentile of session length | ratio | `SESSION_INSIGHT_SETTINGS.sessionReach` |
 | Late and early resets | last third, first third of the route | ratio | `SESSION_INSIGHT_SETTINGS` |
 | Near-PB | within 2% | ratio | `SESSION_INSIGHT_SETTINGS.nearPbFraction` |
 | Smallest effect | 0.5% pace, 5 points of reset rate | ratio | `SESSION_INSIGHT_SETTINGS` |
 | Confidence | 95%, 99% for searches | ratio | `SESSION_INSIGHT_SETTINGS` |
 | Recap golds | ≥ 5 earlier times | count | `RECAP_SETTINGS.minGoldHistory` |
-| Recap most improved | first and last 10 (≥ 5) | count | `RECAP_SETTINGS` |
+| Recap most improved | first and last 10 clean times in the year, ≥ 5 each | count | `RECAP_SETTINGS.improvementWindow`, `RECAP_SETTINGS.minImprovementSamples` |
+| Live stats: reading LiveSplit | every 250 ms | human | `POLL_MS` in `packages/web/src/live/feeds.ts` |
+| Live stats: demo speeds | real time, 2 min or 30 s per run | human | `DEMO_SPEEDS` in `packages/web/src/live/feeds.ts` |
+| Live stats: demo reset point | half the usual time, ≥ 1 s (gold, then 2 s, when the usual time is missing) | ratio (human floor) | `replayAttempt` in `packages/core/src/live.ts` |
 
 ## Appendix B: Notation
 

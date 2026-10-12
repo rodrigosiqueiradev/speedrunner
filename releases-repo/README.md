@@ -24,7 +24,7 @@ You need:
   of runs gives thin answers.
 - **A desktop screen.** The app is laid out for one.
 
-No file to hand? **Try the sample** loads a Dishonored Any% run from the livesplit-core test suite.
+No file to hand? **Try a sample run** loads a Dishonored Any% run from the livesplit-core test suite.
 
 ## What it shows you
 
@@ -79,8 +79,8 @@ the rest.
 
 ## Download and get started
 
-1. Download the file for your system from the table below and open it.
-2. Choose **Open file** and pick your LiveSplit split file (`.lss`). If you are not sure where
+1. Download the file from the table below and open it.
+2. Click **Choose .lss file** and pick your LiveSplit split file (`.lss`). If you are not sure where
    LiveSplit keeps it, right-click LiveSplit and choose **Save Splits As...** to see.
 3. Read the **realistic target** at the top of the overview first. The gap between it and your PB is
    the time practice can get you without a lucky run. Then read **What to practise first** underneath
@@ -92,17 +92,12 @@ the rest.
 
 New versions are built for Windows only for now. Older
 [releases](https://github.com/rodrigosiqueiradev/speedrunner-releases/releases) also have macOS and
-Linux files.
+Linux files, without support.
 
-### First launch warnings
+### First launch warning
 
-The apps aren't signed with a developer certificate yet, so Windows and macOS warn you the first time
-you open them.
-
-- **Windows:** on the SmartScreen prompt, choose **More info**, then **Run anyway**.
-- **macOS:** right-click the app and choose **Open**, or allow it under System Settings › Privacy &
-  Security › **Open Anyway**. If macOS says the app "is damaged and can't be opened", run
-  `xattr -cr Speedrunner.app` in Terminal and open it again.
+The app isn't signed with a developer certificate yet, so Windows warns you the first time you open
+it. On the SmartScreen prompt, choose **More info**, then **Run anyway**.
 
 **[The user manual](docs/README.md)** covers every feature and the maths behind each number. Each
 [release](https://github.com/rodrigosiqueiradev/speedrunner-releases/releases) lists the changes in
