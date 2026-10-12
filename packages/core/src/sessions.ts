@@ -95,7 +95,7 @@ export function attemptLimit(run: Run): Ms {
     .filter((a) => a.id > 0 && a.time != null && a.time > 0)
     .map((a) => a.time!)
     .sort((a, b) => a - b);
-  const pb = [...run.segments].reverse().find((s) => s.pbSplit != null)?.pbSplit ?? null;
+  const pb = run.segments.at(-1)?.pbSplit ?? null;
   const typical = finished.length ? (finished[Math.floor((finished.length - 1) / 2)] + finished[Math.ceil((finished.length - 1) / 2)]) / 2 : pb;
   return typical != null && typical > 0 ? SESSION_DEFAULTS.leftRunningFactor * typical : SESSION_DEFAULTS.maxAttemptMs;
 }

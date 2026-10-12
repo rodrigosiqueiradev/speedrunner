@@ -131,7 +131,7 @@ export interface PbOddsOptions extends SegmentModelOptions {
  */
 export function pbOdds(run: Run, options: PbOddsOptions = {}): PbOdds | null {
   const S = PB_ODDS_SETTINGS;
-  const personalBest = [...run.segments].reverse().find((s) => s.pbSplit != null)?.pbSplit ?? null;
+  const personalBest = run.segments.at(-1)?.pbSplit ?? null;
   const n = run.segments.length;
   const target = options.target ?? personalBest;
   if (personalBest == null || target == null || n === 0) return null;

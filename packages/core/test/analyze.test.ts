@@ -14,6 +14,14 @@ describe("analyzeRun on a small file", () => {
     expect(a.possibleTimeSave).toBe(7_000);
   });
 
+  it("has no PB when the last split has no PB time, as in LiveSplit", () => {
+    // A split added after the PB: LiveSplit leaves its PB time empty and shows no PB.
+    const added = { ...small, segments: [...small.segments, { ...small.segments.at(-1)!, name: "New", pbSplit: null, history: new Map() }] };
+    const b = analyzeRun(added, { minSamples: 1 });
+    expect(b.personalBest).toBeNull();
+    expect(b.realisticTarget).toBeNull();
+  });
+
   it("ignores segment times that include a skipped split", () => {
     // Attempt 4 skipped Level 1, so its 2:15.5 for Level 2 covers both levels.
     expect(a.segments[1].samples).toBe(2);

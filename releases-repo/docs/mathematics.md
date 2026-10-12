@@ -194,7 +194,8 @@ zero (1 ms) are also absolute.
 
 **Definition 2.1.** Let $S_i$ be the PB's cumulative split times.
 
-- **Personal best**: $\mathrm{PB} = S_k$ for the last $k$ with $S_k$ present.
+- **Personal best**: $\mathrm{PB} = S_n$, the PB's time at the last split. As in LiveSplit, a file whose last split has
+  no PB time (a split added after the PB, say) has no PB.
 - **PB segment time**: $p_1 = S_1$ and $p_i = S_i - S_{i-1}$, undefined if either split is missing.
 - **Gold**: $g_i = \min\bigl(g^{\text{stored}}_i,\ \min C_i,\ p_i\bigr)$ over the terms that exist, where the stored
   gold is dropped if $g^{\text{stored}}_i < \varphi_i$ (a stored mis-split, shown as "gold ignored"). The PB segment is

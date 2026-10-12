@@ -207,7 +207,7 @@ export function analyzeRun(run: Run, options: AnalyzeOptions = {}): RunAnalysis 
     };
   });
 
-  const personalBest = [...segments].reverse().find((s) => s.pbSplit != null)?.pbSplit ?? null;
+  const personalBest = segments.at(-1)?.pbSplit ?? null;
   const golds = stats.map((s) => s.gold);
   const sumOfBest = golds.every((g) => g != null) ? golds.reduce<number>((a, g) => a + g!, 0) : null;
   const lucky = stats.filter((s) => s.luck);
