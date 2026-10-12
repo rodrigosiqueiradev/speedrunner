@@ -259,6 +259,39 @@ never changed, and saving again from a copy replaces these comparisons rather th
 
 The realistic target and recent golds are written for both real time and game time when the file has both.
 
+## Live stats
+
+Live stats follows LiveSplit's timer while you run and compares the attempt against your own history. The timer is
+read from LiveSplit's own server on your computer (`ws://localhost:16834/livesplit` by default), four times a second.
+It only reads: it never starts, splits or resets your timer.
+
+Most of these are numbers from the sections above, read from where your run is now, so what follows is what each one
+means live. They compare against your **usual** time for a segment: the **Typical** time above, the median of your
+recent clean times (the latest half, 10 to 50), or the segment's PB time when it has too few clean times for one. The
+formulas are in [§13 of the maths](mathematics.md#13-live-stats).
+
+| Number | How it's calculated |
+| --- | --- |
+| **Split** | The segment LiveSplit is timing now, and how many segments the run has. **Finished** once the run ends. |
+| **Run time** | The time on LiveSplit's timer, in whichever timing method LiveSplit is showing. |
+| **PB chance** | **PB chance from a split** above, for the split you are on: the simulated runs that reached it at about your time, and how many of them went on to beat your PB. Before your first split it's the chance a run you start now beats your PB, allowing for a run-ending mistake later on. During a segment it keeps moving, because only the simulated runs whose segment took at least as long as yours is taking still look like this run: it falls as the segment runs long, and is 0% once the timer passes your PB. The arrow shows how the last segment, or the one you're on, moved it. At the end it reads **New PB** or **No PB**. |
+| **Keep going?** | The reset coach's verdict above for where your run is now: keep going while playing on finds a PB at least as fast as starting over. During a segment it turns to **Reset** as soon as splitting right now would already say reset, because a reset verdict at this split holds for every later one too. It's shown from your first split to your last, and it never resets for you. |
+| **vs PB** | Your time at the last split minus your PB's time at the same split: ahead is −, behind is +. A split your PB skipped has no comparison. During a segment it ticks with the timer, showing the delta you'd have if you split now. |
+| **vs goal** | The same against your goal's splits: your realistic target until you set a goal, then the goal plan's splits for it, the same times as the **Sub X (balanced)** comparison above. The goal is the goal planner's, kept per game and category, so setting it in either place sets it in both. A goal out of reach has no plan, so the stat reads **Out of reach**. |
+| **Last segment** | The segment you just finished minus your usual time for it, in time and as a share of the usual, or **Gold** when it beat your gold. The share makes a 2 second loss in a 30 second segment and a 2 minute loss in a 1 hour segment read the same way. |
+| **Likely finish** | Your time at the last split plus your usual time for every segment still to play. When the segment you're on has already run longer than usual, it counts on from the time on the timer instead, so the projection never drops behind the clock. |
+| **Best possible** | The same with every segment still to play at its gold. |
+| **This segment** | Your usual time for the segment you're on, with its gold and its time in your PB. |
+| **Up next** | The segment after it, or the first segment before a run starts: its usual time, its gold and its **Runs die here** share. Nothing shows during the last segment. |
+| **Runs die here** | Of your attempts that reached this segment going well — in the faster half of your times at the split before — the share that were reset in it. It's the rate behind the **Runs die here** advice above, not the **Reset rate** column, which counts every attempt. The first segment has no split before it, so it falls back to the reset rate over every attempt that reached it, as does a segment no good run has reached. |
+| **Golds this run** | Segments in this attempt faster than your gold, counted against the golds in the file you loaded, so one LiveSplit has saved since you loaded it still counts here. |
+| **This session** | Attempts, finishes, PBs and best time since you opened the page: an attempt when the timer starts, a finish when it ends, and a PB when a finish beats both your file's PB and every earlier finish this session. |
+
+**Demo.** Without LiveSplit, the demo replays your own recent attempts — the ones that reached the first split,
+finishes and resets alike, in no fixed order. An attempt you reset is replayed resetting half your usual time into
+the segment it died in (at least a second). The two faster speeds scale the replay against your PB, or your usual run
+length when you have no PB, so a whole run takes 2 minutes or 30 seconds on screen whatever the category's length.
+
 ## Session insights
 
 - **Sessions.** LiveSplit 1.6 and later save when every attempt started and ended (in UTC). A break of more than
