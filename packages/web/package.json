@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "build": "tsc --noEmit -p tsconfig.json && vite build && npm run check:no-upload",
+    "check:no-upload": "node scripts/check-no-upload.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "preview": "vite preview",
     "test": "vitest run"

@@ -253,3 +253,8 @@ Everything the app remembers stays on this device:
 | Update check choice, dismissed version | Local storage (desktop app) | `speedrunner.updates.*` |
 
 Nothing above is sent anywhere. Recap and share images are made on your machine; a PNG is only shared if you share it.
+
+That claim is checked, not just stated. Every build runs two tests against it: one renders the whole app, loads a split
+file and visits every page with every outbound call recorded, and fails if any is made; the other reads the built app
+and fails on any address that isn't on a short list with a written reason. Both are in `packages/web`
+(`test/no-upload.test.tsx` and `scripts/check-no-upload.mjs`), and both run on every change.

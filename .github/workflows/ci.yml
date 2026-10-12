@@ -17,3 +17,6 @@ jobs:
       # Vitest strips types without checking them, so type errors are caught here.
       - run: npm run typecheck
       - run: npm test
+      # The web build ends with scripts/check-no-upload.mjs, which fails if the built app has
+      # gained an address it could send anything to. "Nothing is uploaded" is the first rule.
+      - run: npm run build
