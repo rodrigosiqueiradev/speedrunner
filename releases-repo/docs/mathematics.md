@@ -692,8 +692,9 @@ With $N = 10{,}000$ simulated totals $T^{(1)},\dots,T^{(N)}$ and a target $\Thet
 \hat p = \hat p_{\text{fin}} \cdot \phi ,
 ```
 
-where the **finish rate** $\phi$ is the share of the last 50 attempts that finished (or $\prod_i (1 - \rho_i)$ without
-an attempt history).
+where the **finish rate** $\phi$ is the share of the last 50 attempts that finished, reaching further back when
+those hold fewer than 5 finished runs until the window holds 5 (or covers every attempt), so a category where most
+attempts are reset doesn't read as never finishing (or $\prod_i (1 - \rho_i)$ without an attempt history).
 
 **Proposition 7.4.** $P(\text{PB in one attempt}) = P(\text{finish}) \cdot P(\text{beat } \Theta \mid \text{finish})$.
 
@@ -1316,6 +1317,7 @@ Every constant and what kind of quantity it is. *Ratio* and *count* settings are
 | Overall score | best 5 | count |
 | Simulations | 10,000, seed 20261009 | count |
 | Finish rate and attempt length | last 50 attempts | count |
+| Finished runs the finish rate reaches back for | 5 | count |
 | Kernel bandwidth | 0.3 × sd at the split | ratio |
 | Reset search range | ± 20% of the PB split | ratio |
 | Grind window | 28 days | human |

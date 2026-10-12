@@ -20,7 +20,9 @@ export function PbOddsSummary({ odds }: { odds: PbOdds }) {
           value={unreachable ? "< 0.01%" : oneIn(odds.perAttempt)}
           note={
             unreachable
-              ? `None of ${sims} simulated runs beat your PB at your current form`
+              ? odds.ifFinished > 0
+                ? "None of your attempts reached the end"
+                : `None of ${sims} simulated runs beat your PB at your current form`
               : `${describeChance(odds.perAttempt)} of attempts, counting the ones you reset`
           }
           lead

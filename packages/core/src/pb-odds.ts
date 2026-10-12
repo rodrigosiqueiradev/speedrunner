@@ -20,8 +20,13 @@ export const PB_ODDS_SETTINGS = {
   seed: 20_261_009,
   /** The grind rate is the attempts per day over this many days before your latest attempt. */
   grindWindowDays: 28,
-  /** Your finish rate and attempt length come from this many of your latest attempts. */
+  /** Your finish rate and attempt length come from this many of your latest attempts... */
   recentAttempts: 50,
+  /**
+   * ...but the finish rate reaches further back until it holds this many finished runs, so a
+   * category where most attempts are reset doesn't read as never finishing.
+   */
+  minRecentFinishes: 5,
   /**
    * Odds from a split look at simulated runs that were near your time there. "Near" is this share
    * of how spread out the simulated times at that split are.
@@ -83,6 +88,8 @@ export interface PbOdds {
   ifFinished: number;
   /** Share of your recent attempts that finished. */
   finishRate: number;
+  /** How many of your latest attempts the finish rate is taken from (0 without attempt history). */
+  finishWindow: number;
   /** Your average attempt length, from attempt start and end times where the file has them. */
   meanAttemptLength: Ms;
   /** Your middle simulated finish time, and the time you'd beat 1 run in 10. */
@@ -147,11 +154,18 @@ export function pbOdds(run: Run, options: PbOddsOptions = {}): PbOdds | null {
   }
 
   const ifFinished = beat / sims;
-  const recent = run.attempts.filter((a) => a.id > 0).slice(-S.recentAttempts);
+  const attempts = run.attempts.filter((a) => a.id > 0);
+  const recent = attempts.slice(-S.recentAttempts);
   const lastSegment = run.segments[n - 1];
+  const finished = (a: Run["attempts"][number]) => lastSegment.history.get(a.id) != null || a.time != null;
+  // The latest attempts, widened back until they hold enough finished runs (or reach the first attempt).
+  let start = Math.max(0, attempts.length - S.recentAttempts);
+  let finishes = recent.filter(finished).length;
+  while (start > 0 && finishes < S.minRecentFinishes) if (finished(attempts[--start])) finishes++;
+  const finishWindow = attempts.length - start;
   // Without attempt history, fall back to the per-segment reset rates.
-  const finishRate = recent.length
-    ? recent.filter((a) => lastSegment.history.get(a.id) != null || a.time != null).length / recent.length
+  const finishRate = finishWindow
+    ? finishes / finishWindow
     : segmentModels.reduce((p, m) => p * (1 - m.resetRate), 1);
   const perAttempt = ifFinished * finishRate;
   const meanAttemptLength = attemptLength(run, recent) ?? modelledAttemptLength(form.segments.map((s) => s.typical), segmentModels);
@@ -174,6 +188,7 @@ export function pbOdds(run: Run, options: PbOddsOptions = {}): PbOdds | null {
     perAttempt,
     ifFinished,
     finishRate,
+    finishWindow,
     meanAttemptLength,
     medianFinish: 0,
     goodFinish: 0,

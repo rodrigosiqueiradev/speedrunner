@@ -37,11 +37,11 @@ export const PB_ODDS_METRICS: Record<
     short: "How often an attempt beats your PB at your current form, counting the ones you reset.",
     how: [
       "PB chance per attempt = chance a finished run beats your PB (see If you finish) × your finish rate.",
-      `Your finish rate is the share of your last ${S.recentAttempts} attempts that reached the end.`,
+      `Your finish rate is the share of your last ${S.recentAttempts} attempts that reached the end. When fewer than ${S.minRecentFinishes} of them finished, it reaches further back until it holds ${S.minRecentFinishes} finished runs, so a category where most attempts are reset doesn't read as never finishing.`,
       "Nothing here is a fixed time: it works the same for a 5 minute category and a 6 hour one.",
     ],
     example: (o) =>
-      `${describeChance(o.ifFinished)} of finished runs beat ${formatTime(o.personalBest)}, and ${pct(o.finishRate)} of your recent attempts finished, so about ${o.perAttempt > 0 ? oneIn(o.perAttempt) : "none"}.`,
+      `${describeChance(o.ifFinished)} of finished runs beat ${formatTime(o.personalBest)}, and ${o.finishWindow > 0 ? `${describeChance(o.finishRate)} of your last ${o.finishWindow.toLocaleString("en-US")} attempts finished` : `your reset rates finish ${describeChance(o.finishRate)} of runs`}, so about ${o.perAttempt > 0 ? oneIn(o.perAttempt) : "none"}.`,
   },
   ifFinished: {
     id: "pb-if-finished",

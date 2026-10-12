@@ -221,6 +221,32 @@ describe("pbOdds", () => {
     expect(pbOdds(forgotten)!.meanAttemptLength).toBeCloseTo(150_000 + (onSplits - 150_000) / recent.length, 0);
   });
 
+  it("reaches back for finished runs when the latest attempts were all reset", () => {
+    // 200 attempts that finish every 20th time, so the last 50 hold only 2 finishes and the
+    // window has to reach back to hold 5.
+    const resetty = synthRun({
+      base: [60_000, 60_000, 60_000],
+      noise: (i, id) => ((Math.floor(id / 20) * 3 + i * 7) % 10) * 1000,
+      resetAt: (id) => (id % 20 === 0 ? undefined : 1),
+      attempts: 200,
+    });
+    const o = pbOdds(resetty)!;
+    // Back from attempt 200 to attempt 120: 81 attempts holding the finishes at 120, 140 ... 200.
+    expect(o.finishWindow).toBe(81);
+    expect(o.finishRate).toBeCloseTo(PB_ODDS_SETTINGS.minRecentFinishes / 81, 10);
+    expect(o.perAttempt).toBeGreaterThan(0);
+    // A long dry spell at the end doesn't drive the odds to zero.
+    const dry = { ...resetty, attempts: resetty.attempts.map((a) => (a.id > 140 ? { ...a, time: null } : a)) };
+    const last = dry.segments.length - 1;
+    dry.segments = dry.segments.map((s, i) =>
+      i === last ? { ...s, history: new Map([...s.history].filter(([id]) => id <= 140)) } : s,
+    );
+    const d = pbOdds(dry)!;
+    expect(d.finishRate).toBeGreaterThan(0);
+    expect(d.finishWindow).toBeGreaterThan(PB_ODDS_SETTINGS.recentAttempts);
+    expect(d.perAttempt).toBeGreaterThan(0);
+  });
+
   it("returns null without a PB", () => {
     const noPb = { ...run, segments: run.segments.map((s) => ({ ...s, pbSplit: null })) };
     expect(pbOdds(noPb)).toBeNull();
