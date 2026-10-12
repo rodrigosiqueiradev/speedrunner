@@ -321,7 +321,8 @@ export function deriveCustomTheme(accentHex: string, tint: string | null, mode: 
   } else {
     wash = oklchToHex(0.255, Math.min(0.055, Math.max(0.03, C * 0.3)), H);
     let moved: boolean;
-    [accent, moved] = seek(L, C, H, [surface, ground, wash], UI, 1);
+    // Ground is darker than the surface and the wash, so dark mode does not seek it.
+    [accent, moved] = seek(L, C, H, [surface, wash], UI, 1);
     if (moved) notes.push("accent");
     if (L >= 0.7) {
       [fill] = seek(Math.min(Math.max(L, 0.72), 0.86), Math.min(C, 0.14), H, [DARK_TEXT], TEXT, 1);
