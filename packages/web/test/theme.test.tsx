@@ -237,6 +237,11 @@ describe("theme", () => {
       }
     }
   });
+
+  it("uses Night Shell ink for the header focus ring, and keeps the page ring on the accent", () => {
+    expect(ruleBody(":focus-visible")).toContain("outline: 2px solid var(--accent)");
+    expect(ruleBody(".shell :focus-visible").trim()).toBe("outline-color: var(--shell-ink);");
+  });
 });
 
 const EXAMPLES: Array<[string, string | null, ColourScheme, boolean, string, string, string, string, string, string]> = [
