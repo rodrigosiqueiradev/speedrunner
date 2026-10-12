@@ -70,9 +70,12 @@ from a run's artifacts on the **Desktop app** workflow in GitHub Actions:
 
 - **Windows:** `Speedrunner-windows.exe`. Put it anywhere and run it. It uses the WebView2 runtime
   that ships with Windows 10 and 11.
-- **macOS:** `Speedrunner-macos.zip` holds `Speedrunner.app`, which runs on Apple Silicon and Intel.
-  Unzip it and run it from any folder.
-- **Linux:** `Speedrunner-linux.AppImage`. Make it executable (`chmod +x`) and run it.
+
+For now only the Windows app is built, to save GitHub Actions minutes; CI still runs the tests on
+Linux. The macOS and Linux builds are commented out in the matrix of
+`.github/workflows/desktop.yml`; restore them to build `Speedrunner-macos.zip` (a universal
+`Speedrunner.app`) and `Speedrunner-linux.AppImage` again, and add them back to the downloads in
+`.github/scripts/release-notes.sh` and `releases-repo/`.
 
 To publish a version, push a new tag such as `v0.2.0` (`git tag v0.2.0 && git push origin v0.2.0`);
 a release with the apps appears on the releases repo a few minutes later. Its notes list every pull

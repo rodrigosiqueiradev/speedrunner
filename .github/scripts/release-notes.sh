@@ -47,9 +47,4 @@ cat << 'NOTES'
 
 - **Windows:** `Speedrunner-windows.exe`. Run it from anywhere. If SmartScreen warns you, choose
   **More info**, then **Run anyway**.
-- **macOS:** `Speedrunner-macos.zip` holds `Speedrunner.app` for Apple Silicon and Intel. Unzip it
-  and open it once; when macOS blocks it, go to System Settings › Privacy & Security and choose
-  **Open Anyway**. If macOS says the app "is damaged and can't be opened", run
-  `xattr -cr Speedrunner.app` in Terminal and open it again.
-- **Linux:** `Speedrunner-linux.AppImage`. Make it executable (`chmod +x`) and run it.
 NOTES

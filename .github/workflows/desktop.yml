@@ -22,18 +22,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Portable builds, no installers: an AppImage, a single .exe and a zipped .app.
-          - os: ubuntu-22.04
-            name: linux
-            args: --bundles appimage
+          # Portable builds, no installers. Only Windows is built for now, to save Actions minutes
+          # (macOS runners cost the most). CI still tests on Linux. To build Linux and macOS again,
+          # restore these entries; the steps below still handle them.
+          #   - os: ubuntu-22.04
+          #     name: linux
+          #     args: --bundles appimage
+          #   - os: macos-latest
+          #     name: macos
+          #     # One app that runs on both Apple Silicon and Intel Macs.
+          #     args: --target universal-apple-darwin --bundles app
+          #     targets: aarch64-apple-darwin,x86_64-apple-darwin
           - os: windows-latest
             name: windows
             args: --no-bundle
-          - os: macos-latest
-            name: macos
-            # One app that runs on both Apple Silicon and Intel Macs.
-            args: --target universal-apple-darwin --bundles app
-            targets: aarch64-apple-darwin,x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6

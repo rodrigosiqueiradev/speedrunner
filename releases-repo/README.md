@@ -5,7 +5,7 @@ your run loses time, how fast you could realistically be, and what to practise f
 own computer and uploads nothing.
 
 **[Download the latest version](https://github.com/rodrigosiqueiradev/speedrunner-releases/releases/latest)**
-for Windows, macOS or Linux. There is nothing to install.
+for Windows. There is nothing to install.
 
 ## Is this for you?
 
@@ -89,14 +89,10 @@ the rest.
 | System | File | How to run it |
 | --- | --- | --- |
 | Windows 10 or 11 | `Speedrunner-windows.exe` | Put it anywhere and double-click it. |
-| macOS (Apple Silicon or Intel) | `Speedrunner-macos.zip` | Unzip it and open `Speedrunner.app`. |
-| Linux | `Speedrunner-linux.AppImage` | Make it executable, then run it. |
 
-On Linux, make it executable with:
-
-```
-chmod +x Speedrunner-linux.AppImage
-```
+New versions are built for Windows only for now. Older
+[releases](https://github.com/rodrigosiqueiradev/speedrunner-releases/releases) also have macOS and
+Linux files.
 
 ### First launch warnings
 

@@ -31,7 +31,7 @@ Section numbers like **[§5]** below point into the mathematics paper.
 
 Speedrunner reads the LiveSplit split file (`.lss`) you already keep and shows where your run loses time, how fast you
 could realistically be, what to practise, how likely a PB is, and how well you run each category on one 0 to 100
-scale. It is a desktop app for Windows, macOS and Linux.
+scale. It is a desktop app for Windows.
 
 Three principles shape every feature:
 
@@ -194,9 +194,9 @@ A recap of one calendar year across every split file you include, drawn as a 108
 
 Speedrunner runs entirely on your computer; there is no server or account.
 
-- **Downloads.** Portable apps (nothing to install) for Windows (`.exe`), macOS (`.app` in a zip, Apple Silicon and
-  Intel) and Linux (`.AppImage`), from the [latest release](https://github.com/rodrigosiqueiradev/speedrunner-releases/releases/latest).
-  The apps aren't signed yet; the [README](../README.md#first-launch-warnings) explains the first-launch warnings.
+- **Downloads.** A portable app (nothing to install) for Windows (`.exe`), from the
+  [latest release](https://github.com/rodrigosiqueiradev/speedrunner-releases/releases/latest). New versions are
+  Windows only for now. The app isn't signed yet; the [README](../README.md#first-launch-warnings) explains the first-launch warnings.
 - **Overlay window.** Live stats opens its own borderless overlay window, with an optional always-on-top setting.
 - **Update check.** At startup the app asks this repository for its latest release and shows a banner when a
   newer one exists. This is the app's only request to the internet; it sends nothing about you or your splits. It can
