@@ -176,24 +176,24 @@ components:
 
 Speedrunner reads like the notebook a runner keeps between sessions: a calm, well-ruled page where the numbers sit next to the reasons behind them. The page doesn't hype the run. It lays the run out, says what the figures mean, and ends with what to practise next. Explanations are part of the layout, not hidden away. Info tips, section notes, the "How it's calculated" entries and worked examples taken from the runner's own file all count as primary content.
 
-The logbook is written in the runner's own handwriting, which here is LiveSplit's. Times are set in tabular mono and right-aligned, the way a splits panel shows them, and gold always means gold. Pages are light by default and quiet. Cool grey paper, white panels and hairline rules carry the structure. Colour appears only where it encodes a meaning: blue for time a good attempt would save, gold for best segments. A dark "Night Shell" header frames the logbook like a timer window. Dark mode is a separately tuned palette, not an inversion.
+The logbook is written in the runner's own handwriting, which here is LiveSplit's. Times are set in tabular mono and right-aligned, the way a splits panel shows them, and gold always means gold. Pages are light by default and quiet. Cool grey paper, white panels and hairline rules carry the structure. Colour appears only where it encodes a meaning. In the default palette that colour is blue: time a good attempt would save. Gold is always a best segment, and red is always an error. A palette can change the accent hue. It does not change what gold and red mean. A dark "Night Shell" header frames the logbook like a timer window. Dark mode is a separately tuned palette, not an inversion.
 
 The density is moderate. Comfortable reading measures (56–78ch) sit alongside compact data views (tables, the route strip, the bar chart) that stay readable without zooming.
 
 **Key Characteristics:**
 - Explanation sits next to every number. Notes, tips and worked examples are first-class content.
 - Times are tabular mono and right-aligned. Labels are sans and left-aligned.
-- Colour carries meaning: blue is reachable saves, gold is golds. Everything else is neutral.
+- Colour carries meaning: the accent is reachable saves and actions, gold is golds, red is an error. Everything else is neutral. The accent hue depends on the palette.
 - Flat, ruled surfaces. A shadow appears only on content that floats.
 - One sticky dark header and one narrow column (1080px max).
 - Light and dark themes are each tuned on their own.
 
 ## Colors
 
-A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Gold Split.
+The colours at the top of this file are the default palette, Speedrunner, in light mode. A cool, near-neutral logbook with two meaningful inks: the accent (Split Blue, in that palette) and Gold Split. Other palettes keep every role and change the accent hue. They are specified under Palettes.
 
 ### Primary
-- **Split Blue** (`split-blue`): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, the focus ring, text selection and the save bars on the route strip. **Split Blue Ink** (`split-blue-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Fill** (`split-blue-fill`, hover `split-blue-fill-hover`) is the slightly deeper step used behind white text on filled controls (the primary button and the pressed toggle), because white on Split Blue only reaches 4.4:1. **Split Blue Wash** (`split-blue-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts.
+- **Split Blue** (`split-blue`, the `--accent` role): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, the focus ring, text selection and the save bars on the route strip. **Split Blue Ink** (`split-blue-ink`, `--accent-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Fill** (`split-blue-fill`, hover `split-blue-fill-hover`; `--accent-fill` and `--accent-fill-hover`) is the slightly deeper step used behind white text on filled controls (the primary button and the pressed toggle), because white on Split Blue only reaches 4.4:1. **Split Blue Wash** (`split-blue-wash`, `--accent-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts. In any palette other than Speedrunner, these roles use that palette's accent, not this blue.
 
 ### Secondary
 - **Gold Split** (`gold-split`): LiveSplit's gold, used only for gold segments (the gold portion of savings bars and its legend swatch). **Gold Split Ink** and **Gold Split Wash** pair as the small flag that marks gold-related notes in the segment table.
@@ -214,7 +214,7 @@ A cool, near-neutral logbook palette with two meaningful inks: Split Blue and Go
 - **Route Track** (`route-track`): the neutral band the route strip draws the PB on, one step darker than the page ground. Dark mode uses `#1f2733`.
 
 ### Named Rules
-**The Meaning-Only Colour Rule.** Blue means time a good attempt would save. Gold means a gold segment. No other hues appear, and neither is ever used decoratively.
+**The Meaning-Only Colour Rule.** The accent means time a good attempt would save, and it is also the colour of primary actions, focus and links. Gold means a gold segment. Red means an error. No other hues appear, and none of these is used decoratively. The accent hue depends on the palette. Gold and error do not take on that hue. Time behind stays neutral ink. There is no separate ahead or behind colour.
 
 **The Separate Night Rule.** Dark mode is its own tuned set of steps (see the sidecar), never `filter: invert` or computed opposites. Every new token needs a light value and a dark value.
 
@@ -254,7 +254,7 @@ The only breakpoint is 640px. Below it the shell hides its text links, compariso
 The system is flat. Depth comes from tone (ground, then surface, then sunk) and hairline rules, not shadows. Panels sit on the grey ground with a 1px Rule Line border. Exactly one shadow exists, and only content that floats above the page uses it.
 
 ### Shadow Vocabulary
-- **Pop** (`0 6px 24px rgb(13 20 32 / 0.14), 0 1px 3px rgb(13 20 32 / 0.08)`; dark: `0 8px 28px rgb(0 0 0 / 0.5)`): info tip panels and the chart tooltip only.
+- **Pop** (`0 6px 24px rgb(13 20 32 / 0.14), 0 1px 3px rgb(13 20 32 / 0.08)`; dark: `0 8px 28px rgb(0 0 0 / 0.5)`): info tip panels, the chart tooltip and the Appearance panel. That pair is Speedrunner. A tinted palette uses the same alphas on its own ink. High contrast light uses the stronger shadow in its palette table. Dark mode keeps the black shadow above.
 
 ### Named Rules
 **The Ruled Page Rule.** Separate content with space and hairline rules, not nested cards or shadows. If something casts a shadow, it must be floating above the page.
@@ -322,12 +322,595 @@ The live page puts the card's stats first, numbered and in card order with up an
 ### Navigation
 A Night Shell bar, sticky, 56px tall. The wordmark is "Speedrunner" in 600 sans. The right side links to the other views (Analyse a run, Profile, Year in runs). Once a run is loaded it shows the shell "Open file" button; "How it's calculated" for a run is its last tab.
 
+## Palettes
+
+The colours in the front matter of this file are Speedrunner in light mode. Where the component notes above say Split Blue, they mean that palette's accent. Grove, Violet, Amber and High contrast keep every role and change the accent hue. Each theme has its own light version and its own dark version, so System mode still works. The choice is saved on this computer. Nothing is uploaded.
+
+Mode stays System, Light or Dark. Theme is the colour set. They are two choices.
+
+The five presets are hand-tuned. They are not the output of the custom rules further down. Speedrunner is today's `:root` exactly, and its attribute may be omitted.
+
+### What keeps its hue
+
+Gold and error keep their hue family in every theme. A theme may only change their lightness, and only High contrast does.
+
+- Gold stays gold. Speedrunner, Grove, Violet and Amber use the current gold tokens unchanged. High contrast light uses a darker gold ink, `#6d4c00`, still in the same gold family, so the flag clears 7:1 on white. Dark gold is unchanged.
+- Error stays red. The same four themes use the current error tokens. High contrast light uses `#9e2322`, still red. Dark error is unchanged.
+- There is no ahead colour and no behind colour in `:root`. Time behind stays `--ink` (neutral). Do not add a green or a red for it. Time saved, links and deltas stay `--accent-ink`, so that hue follows the theme. That is the accent, not a fixed status green.
+- The Live card's ahead blue and its falling-chance red are out of scope. They do not follow the palette.
+
+Amber is a deep burnt orange, about hue 62°, so it does not become the gold (about hue 82°) or the error red (about hue 27°). On the savings chart the accent bar and the gold bar stay distinguishable. Do not shift Amber toward gold to make the theme "more amber".
+
+### Preset tokens
+
+Speedrunner is the current `:root` exactly. Do not regenerate it. The other four are hand-tuned. They are not the output of the custom algorithm.
+
+Light and dark are each tuned. Dark is not an inversion. In dark mode the button fill is sometimes lighter than the light-mode fill, so the button still clears the dark page.
+
+`--on-accent` is `#ffffff` everywhere except High contrast dark, where it is `#000000`. A light blue button with black text is what keeps the button visible on black and the text at 7:1.
+
+#### Speedrunner
+
+`data-palette="speedrunner"` (the default; the attribute may be omitted)
+
+##### Speedrunner, light
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#f1f3f6` |
+| `--surface` | `#ffffff` |
+| `--surface-sunk` | `#f6f7f9` |
+| `--hover` | `#eef1f5` |
+| `--line` | `#e1e5eb` |
+| `--line-strong` | `#c9cfd8` |
+| `--ink` | `#0d1420` |
+| `--ink-2` | `#47505e` |
+| `--ink-3` | `#5d6573` |
+| `--shell` | `#0e1726` |
+| `--shell-ink` | `#e8edf5` |
+| `--shell-ink-2` | `#a3b0c2` |
+| `--accent` | `#2a78d6` |
+| `--accent-ink` | `#1c5cab` |
+| `--accent-wash` | `#e8f1fc` |
+| `--accent-fill` | `#256abf` |
+| `--accent-fill-hover` | `#1c5cab` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#b8860b` |
+| `--gold-wash` | `#fbf3dd` |
+| `--gold-ink` | `#7a5600` |
+| `--error` | `#b42323` |
+| `--error-wash` | `#fdecec` |
+| `--r0` | `#e7ebf0` |
+| `--shadow-pop` | `0 6px 24px rgb(13 20 32 / 0.14), 0 1px 3px rgb(13 20 32 / 0.08)` |
+
+##### Speedrunner, dark
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#0d1117` |
+| `--surface` | `#151a22` |
+| `--surface-sunk` | `#11161d` |
+| `--hover` | `#1c2330` |
+| `--line` | `#252d39` |
+| `--line-strong` | `#343e4d` |
+| `--ink` | `#f2f5f9` |
+| `--ink-2` | `#b9c2cf` |
+| `--ink-3` | `#8b95a4` |
+| `--shell` | `#080c12` |
+| `--shell-ink` | `#e8edf5` |
+| `--shell-ink-2` | `#8b97a8` |
+| `--accent` | `#3987e5` |
+| `--accent-ink` | `#86b6ef` |
+| `--accent-wash` | `#14233a` |
+| `--accent-fill` | `#256abf` |
+| `--accent-fill-hover` | `#1c5cab` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#c98500` |
+| `--gold-wash` | `#2a2210` |
+| `--gold-ink` | `#f0c25a` |
+| `--error` | `#ff8a8a` |
+| `--error-wash` | `#2d1515` |
+| `--r0` | `#1f2733` |
+| `--shadow-pop` | `0 8px 28px rgb(0 0 0 / 0.5)` |
+
+#### Grove
+
+`data-palette="grove"`
+
+##### Grove, light
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#edf5f0` |
+| `--surface` | `#ffffff` |
+| `--surface-sunk` | `#f3f9f6` |
+| `--hover` | `#e9f3ed` |
+| `--line` | `#dce7e0` |
+| `--line-strong` | `#c3d2c8` |
+| `--ink` | `#0d1710` |
+| `--ink-2` | `#46534b` |
+| `--ink-3` | `#5b675f` |
+| `--shell` | `#0a1a10` |
+| `--shell-ink` | `#e7efea` |
+| `--shell-ink-2` | `#a0b3a6` |
+| `--accent` | `#1f7a47` |
+| `--accent-ink` | `#0e703e` |
+| `--accent-wash` | `#e3f5ea` |
+| `--accent-fill` | `#1b7342` |
+| `--accent-fill-hover` | `#036b3b` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#b8860b` |
+| `--gold-wash` | `#fbf3dd` |
+| `--gold-ink` | `#7a5600` |
+| `--error` | `#b42323` |
+| `--error-wash` | `#fdecec` |
+| `--r0` | `#e3ede7` |
+| `--shadow-pop` | `0 6px 24px rgb(13 23 16 / 0.14), 0 1px 3px rgb(13 23 16 / 0.08)` |
+
+##### Grove, dark
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#0b130e` |
+| `--surface` | `#121c16` |
+| `--surface-sunk` | `#0f1812` |
+| `--hover` | `#18271d` |
+| `--line` | `#213127` |
+| `--line-strong` | `#304336` |
+| `--ink` | `#f1f6f3` |
+| `--ink-2` | `#b8c5bc` |
+| `--ink-3` | `#89998e` |
+| `--shell` | `#050e08` |
+| `--shell-ink` | `#e8efeb` |
+| `--shell-ink-2` | `#899b8f` |
+| `--accent` | `#3d9a62` |
+| `--accent-ink` | `#7dcea0` |
+| `--accent-wash` | `#15281b` |
+| `--accent-fill` | `#2c7e4e` |
+| `--accent-fill-hover` | `#318252` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#c98500` |
+| `--gold-wash` | `#2a2210` |
+| `--gold-ink` | `#f0c25a` |
+| `--error` | `#ff8a8a` |
+| `--error-wash` | `#2d1515` |
+| `--r0` | `#1d2b21` |
+| `--shadow-pop` | `0 8px 28px rgb(0 0 0 / 0.5)` |
+
+#### Violet
+
+`data-palette="violet"`
+
+##### Violet, light
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#f3f1fb` |
+| `--surface` | `#ffffff` |
+| `--surface-sunk` | `#f7f6fd` |
+| `--hover` | `#f0effa` |
+| `--line` | `#e4e2ef` |
+| `--line-strong` | `#cdcbdb` |
+| `--ink` | `#14121c` |
+| `--ink-2` | `#4f4e5b` |
+| `--ink-3` | `#63616e` |
+| `--shell` | `#161323` |
+| `--shell-ink` | `#edebf5` |
+| `--shell-ink-2` | `#adaabf` |
+| `--accent` | `#684db6` |
+| `--accent-ink` | `#5a3ea6` |
+| `--accent-wash` | `#f0eeff` |
+| `--accent-fill` | `#5e44ae` |
+| `--accent-fill-hover` | `#4e359c` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#b8860b` |
+| `--gold-wash` | `#fbf3dd` |
+| `--gold-ink` | `#7a5600` |
+| `--error` | `#b42323` |
+| `--error-wash` | `#fdecec` |
+| `--r0` | `#eae8f4` |
+| `--shadow-pop` | `0 6px 24px rgb(20 18 28 / 0.14), 0 1px 3px rgb(20 18 28 / 0.08)` |
+
+##### Violet, dark
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#110f17` |
+| `--surface` | `#1a1822` |
+| `--surface-sunk` | `#16141d` |
+| `--hover` | `#23202f` |
+| `--line` | `#2d2a3a` |
+| `--line-strong` | `#3d3a4d` |
+| `--ink` | `#f5f4fb` |
+| `--ink-2` | `#c1bfce` |
+| `--ink-3` | `#9492a3` |
+| `--shell` | `#0b0a13` |
+| `--shell-ink` | `#edecf4` |
+| `--shell-ink-2` | `#9693a7` |
+| `--accent` | `#7e64d0` |
+| `--accent-ink` | `#c4b6f5` |
+| `--accent-wash` | `#241e38` |
+| `--accent-fill` | `#7461b7` |
+| `--accent-fill-hover` | `#7965bb` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#c98500` |
+| `--gold-wash` | `#2a2210` |
+| `--gold-ink` | `#f0c25a` |
+| `--error` | `#ff8a8a` |
+| `--error-wash` | `#2d1515` |
+| `--r0` | `#272433` |
+| `--shadow-pop` | `0 8px 28px rgb(0 0 0 / 0.5)` |
+
+#### Amber
+
+`data-palette="amber"`
+
+##### Amber, light
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#f9f1ec` |
+| `--surface` | `#ffffff` |
+| `--surface-sunk` | `#fbf6f3` |
+| `--hover` | `#f7eee8` |
+| `--line` | `#ece2da` |
+| `--line-strong` | `#d8cac0` |
+| `--ink` | `#1b120b` |
+| `--ink-2` | `#594d44` |
+| `--ink-3` | `#6c6158` |
+| `--shell` | `#201308` |
+| `--shell-ink` | `#f3ebe6` |
+| `--shell-ink-2` | `#bbaa9d` |
+| `--accent` | `#995600` |
+| `--accent-ink` | `#814800` |
+| `--accent-wash` | `#fbf1e6` |
+| `--accent-fill` | `#8e5100` |
+| `--accent-fill-hover` | `#7a4500` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#b8860b` |
+| `--gold-wash` | `#fbf3dd` |
+| `--gold-ink` | `#7a5600` |
+| `--error` | `#b42323` |
+| `--error-wash` | `#fdecec` |
+| `--r0` | `#f1e8e2` |
+| `--shadow-pop` | `0 6px 24px rgb(27 18 11 / 0.14), 0 1px 3px rgb(27 18 11 / 0.08)` |
+
+##### Amber, dark
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#160f0a` |
+| `--surface` | `#211810` |
+| `--surface-sunk` | `#1c140d` |
+| `--hover` | `#2d2015` |
+| `--line` | `#37291e` |
+| `--line-strong` | `#4a3a2d` |
+| `--ink` | `#f9f4f0` |
+| `--ink-2` | `#cbbfb5` |
+| `--ink-3` | `#a09186` |
+| `--shell` | `#110904` |
+| `--shell-ink` | `#f2ebe7` |
+| `--shell-ink-2` | `#a39285` |
+| `--accent` | `#e0a15a` |
+| `--accent-ink` | `#f0c48a` |
+| `--accent-wash` | `#2c1d10` |
+| `--accent-fill` | `#a25f16` |
+| `--accent-fill-hover` | `#a5621a` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#c98500` |
+| `--gold-wash` | `#2a2210` |
+| `--gold-ink` | `#f0c25a` |
+| `--error` | `#ff8a8a` |
+| `--error-wash` | `#2d1515` |
+| `--r0` | `#30241a` |
+| `--shadow-pop` | `0 8px 28px rgb(0 0 0 / 0.5)` |
+
+#### High contrast
+
+`data-palette="contrast"`
+
+##### High contrast, light
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#ffffff` |
+| `--surface` | `#ffffff` |
+| `--surface-sunk` | `#f2f2f2` |
+| `--hover` | `#e5e5e5` |
+| `--line` | `#5c5c5c` |
+| `--line-strong` | `#1f1f1f` |
+| `--ink` | `#000000` |
+| `--ink-2` | `#1a1a1a` |
+| `--ink-3` | `#3f3f3f` |
+| `--shell` | `#000000` |
+| `--shell-ink` | `#ffffff` |
+| `--shell-ink-2` | `#c8c8c8` |
+| `--accent` | `#1656a4` |
+| `--accent-ink` | `#0f4e98` |
+| `--accent-wash` | `#e5f0fb` |
+| `--accent-fill` | `#0b56a9` |
+| `--accent-fill-hover` | `#084888` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#b8860b` |
+| `--gold-wash` | `#fbf3dd` |
+| `--gold-ink` | `#6d4c00` |
+| `--error` | `#9e2322` |
+| `--error-wash` | `#fdecec` |
+| `--r0` | `#767676` |
+| `--shadow-pop` | `0 6px 24px rgb(0 0 0 / 0.22), 0 1px 3px rgb(0 0 0 / 0.14)` |
+
+##### High contrast, dark
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#000000` |
+| `--surface` | `#0a0a0a` |
+| `--surface-sunk` | `#000000` |
+| `--hover` | `#1a1a1a` |
+| `--line` | `#a6a6a6` |
+| `--line-strong` | `#ffffff` |
+| `--ink` | `#ffffff` |
+| `--ink-2` | `#f0f0f0` |
+| `--ink-3` | `#d0d0d0` |
+| `--shell` | `#000000` |
+| `--shell-ink` | `#ffffff` |
+| `--shell-ink-2` | `#d0d0d0` |
+| `--accent` | `#8eb7ee` |
+| `--accent-ink` | `#d4e4ff` |
+| `--accent-wash` | `#0c2244` |
+| `--accent-fill` | `#8eb7ee` |
+| `--accent-fill-hover` | `#a9cdff` |
+| `--on-accent` | `#000000` |
+| `--gold` | `#c98500` |
+| `--gold-wash` | `#2a2210` |
+| `--gold-ink` | `#f0c25a` |
+| `--error` | `#ff8a8a` |
+| `--error-wash` | `#2d1515` |
+| `--r0` | `#8a8a8a` |
+| `--shadow-pop` | `0 8px 28px rgb(0 0 0 / 0.5)` |
+
+
+### Contrast
+
+Ratios use the WCAG 2.1 relative luminance formula. Text must clear **4.5:1**. The accent, used as a focus ring and as a button against the page, must clear **3:1**. The pass line for every pair below is 4.5 except where a pair is a non-text boundary, and those boundaries were checked at 3:1 as well (accent on ground and on surface, accent-fill on surface). All of them pass.
+
+High contrast also clears **7:1** for ink, ink-2, ink-3, accent-ink, on-accent on the fill, shell ink and shell ink muted, and for gold ink and error on the surface.
+
+| Theme | Mode | Ink on ground | Ink on surface | Ink-2 on surface | Ink-3 on ground | Accent-ink on surface | On-accent on fill | Gold-ink on surface | Error on surface |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Speedrunner | light | 16.60 | 18.45 | 8.15 | 5.29 | 6.63 | 5.39 | 6.65 | 6.55 |
+| Speedrunner | dark | 17.31 | 15.97 | 9.71 | 6.25 | 8.27 | 5.39 | 10.45 | 7.69 |
+| Grove | light | 16.49 | 18.31 | 8.08 | 5.33 | 6.17 | 5.87 | 6.65 | 6.55 |
+| Grove | dark | 17.25 | 15.97 | 9.76 | 6.29 | 9.31 | 5.00 | 10.44 | 7.69 |
+| Violet | light | 16.58 | 18.53 | 8.16 | 5.42 | 7.85 | 7.21 | 6.65 | 6.55 |
+| Violet | dark | 17.40 | 16.04 | 9.69 | 6.25 | 9.48 | 5.08 | 10.49 | 7.73 |
+| Amber | light | 16.54 | 18.45 | 8.17 | 5.40 | 7.34 | 6.31 | 6.65 | 6.55 |
+| Amber | dark | 17.37 | 15.98 | 9.69 | 6.22 | 10.78 | 5.02 | 10.45 | 7.69 |
+| High contrast | light | 21.00 | 21.00 | 17.40 | 10.53 | 8.19 | 7.20 | 7.82 | 7.73 |
+| High contrast | dark | 21.00 | 19.80 | 17.37 | 13.62 | 15.41 | 10.16 | 11.85 | 8.72 |
+
+Also checked, all at or above 4.5: ink on accent-wash, accent-ink on ground and on accent-wash, on-accent on accent-fill-hover, gold-ink on gold-wash, error on error-wash, shell-ink and shell-ink-2 on shell. Hairline `--line` is structure, not text, and is not required to hit 3:1. High contrast uses stronger lines so the edges of panels stay obvious.
+
+White on the raw Speedrunner accent `#2a78d6` is 4.42:1, which is why the fill is the deeper `#256abf` (5.39:1). Keep that. Do not put white text on `--accent`.
+
+### Custom theme
+
+The person picks an **accent**, and may pick a **background tint**. The app makes every other colour token from those two, in the active mode. The pickers keep the hex the person chose. The page uses the derived tokens. Nothing is baked back into the pickers.
+
+#### What they pick
+
+- **Accent.** A colour input and a 7-character hex field, each updating the other. Empty or invalid hex on blur reverts to the last good value.
+- **Tint the page.** A checkbox, off by default. Off means `tint` is null and the neutrals are the Speedrunner neutrals exactly. On shows a second colour input, starting at the accent colour. The tint contributes its hue only. Lightness and chroma of the page come from the ladder below, so a saturated pick cannot turn the page into a solid block of that colour.
+
+Entering Custom copies the current preset's light accent into the picker (`#2a78d6`, `#1f7a47`, `#684db6`, `#995600`, or `#1656a4`) and sets tint off. It does not clone the preset token for token. From Speedrunner, the accent stays `#2a78d6` and the button fill moves to the derived `#2675d2`. That is expected.
+
+#### Rules
+
+Work in OKLCH (Björn Ottosson). Round each sRGB channel to the nearest integer, halves to even. If a colour falls outside sRGB, reduce chroma until it fits, and keep lightness and hue. Targets: text **4.6:1** (so the rounded hex still clears 4.5), non-text accent and button edge **3.1:1**.
+
+1. Read the accent. If its chroma is under 0.02, it is grey: use hue 255.5, chroma 0.14, lightness 0.575 in light mode and 0.622 in dark mode. Show the line.
+2. If chroma is over 0.20, cap it at 0.16. Show the line.
+3. Neutrals. No tint, or a tint whose chroma is under 0.02: copy the Speedrunner neutrals for that mode, including the shadow. A tint that was given but has no hue still shows the line ("that tint has no hue"). Otherwise take the tint's hue and build the ladder. Light mode surface is always `#ffffff`.
+
+Light ladder (lightness, chroma), hue from the tint:
+
+| Token | Lightness | Chroma |
+| --- | --- | --- |
+| ground | 0.963 | 0.012 |
+| surface-sunk | 0.976 | 0.008 |
+| hover | 0.955 | 0.014 |
+| line | 0.918 | 0.016 |
+| line-strong | 0.848 | 0.022 |
+| ink | 0.191 | 0.020 |
+| ink-2 | 0.429 | 0.022 |
+| ink-3 | 0.500 | 0.020 |
+| r0 | 0.936 | 0.014 |
+| shell | 0.200 | 0.030 |
+| shell-ink | 0.945 | 0.012 |
+| shell-ink-2 | 0.748 | 0.028 |
+
+Dark ladder:
+
+| Token | Lightness | Chroma |
+| --- | --- | --- |
+| ground | 0.176 | 0.016 |
+| surface | 0.216 | 0.020 |
+| surface-sunk | 0.198 | 0.018 |
+| hover | 0.255 | 0.028 |
+| line | 0.295 | 0.028 |
+| line-strong | 0.361 | 0.032 |
+| ink | 0.969 | 0.008 |
+| ink-2 | 0.811 | 0.020 |
+| ink-3 | 0.667 | 0.024 |
+| r0 | 0.271 | 0.026 |
+| shell | 0.150 | 0.020 |
+| shell-ink | 0.945 | 0.010 |
+| shell-ink-2 | 0.672 | 0.028 |
+
+Light shadow is the Speedrunner shadow with the theme ink's red, green and blue. Dark shadow is always `0 8px 28px rgb(0 0 0 / 0.5)`.
+
+4. Wash. Light: lightness 0.955, chroma clamped between 0.012 and 0.028 at 0.18 times the accent chroma. Dark: lightness 0.255, chroma clamped between 0.03 and 0.055 at 0.30 times the accent chroma. Hue is the accent hue.
+5. Accent (bars, focus ring, tab underline). Light mode: darken until it clears 3.1 on both surface and ground. Dark mode: lighten until it clears 3.1 on the surface. Show the line if the lightness moved.
+6. Fill and the text on it. Prefer white `#ffffff`. In light mode, darken the pick until white clears 4.6. Use that fill with white text when the lightness drop is 0.18 or less and the fill also clears 3.1 on the surface. Otherwise use dark text `#0d1420` (this exact ink, in both modes, because it sits on the fill) and darken the fill until it clears 3.1 on the surface while the dark text still clears 4.6. Show the line when the text is dark or the fill moved. In dark mode, a pick of lightness 0.70 or more uses dark text on a light fill. A darker pick uses white text on a fill that clears both 4.6 for white and 3.1 on the surface. If that pair is impossible, use dark text on a light fill.
+7. Hover. Try one step darker (about 0.045 lightness). Keep it only if the same text colour still clears 4.6 and the fill still clears 3.0 on the surface. Otherwise try one step lighter. If neither passes, hover equals fill. Grove dark and a pale yellow in light mode are cases where hover equals fill.
+8. Accent-ink. Light mode: start at lightness at most 0.48 and chroma at most 0.15, then darken until it clears 4.6 on surface, ground and wash. Dark mode: start at lightness at least 0.74 and chroma at most 0.12, then lighten until the same three pass.
+9. Gold and error. Copy the fixed tokens for that mode. Speedrunner's gold and error, not the High contrast variants. Never take them from the accent.
+10. If ink, ink-2, ink-3, shell-ink or shell-ink-2 has fallen under 4.6 on the surface it is read on, move that colour's lightness until it passes. Show the line.
+
+#### When a pick fails contrast
+
+Do not reject the colour. Do not reset the picker. Adjust the derived tokens and say so, in one line under the pickers, in `--ink-2` at 0.8125rem:
+
+> Adjusted so text stays readable.
+
+The line uses the secondary ink, not the error colour. It is information, not a failure. Show it when any step above flagged an adjustment. Hide it when the pick derives cleanly. The line is one sentence, not a list of reasons.
+
+What the person sees in the cases that matter:
+
+- A normal blue or green already clears, so there is no line. The accent they picked is the accent on the page (a one-channel round from the hex maths is not an adjustment).
+- A pale yellow cannot be a button on white paper. The accent and the fill deepen, the button text turns dark, and the line shows. In dark mode the yellow can stay light, with dark text on the button, and the line still shows.
+- A neon green is toned down, then treated the same way as a colour that fails the button edge.
+- A grey accent becomes Speedrunner blue, and the line shows.
+- A white, black or grey tint has no hue. The page stays the Speedrunner neutrals, and the line shows.
+- A real tint only shifts the neutrals toward that hue. It does not recolour gold or error.
+
+#### Worked examples
+
+These are the check for the rules above. Match the accent tokens. Match whether the line shows. With no tint, every neutral matches Speedrunner for that mode. Gold and error match the Speedrunner pair for that mode, in every example.
+
+| Accent pick | Tint | Mode | Line | accent | accent-ink | wash | fill | fill-hover | on-accent |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `#2a78d6` | none | light | no | `#2a78d6` | `#115cb0` | `#e7f1ff` | `#2675d2` | `#1166c1` | `#ffffff` |
+| `#2a78d6` | none | dark | no | `#2a78d6` | `#76adf6` | `#12233a` | `#2675d2` | `#1467c3` | `#ffffff` |
+| `#1f7a47` | none | light | no | `#1f7a48` | `#0e703f` | `#e6f5eb` | `#1f7a48` | `#036b3b` | `#ffffff` |
+| `#1f7a47` | none | dark | no | `#1f7a48` | `#6bc08a` | `#15281b` | `#1f7a48` | `#1f7a48` | `#ffffff` |
+| `#ffe14a` | none | light | yes | `#a08900` | `#6e5d00` | `#f5f1dd` | `#a99100` | `#a99100` | `#0d1420` |
+| `#ffe14a` | none | dark | yes | `#ffe14e` | `#f7e283` | `#292303` | `#ead15d` | `#dbc24f` | `#0d1420` |
+| `#c8c8c8` | none | light | yes | `#3a79ca` | `#1c5cab` | `#e7f1ff` | `#3676c6` | `#2667b6` | `#ffffff` |
+| `#c8c8c8` | none | dark | yes | `#4888d9` | `#76adf6` | `#152337` | `#3676c6` | `#2868b7` | `#ffffff` |
+| `#00ff66` | none | light | yes | `#2b9e49` | `#00722b` | `#e4f6e7` | `#37a651` | `#37a651` | `#0d1420` |
+| `#00ff66` | none | dark | yes | `#85f197` | `#9deba8` | `#112915` | `#8eea9c` | `#7fdb8f` | `#0d1420` |
+| `#6a45c4` | `#916cba` | light | no | `#6a45c4` | `#6148aa` | `#f0eeff` | `#6a45c4` | `#5d35b3` | `#ffffff` |
+| `#6a45c4` | `#916cba` | dark | yes | `#724fce` | `#ac9df1` | `#231d3b` | `#724fce` | `#7d5cdc` | `#ffffff` |
+| `#1f7a47` | `#ffffff` | light | yes | `#1f7a48` | `#0e703f` | `#e6f5eb` | `#1f7a48` | `#036b3b` | `#ffffff` |
+| `#1f7a47` | `#ffffff` | dark | yes | `#1f7a48` | `#6bc08a` | `#15281b` | `#1f7a48` | `#1f7a48` | `#ffffff` |
+
+
+The tinted violet pick is the check for the ladder. Full tokens:
+
+##### Violet tint, light (accent `#6a45c4`, tint `#916cba`)
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#f4f1fa` |
+| `--surface` | `#ffffff` |
+| `--surface-sunk` | `#f8f6fc` |
+| `--hover` | `#f2eef9` |
+| `--line` | `#e6e1ee` |
+| `--line-strong` | `#d0cada` |
+| `--ink` | `#16121b` |
+| `--ink-2` | `#524d5a` |
+| `--ink-3` | `#66616d` |
+| `--shell` | `#191221` |
+| `--shell-ink` | `#eeebf4` |
+| `--shell-ink-2` | `#b1a9bd` |
+| `--accent` | `#6a45c4` |
+| `--accent-ink` | `#6148aa` |
+| `--accent-wash` | `#f0eeff` |
+| `--accent-fill` | `#6a45c4` |
+| `--accent-fill-hover` | `#5d35b3` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#b8860b` |
+| `--gold-wash` | `#fbf3dd` |
+| `--gold-ink` | `#7a5600` |
+| `--error` | `#b42323` |
+| `--error-wash` | `#fdecec` |
+| `--r0` | `#ece8f2` |
+| `--shadow-pop` | `0 6px 24px rgb(22 18 27 / 0.14), 0 1px 3px rgb(22 18 27 / 0.08)` |
+
+##### Violet tint, dark (accent `#6a45c4`, tint `#916cba`)
+
+| Token | Value |
+| --- | --- |
+| `--ground` | `#120f17` |
+| `--surface` | `#1c1721` |
+| `--surface-sunk` | `#17141c` |
+| `--hover` | `#261f2e` |
+| `--line` | `#302938` |
+| `--line-strong` | `#41394b` |
+| `--ink` | `#f6f3fa` |
+| `--ink-2` | `#c4becd` |
+| `--ink-3` | `#9891a1` |
+| `--shell` | `#0d0912` |
+| `--shell-ink` | `#eeebf3` |
+| `--shell-ink-2` | `#9a92a5` |
+| `--accent` | `#724fce` |
+| `--accent-ink` | `#ac9df1` |
+| `--accent-wash` | `#231d3b` |
+| `--accent-fill` | `#724fce` |
+| `--accent-fill-hover` | `#7d5cdc` |
+| `--on-accent` | `#ffffff` |
+| `--gold` | `#c98500` |
+| `--gold-wash` | `#2a2210` |
+| `--gold-ink` | `#f0c25a` |
+| `--error` | `#ff8a8a` |
+| `--error-wash` | `#2d1515` |
+| `--r0` | `#2a2431` |
+| `--shadow-pop` | `0 8px 28px rgb(0 0 0 / 0.5)` |
+
+
+### Appearance
+
+The footer Theme switch is replaced by one control, **Appearance**. The privacy sentence and the version note stay. The footer stays centred, 0.875rem, `--ink-3`.
+
+The mode toggle is the control people already use, and five swatches do not fit beside the privacy line without crowding it (Hick's Law, Choice Overload). So the footer shows one quiet button, and the choices sit in a small panel. Mode is the first thing inside the panel, still the existing small `Toggle`, so the segmented control itself does not change (Jakob's Law).
+
+#### Closed
+
+A text button, `--ink-3`, 0.875rem, with a 14px swatch before the word "Appearance". Gap `--s2`. The swatch is `aria-hidden`. The button's accessible name is "Appearance". `aria-expanded` and `aria-haspopup="dialog"`. The swatch is the current theme's light `--accent-fill`, including while the page is in dark mode, so the chip does not flip when the mode flips. Custom uses the derived fill. High contrast is the exception, below.
+
+#### Open
+
+A dialog, anchored above the button with an 8px gap, centred on the button. Width 280px, or `100vw - 32px` when that is narrower. Page surface, 1px `--line-strong`, radius 8px, the Pop shadow. Padding 12px 16px 16px. If the panel would leave the viewport, pin it 8px inside the viewport. It is not a bottom sheet. The info-tip sheet is for long text. This panel is short.
+
+Focus moves to the pressed mode segment. Tab stays inside the dialog. Escape, or a click outside, closes it and returns focus to the Appearance button. Fade 160ms on the existing curve. Under `prefers-reduced-motion`, show it at once.
+
+```
+Appearance
+Mode
+[ System | Light | Dark ]
+Theme
+[ swatches ]
+        Grove
+Custom…
+```
+
+- **Appearance.** The panel title, 0.8125rem, weight 600, `--ink`. `aria-labelledby` points at it.
+- **Mode.** Label in `--ink-2`, 0.8125rem. Then the existing small `Toggle` with System, Light and Dark, full width of the panel. Choosing one saves and applies immediately, as it does today.
+- **Theme.** Label in `--ink-2`. Then five swatches in one row, gap 12px, as a `radiogroup` labelled "Theme". Each is a 36px button, radius 8px, `role="radio"`, accessible name the theme name. Order: Speedrunner, Grove, Violet, Amber, High contrast. Arrow keys move. The selected swatch has a 2px `--ink` outline, offset 2px. The others have a 1px `--line-strong` border. A caption under the row, centred, `--ink-2`, 0.8125rem, is the selected name. One caption, not five labels.
+- **High contrast swatch.** Not a blue square. A 36px rounded square, split vertically `#000000` and `#ffffff`, with a 4px `#1656a4` bar along the split. The other four swatches are blue, green, violet and burnt orange. A second blue square would be mistaken for Speedrunner (Von Restorff). The 14px footer chip uses the same split.
+- **Custom…** A text button in `--accent-ink`, the text-link style, under the caption. It is not a sixth swatch. `aria-pressed` when custom is active. Activating it selects custom and shows the pickers under the button. The swatches stay, so a preset is one click away. Choosing a swatch leaves custom and hides the pickers. The stored custom colours are kept.
+
+Pickers, only while custom is selected:
+
+```
+Accent   [####]  #1f7a47
+[ ] Tint the page
+Adjusted so text stays readable.
+```
+
+The colour input is 36 by 28, radius 6px, the same quiet chrome as a native colour well with a `--line-strong` border. The hex field is mono, 7 characters. Changes apply as the person edits, with no Apply button. The page behind the panel is the preview.
+
+#### Narrow screens
+
+The footer already wraps. The Appearance button may sit on its own line. The panel stays a popover at the width above. Swatches do not wrap.
+
 ## Do's and Don'ts
 
 ### Do:
 - **Do** put an explanation next to every number: an info tip, a note, or a link into "How it's calculated".
 - **Do** set every time, delta and save in Plex Mono with tabular numerals, right-aligned.
-- **Do** keep Split Blue for good-day saves and actions, and Gold Split for golds only.
+- **Do** keep the palette's accent for good-day saves and actions, and Gold Split for golds only.
 - **Do** separate sections with 48px of space and hairline rules, inside the single 1080px column.
 - **Do** define every new colour token for light and dark under the existing `:root` / `[data-theme]` structure.
 - **Do** keep motion short (140–160ms, `cubic-bezier(0.16, 1, 0.3, 1)`) and honour `prefers-reduced-motion`.
@@ -335,7 +918,7 @@ A Night Shell bar, sticky, 56px tall. The wordmark is "Speedrunner" in 600 sans.
 
 ### Don't:
 - **Don't** nest cards inside cards or add shadows to content that sits on the page.
-- **Don't** add hues beyond blue, gold and the error red, or use blue and gold decoratively.
+- **Don't** add a hue beyond the palette's accent, gold and the error red, or use the accent and gold decoratively. Don't recolour gold or error to match the accent.
 - **Don't** use all-caps labels, letter-spaced eyebrows or display type outside the landing headline.
 - **Don't** set times in proportional type or centre numeric columns.
 - **Don't** invert the light palette to get dark mode.
