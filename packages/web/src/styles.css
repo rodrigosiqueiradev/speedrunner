@@ -512,6 +512,9 @@ button.primary:hover { background: var(--accent-fill-hover); border-color: var(-
 .app { max-width: 1080px; margin: 0 auto; padding: var(--s6) var(--s4) var(--s7); }
 
 /* Landing */
+.crash { max-width: 640px; margin: var(--s7) auto; padding: 0 var(--s4); }
+.crash p { color: var(--ink-2); }
+.crash .crash-detail { font-family: var(--mono); font-size: 0.875rem; color: var(--error); }
 .landing { max-width: 640px; margin: var(--s6) auto var(--s5); text-align: center; }
 .landing h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.025em; line-height: 1.15; }
 .lede { margin: var(--s3) auto 0; color: var(--ink-2); font-size: 1.0625rem; max-width: 56ch; }

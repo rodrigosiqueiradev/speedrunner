@@ -21,10 +21,25 @@ export function loadProfile(): ProfileEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    // An entry that isn't the shape the profile page reads is dropped rather than breaking the page.
+    return Array.isArray(parsed) ? parsed.filter(isEntry).map((e) => ({ ...e, typedReference: e.typedReference ?? null })) : [];
   } catch {
     return [];
   }
+}
+
+function isEntry(e: unknown): e is ProfileEntry {
+  const x = e as Partial<ProfileEntry> | null;
+  const s = x?.score as Partial<CategoryScore> | undefined;
+  return (
+    typeof x?.key === "string" &&
+    typeof x.fileName === "string" &&
+    typeof s?.game === "string" &&
+    typeof s.category === "string" &&
+    typeof s.efficiency === "object" &&
+    typeof s.consistency === "object" &&
+    typeof s.weights === "object"
+  );
 }
 
 export function saveProfile(entries: ProfileEntry[]): void {
