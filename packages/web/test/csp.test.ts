@@ -39,7 +39,18 @@ describe("the built app's content security policy", () => {
 
   it("allows the app's own files and nothing else", () => {
     const policy = directives(webPolicy!);
-    expect(Object.keys(policy).sort()).toEqual(["connect-src", "default-src", "font-src", "img-src", "style-src"]);
+    expect(Object.keys(policy).sort()).toEqual([
+      "base-uri",
+      "connect-src",
+      "default-src",
+      "font-src",
+      "form-action",
+      "img-src",
+      "style-src",
+    ]);
+    // No <base> tag can move where the app's own links point, and there are no forms to send.
+    expect(policy["base-uri"]).toEqual(["'none'"]);
+    expect(policy["form-action"]).toEqual(["'none'"]);
     // No script-src, so scripts fall back to default-src: the app's own, never inline, never remote.
     expect(policy["default-src"]).toEqual(["'self'"]);
     expect(policy["font-src"]).toEqual(["'self'"]);
@@ -59,8 +70,8 @@ describe("the built app's content security policy", () => {
       // LiveSplit's server, on this computer, on whichever port its settings say.
       "ws://localhost:*",
       "ws://127.0.0.1:*",
-      // The desktop app's update check. The browser build never asks (src/App.tsx).
-      "https://api.github.com",
+      // The desktop app's update check, and only that address. The browser build never asks (src/App.tsx).
+      "https://api.github.com/repos/rodrigosiqueiradev/speedrunner-releases/releases/latest",
     ]);
   });
 
