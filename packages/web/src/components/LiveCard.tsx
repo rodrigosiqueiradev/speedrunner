@@ -59,7 +59,8 @@ export function LiveCard({
       )}
       {status?.kind === "offline" && (
         <p className="live-card-note">
-          {status.reason} Trying again every few seconds.
+          {status.reason}
+          {status.retry && " Trying again every few seconds."}
         </p>
       )}
       {status?.kind === "connected" && status.mismatch && !note && <p className="live-card-note">{status.mismatch}</p>}

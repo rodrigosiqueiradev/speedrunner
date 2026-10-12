@@ -2,7 +2,7 @@ import { formatTime, type Run, type TimingMethod } from "@speedrunner/core";
 import { useEffect, useRef, useState } from "react";
 import { LIVE_RUN_KEY, loadLiveConfig, saveLiveConfig, saveLiveRun, type LiveConfig } from "../live/config";
 import { useSplitsSync, type SplitsSync } from "../live/useSplitsSync";
-import { DEFAULT_LIVESPLIT_URL, DEMO_SPEEDS, type DemoSpeed } from "../live/feeds";
+import { DEFAULT_LIVESPLIT_URL, DEMO_SPEEDS, addressProblem, type DemoSpeed } from "../live/feeds";
 import { DEFAULT_CHOICES, LIVE_STATS, STAT_BY_ID, type StatChoice } from "../live/stats";
 import {
   DEFAULT_STYLE,
@@ -95,6 +95,9 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
     setFile(next);
     void saveLiveRun(next);
   };
+
+  // Said by the field rather than left to the connection, which the policy in index.html refuses.
+  const urlProblem = addressProblem(urlDraft.trim() || DEFAULT_LIVESPLIT_URL);
 
   const view = useLive(file?.xml ?? null, config);
   const sync = useSplitsSync(config.source === "livesplit" ? view.status : null, file, choose);
@@ -220,14 +223,26 @@ export function LivePage({ runs, loaded }: { runs: LiveRunOption[]; loaded: Stor
                 className="live-url"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  update({ url: urlDraft.trim() || DEFAULT_LIVESPLIT_URL });
+                  if (!urlProblem) update({ url: urlDraft.trim() || DEFAULT_LIVESPLIT_URL });
                 }}
               >
                 <label htmlFor="live-url">LiveSplit server</label>
-                <input id="live-url" value={urlDraft} spellCheck={false} onChange={(e) => setUrlDraft(e.target.value)} />
-                <button type="submit" disabled={urlDraft.trim() === config.url}>
+                <input
+                  id="live-url"
+                  value={urlDraft}
+                  spellCheck={false}
+                  aria-invalid={!!urlProblem}
+                  aria-describedby={urlProblem ? "live-url-note" : undefined}
+                  onChange={(e) => setUrlDraft(e.target.value)}
+                />
+                <button type="submit" disabled={!!urlProblem || urlDraft.trim() === config.url}>
                   Connect
                 </button>
+                {urlProblem && (
+                  <p className="live-url-note" id="live-url-note" role="status">
+                    {urlProblem}
+                  </p>
+                )}
               </form>
             ) : (
               <div className="live-speed">

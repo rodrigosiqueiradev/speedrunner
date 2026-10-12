@@ -37,7 +37,10 @@ scale. It runs as a web app and as a desktop app for Windows, macOS and Linux. I
 Three principles shape every feature:
 
 - **Everything is local.** Files are read and analysed on your machine. Nothing is uploaded, there is no account, and
-  scores come only from your own files (no leaderboard sites).
+  scores come only from your own files (no leaderboard sites). Both apps carry a content security policy that holds
+  them to it: the page may only load the app's own files, and may only connect to the app's own files, to LiveSplit on
+  this computer, and to GitHub's releases API for the desktop app's update check. A remote font, a tracking pixel or a
+  request added by accident is refused by the engine rather than loaded.
 - **Every number is explainable.** Each number has a **?** tooltip and an entry under **How it's calculated**.
 - **No category length is assumed.** Every rule is a ratio of your own times or a count of your own attempts, so a
   10 minute category with thousands of attempts and a 6 hour one with a few dozen are treated the same way **[§1.5]**.
@@ -152,8 +155,10 @@ A recap of one calendar year across every split file you include, drawn as a 108
 
 - **Timer source.** **LiveSplit** reads the timer through LiveSplit's own server on your computer (in LiveSplit,
   right-click › Control › Start WebSocket Server; address `ws://localhost:16834/livesplit` by default). It only reads:
-  it never starts, splits or resets. **Demo** replays your own recent attempts from the file (finishes and resets
-  included) at real speed, 2 minutes per run or 30 seconds per run, so you can try it without LiveSplit.
+  it never starts, splits or resets. The address has to be `localhost` or `127.0.0.1`, on any port; anything else is a
+  different computer, and the page says so instead of connecting. **Demo** replays your own recent attempts from the
+  file (finishes and resets included) at real speed, 2 minutes per run or 30 seconds per run, so you can try it
+  without LiveSplit.
 - **Split file.** Choose a file or a run from your profile. The page follows the splits LiveSplit has open and switches
   to the matching profile file: by file name when LiveSplit says which file is open, otherwise (released LiveSplit
   1.8.37) by the split names LiveSplit reports during an attempt, and between attempts by the attempt and finished

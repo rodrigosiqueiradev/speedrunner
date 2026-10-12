@@ -68,12 +68,26 @@ describe("live stats card", () => {
         title="Dishonored · Any%"
         stats={liveStats(ctx, { phase: "NotRunning", splitIndex: -1, currentTime: null, splitTimes: [] })}
         session={EMPTY_SESSION}
-        status={{ kind: "offline", reason: "LiveSplit isn't answering." }}
+        status={{ kind: "offline", reason: "LiveSplit isn't answering.", retry: true }}
         choices={DEFAULT_CHOICES}
       />,
     );
     expect(screen.getByText("Not connected")).toBeTruthy();
     expect(screen.getByText(/LiveSplit isn't answering. Trying again/)).toBeTruthy();
+  });
+
+  it("doesn't promise to try again when the address itself can't work", () => {
+    render(
+      <LiveCard
+        title="Dishonored · Any%"
+        stats={liveStats(ctx, { phase: "NotRunning", splitIndex: -1, currentTime: null, splitTimes: [] })}
+        session={EMPTY_SESSION}
+        status={{ kind: "offline", reason: "Live stats only reads LiveSplit on this computer.", retry: false }}
+        choices={DEFAULT_CHOICES}
+      />,
+    );
+    expect(screen.getByText("Live stats only reads LiveSplit on this computer.")).toBeTruthy();
+    expect(screen.queryByText(/Trying again/)).toBeNull();
   });
 
   it("keeps a saved choice and adds new stats hidden at the end", () => {

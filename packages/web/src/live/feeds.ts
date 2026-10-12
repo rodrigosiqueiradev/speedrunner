@@ -32,7 +32,8 @@ export type FeedStatus =
       /** The clock LiveSplit compares against, when its server can say (newer LiveSplit versions). */
       timingMethod: TimingMethod | null;
     }
-  | { kind: "offline"; reason: string }
+  /** `retry`: whether the feed is still trying, or has given up because the address can't work. */
+  | { kind: "offline"; reason: string; retry: boolean }
   | { kind: "demo"; attempt: number };
 
 export interface LiveFeed {
@@ -43,6 +44,29 @@ type Listener = (snap: TimerSnapshot, status: FeedStatus) => void;
 
 /** LiveSplit's server listens on this port by default, and serves WebSocket clients at /livesplit. */
 export const DEFAULT_LIVESPLIT_URL = "ws://localhost:16834/livesplit";
+
+/** The names a computer has for itself. Any port on them is fine: LiveSplit's is a setting. */
+const THIS_COMPUTER = ["localhost", "127.0.0.1"];
+
+/**
+ * Why an address can't be read from, or null when it can. Live stats only ever reads a LiveSplit on
+ * the same computer, and both builds are held to that by their content security policy, which lists
+ * these two hosts and nothing else. Saying so plainly beats a connection the engine refuses in
+ * silence.
+ */
+export function addressProblem(url: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return `"${url}" isn't an address. LiveSplit's is ${DEFAULT_LIVESPLIT_URL} unless you changed the port.`;
+  }
+  if (parsed.protocol !== "ws:" && parsed.protocol !== "wss:")
+    return `That address isn't a WebSocket address (it starts with ws://). LiveSplit's is ${DEFAULT_LIVESPLIT_URL} unless you changed the port.`;
+  if (!THIS_COMPUTER.includes(parsed.hostname))
+    return `Live stats only reads LiveSplit on this computer, so the address has to be localhost or 127.0.0.1, as in ${DEFAULT_LIVESPLIT_URL}.`;
+  return null;
+}
 
 const POLL_MS = 250;
 const ANSWER_TIMEOUT_MS = 3000;
@@ -60,6 +84,12 @@ const PHASES: TimerPhase[] = ["NotRunning", "Running", "Paused", "Ended"];
  * or resets the timer.
  */
 export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: Listener): LiveFeed {
+  const problem = addressProblem(url);
+  if (problem) {
+    // Nothing to retry: the same address would be refused again.
+    onUpdate(IDLE_SNAPSHOT, { kind: "offline", reason: problem, retry: false });
+    return { stop: () => {} };
+  }
   let stopped = false;
   let socket: WebSocket | null = null;
   let retry: ReturnType<typeof setTimeout> | undefined;
@@ -85,7 +115,11 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
     try {
       ws = new WebSocket(url);
     } catch {
-      onUpdate(snap, { kind: "offline", reason: "That address isn't a WebSocket address (it starts with ws://)." });
+      onUpdate(snap, {
+        kind: "offline",
+        reason: "The browser wouldn't open that address. Check it against LiveSplit's Settings.",
+        retry: false,
+      });
       return;
     }
     socket = ws;
@@ -191,7 +225,7 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
 
     ws.onopen = () => {
       poll().catch(() => {
-        onUpdate(snap, { kind: "offline", reason: "LiveSplit stopped answering." });
+        onUpdate(snap, { kind: "offline", reason: "LiveSplit stopped answering.", retry: true });
         ws.close();
       });
     };
@@ -200,6 +234,7 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
       onUpdate(snap, {
         kind: "offline",
         reason: "LiveSplit isn't answering. In LiveSplit, right-click › Control › Start WebSocket Server, and check the port in Settings.",
+        retry: true,
       });
       retry = setTimeout(open, RETRY_MS);
     };
