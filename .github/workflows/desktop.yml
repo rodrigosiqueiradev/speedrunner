@@ -38,17 +38,19 @@ jobs:
             args: --no-bundle
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ env.RELEASE_TAG || github.ref }}
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - uses: dtolnay/rust-toolchain@stable
+      # Pinned to a commit of the action's stable branch, so the toolchain is named here.
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
+          toolchain: stable
           targets: ${{ matrix.targets }}
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: packages/desktop/src-tauri
       - name: Install Linux dependencies
@@ -73,7 +75,7 @@ jobs:
             # ditto keeps the bundle's signature, symlinks and permissions intact.
             macos) ditto -c -k --keepParent packages/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Speedrunner.app out/Speedrunner-macos.zip ;;
           esac
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: speedrunner-${{ matrix.name }}
           path: out/*
@@ -86,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Full history and tags, to list the changes since the previous version tag.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
@@ -94,7 +96,7 @@ jobs:
       - run: git fetch --force --tags origin
       - name: Write the release notes
         run: .github/scripts/release-notes.sh "$RELEASE_TAG" > notes.md
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           path: out
           merge-multiple: true
@@ -129,7 +131,7 @@ jobs:
           else
             echo "::notice::$RELEASE_TAG is older than $newest, so the manual on $RELEASES_REPO stays as it is."
           fi
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         if: steps.newest.outputs.update == 'true'
         with:
           repository: ${{ env.RELEASES_REPO }}
