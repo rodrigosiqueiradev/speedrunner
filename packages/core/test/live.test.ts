@@ -293,7 +293,22 @@ describe("trackSession", () => {
     s = trackSession(s, IDLE_SNAPSHOT, run, 100_000);
     const end: TimerSnapshot = { phase: "Ended", splitIndex: 2, currentTime: 90_000, splitTimes: [40_000, 90_000] };
     s = trackSession(s, at([40_000], 80_000), end, 100_000);
-    expect(s).toEqual({ attempts: 2, finished: 1, pbs: 1, best: 90_000, lastFinishPb: true });
+    expect(s).toMatchObject({ attempts: 2, finished: 1, pbs: 1, best: 90_000, lastFinishPb: true });
+  });
+
+  it("takes back a finish when the final split is undone", () => {
+    const end = (t: Ms): TimerSnapshot => ({ phase: "Ended", splitIndex: 2, currentTime: t, splitTimes: [40_000, t] });
+    let s = trackSession(EMPTY_SESSION, IDLE_SNAPSHOT, at([], 0), 100_000);
+    s = trackSession(s, at([40_000], 94_000), end(95_000), 100_000);
+    expect(s).toMatchObject({ attempts: 1, finished: 1, pbs: 1, best: 95_000, lastFinishPb: true });
+    // Undo the final split: the timer runs again from where it stopped, then the run ends later.
+    s = trackSession(s, end(95_000), at([40_000], 95_400), 100_000);
+    expect(s).toMatchObject({ attempts: 1, finished: 0, pbs: 0, best: null, lastFinishPb: false });
+    s = trackSession(s, at([40_000], 96_900), end(97_000), 100_000);
+    expect(s).toMatchObject({ attempts: 1, finished: 1, pbs: 1, best: 97_000, lastFinishPb: true });
+    // A reset and new start straight after a finish is still a new attempt, not an undo.
+    s = trackSession(s, end(97_000), at([], 300), 100_000);
+    expect(s).toMatchObject({ attempts: 2, finished: 1, best: 97_000 });
   });
 
   it("compares later finishes with a PB got earlier in the session", () => {

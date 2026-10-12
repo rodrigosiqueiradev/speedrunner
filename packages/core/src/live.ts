@@ -296,6 +296,8 @@ export interface LiveSession {
   best: Ms | null;
   /** Whether the latest finish beat both the file's PB and every earlier finish this session. */
   lastFinishPb: boolean;
+  /** The session as it was before the latest finish, so undoing the final split can take it back. */
+  beforeFinish?: LiveSession;
 }
 
 export const EMPTY_SESSION: LiveSession = { attempts: 0, finished: 0, pbs: 0, best: null, lastFinishPb: false };
@@ -306,9 +308,15 @@ export const EMPTY_SESSION: LiveSession = { attempts: 0, finished: 0, pbs: 0, be
  */
 export function trackSession(session: LiveSession, prev: TimerSnapshot, next: TimerSnapshot, personalBest: Ms | null): LiveSession {
   let s = session;
-  const wasIdle = prev.phase === "NotRunning" || prev.phase === "Ended";
   const wasRunning = prev.phase === "Running" || prev.phase === "Paused";
   const isRunning = next.phase === "Running" || next.phase === "Paused";
+  // Undoing the final split runs the timer again from where it stopped (or later); a new start
+  // begins near zero. The undone finish is taken back, so the next one is judged on its own.
+  const prevFinal = prev.phase === "Ended" ? (prev.splitTimes[prev.splitTimes.length - 1] ?? prev.currentTime) : null;
+  const undoneFinish =
+    prevFinal != null && isRunning && next.currentTime != null && next.currentTime >= prevFinal && s.beforeFinish != null;
+  if (undoneFinish) return s.beforeFinish!;
+  const wasIdle = prev.phase === "NotRunning" || prev.phase === "Ended";
   // A reset and a new start between two reads of the timer: the time goes back without an undo.
   // Undoing a split keeps the time, and a timer only runs backwards when it starts again.
   const restarted =
@@ -323,8 +331,10 @@ export function trackSession(session: LiveSession, prev: TimerSnapshot, next: Ti
     const final = next.splitTimes[next.splitTimes.length - 1] ?? next.currentTime;
     const toBeat = personalBest == null ? null : Math.min(personalBest, s.best ?? Infinity);
     const pb = final != null && toBeat != null && final < toBeat;
+    const { beforeFinish: _, ...before } = s;
     s = {
       ...s,
+      beforeFinish: before,
       // A run that ended before the feed saw it start still counts as an attempt.
       attempts: Math.max(s.attempts, s.finished + 1),
       finished: s.finished + 1,
