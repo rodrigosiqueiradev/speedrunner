@@ -225,20 +225,21 @@ describe("up next and vs goal", () => {
   });
 
   // The 6 hour Twilight Princess file and a 6 minute Super Mario 64 file with 35k attempts.
-  it.each([REFERENCE, SHORT_REFERENCE])("lowers the PB chance during segments of %s", (file) => {
-    if (!existsSync(file)) return;
-    const run = parseLss(readFileSync(file, "utf8"));
-    const lctx = liveContext(run, pbOdds(run, { simulations: 1000 }));
-    const p = run.segments.map((s) => s.pbSplit!);
-    for (const k of [1, Math.floor(p.length / 2), p.length - 1]) {
-      const splits = p.slice(0, k);
-      const atSplit = liveStats(lctx, at(splits, p[k - 1])).pbChance!;
-      const mid = liveStats(lctx, at(splits, (p[k - 1] + p[k]) / 2)).pbChance!;
-      const late = liveStats(lctx, at(splits, p[k] + (p[k] - p[k - 1]))).pbChance!;
-      expect(mid).toBeLessThanOrEqual(atSplit);
-      expect(late).toBeLessThanOrEqual(mid);
-    }
-  });
+  for (const file of [REFERENCE, SHORT_REFERENCE]) {
+    it.skipIf(!existsSync(file))(`lowers the PB chance during segments of ${file}`, () => {
+      const run = parseLss(readFileSync(file, "utf8"));
+      const lctx = liveContext(run, pbOdds(run, { simulations: 1000 }));
+      const p = run.segments.map((s) => s.pbSplit!);
+      for (const k of [1, Math.floor(p.length / 2), p.length - 1]) {
+        const splits = p.slice(0, k);
+        const atSplit = liveStats(lctx, at(splits, p[k - 1])).pbChance!;
+        const mid = liveStats(lctx, at(splits, (p[k - 1] + p[k]) / 2)).pbChance!;
+        const late = liveStats(lctx, at(splits, p[k] + (p[k] - p[k - 1]))).pbChance!;
+        expect(mid).toBeLessThanOrEqual(atSplit);
+        expect(late).toBeLessThanOrEqual(mid);
+      }
+    });
+  }
 
   it("reads the same for a 10 minute and a 6 hour category", () => {
     const k = 36;

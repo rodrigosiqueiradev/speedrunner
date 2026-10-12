@@ -39,8 +39,9 @@ splits or resets for you.
 The page follows the splits LiveSplit has open and switches to the matching file in your profile.
 LiveSplit's development builds say which file is open, so the page matches it by name and otherwise
 tells you which file to choose. Released LiveSplit (1.8.37) can't say, so the page matches by the
-attempt and finished counts LiveSplit loaded, which works while your profile copy is up to date, and
-otherwise by the split names once an attempt starts. A file you pick by hand stays picked until
+split names LiveSplit reports once an attempt starts, and between attempts by the attempt and
+finished counts LiveSplit loaded, which works while your profile copy is up to date. A file you pick
+by hand stays picked until
 LiveSplit opens different splits.
 
 Without LiveSplit, pick **Demo** to replay your own recent attempts from the split file, or run a

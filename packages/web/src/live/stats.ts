@@ -91,7 +91,7 @@ export const LIVE_STATS: LiveStatDef[] = [
       short: "Whether playing on or starting over gets you to a PB sooner, from your reset rules.",
       how: [
         "The same rule as Should you reset: keep going when the chance of a PB from here, per minute of the run you have left, is at least what fresh attempts give you per minute of play.",
-        "It never resets for you. It's shown from the first split until the last. During a segment it turns to Reset as soon as splitting right now would already say reset.",
+        "It never resets for you. It's shown from the first split until the second to last. During a segment it turns to Reset as soon as splitting right now would already say reset.",
       ],
     },
     view: (s) =>
