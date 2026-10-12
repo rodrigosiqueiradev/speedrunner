@@ -292,7 +292,7 @@ export function deriveCustomTheme(accentHex: string, tint: string | null, mode: 
   if (mode === "light") {
     wash = oklchToHex(0.955, Math.min(0.028, Math.max(0.012, C * 0.18)), H);
     let moved: boolean;
-    [accent, moved] = seek(L, C, H, [surface, ground], UI, -1);
+    [accent, moved] = seek(L, C, H, [surface, ground, wash], UI, -1);
     if (moved) notes.push("accent");
     const [whiteFill] = seek(L, C, H, ["#ffffff"], TEXT, -1);
     const wL = hexToOklch(whiteFill)[0];
@@ -321,7 +321,7 @@ export function deriveCustomTheme(accentHex: string, tint: string | null, mode: 
   } else {
     wash = oklchToHex(0.255, Math.min(0.055, Math.max(0.03, C * 0.3)), H);
     let moved: boolean;
-    [accent, moved] = seek(L, C, H, [surface], UI, 1);
+    [accent, moved] = seek(L, C, H, [surface, ground, wash], UI, 1);
     if (moved) notes.push("accent");
     if (L >= 0.7) {
       [fill] = seek(Math.min(Math.max(L, 0.72), 0.86), Math.min(C, 0.14), H, [DARK_TEXT], TEXT, 1);

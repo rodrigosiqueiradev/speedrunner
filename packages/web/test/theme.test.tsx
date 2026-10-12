@@ -205,7 +205,7 @@ describe("theme", () => {
     act(() => {
       for (const listener of media.listeners) listener();
     });
-    expect(root.style.getPropertyValue("--accent")).toBe("#a08900");
+    expect(root.style.getPropertyValue("--accent")).toBe("#9e8700");
     expect(root.dataset.palette).not.toBe("contrast");
   });
 
@@ -248,18 +248,35 @@ const EXAMPLES: Array<[string, string | null, ColourScheme, boolean, string, str
   ["#2a78d6", null, "light", false, "#2a78d6", "#115cb0", "#e7f1ff", "#2675d2", "#1166c1", "#ffffff"],
   ["#2a78d6", null, "dark", false, "#2a78d6", "#76adf6", "#12233a", "#2675d2", "#1467c3", "#ffffff"],
   ["#1f7a47", null, "light", false, "#1f7a48", "#0e703f", "#e6f5eb", "#1f7a48", "#036b3b", "#ffffff"],
-  ["#1f7a47", null, "dark", false, "#1f7a48", "#6bc08a", "#15281b", "#1f7a48", "#1f7a48", "#ffffff"],
-  ["#ffe14a", null, "light", true, "#a08900", "#6e5d00", "#f5f1dd", "#a99100", "#a99100", "#0d1420"],
+  ["#1f7a47", null, "dark", true, "#257f4c", "#6bc08a", "#15281b", "#1f7a48", "#1f7a48", "#ffffff"],
+  ["#ffe14a", null, "light", true, "#9e8700", "#6e5d00", "#f5f1dd", "#a99100", "#a99100", "#0d1420"],
   ["#ffe14a", null, "dark", true, "#ffe14e", "#f7e283", "#292303", "#ead15d", "#dbc24f", "#0d1420"],
   ["#c8c8c8", null, "light", true, "#3a79ca", "#1c5cab", "#e7f1ff", "#3676c6", "#2667b6", "#ffffff"],
   ["#c8c8c8", null, "dark", true, "#4888d9", "#76adf6", "#152337", "#3676c6", "#2868b7", "#ffffff"],
-  ["#00ff66", null, "light", true, "#2b9e49", "#00722b", "#e4f6e7", "#37a651", "#37a651", "#0d1420"],
+  ["#00ff66", null, "light", true, "#2a9c47", "#00722a", "#e4f6e7", "#37a651", "#37a651", "#0d1420"],
   ["#00ff66", null, "dark", true, "#85f197", "#9deba8", "#112915", "#8eea9c", "#7fdb8f", "#0d1420"],
   ["#6a45c4", "#916cba", "light", false, "#6a45c4", "#6148aa", "#f0eeff", "#6a45c4", "#5d35b3", "#ffffff"],
-  ["#6a45c4", "#916cba", "dark", true, "#724fce", "#ac9df1", "#231d3b", "#724fce", "#7d5cdc", "#ffffff"],
+  ["#6a45c4", "#916cba", "dark", true, "#7855d6", "#ac9df1", "#231d3b", "#724fce", "#7d5cdc", "#ffffff"],
   ["#1f7a47", "#ffffff", "light", true, "#1f7a48", "#0e703f", "#e6f5eb", "#1f7a48", "#036b3b", "#ffffff"],
-  ["#1f7a47", "#ffffff", "dark", true, "#1f7a48", "#6bc08a", "#15281b", "#1f7a48", "#1f7a48", "#ffffff"],
+  ["#1f7a47", "#ffffff", "dark", true, "#257f4c", "#6bc08a", "#15281b", "#1f7a48", "#1f7a48", "#ffffff"],
 ];
+
+function channelLinear(channel: number): number {
+  const c = channel / 255;
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+
+function contrastRatio(a: string, b: string): number {
+  const lum = (hex: string) => {
+    const n = Number.parseInt(hex.slice(1), 16);
+    const r = channelLinear((n >> 16) & 255);
+    const g = channelLinear((n >> 8) & 255);
+    const bl = channelLinear(n & 255);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
 
 describe("custom theme", () => {
   it("matches the worked examples, including when the readable-text line is needed", () => {
@@ -283,6 +300,43 @@ describe("custom theme", () => {
       if (!pairs) throw new Error(mode);
       for (const [name, value] of pairs) expect(derived.tokens[`--${name}`], `${mode} ${name}`).toBe(value);
       expect(derived.adjusted).toBe(mode === "dark");
+    }
+  });
+
+  it("keeps the accent at 3.1 on the wash, the surface and the ground", () => {
+    const pinned: Array<[string, string | null, ColourScheme, string, string]> = [
+      ["#006633", "#120d1c", "dark", "#297f4a", "#15281b"],
+      ["#050208", null, "dark", "#736b79", "#271f2e"],
+      ["#003366", null, "dark", "#4171a9", "#182432"],
+      ["#00ff66", null, "light", "#2a9c47", "#e4f6e7"],
+    ];
+    for (const [accent, tint, mode, accentOut, wash] of pinned) {
+      const derived = deriveCustomTheme(accent, tint, mode);
+      const label = `${accent} ${tint} ${mode}`;
+      expect(derived.tokens["--accent"], label).toBe(accentOut);
+      expect(derived.tokens["--accent-wash"], label).toBe(wash);
+      expect(contrastRatio(accentOut, wash), label).toBeGreaterThanOrEqual(3.1);
+    }
+
+    const steps = [0x00, 0x33, 0x66, 0x99, 0xcc, 0xff];
+    const accents: string[] = [];
+    for (const r of steps) {
+      for (const g of steps) {
+        for (const b of steps) accents.push("#" + [r, g, b].map((c) => c.toString(16).padStart(2, "0")).join(""));
+      }
+    }
+    const tints = [null, "#000000", "#333333", "#666666", "#999999", "#cccccc", "#ffffff", "#120d1c"];
+    for (const accent of accents) {
+      for (const tint of tints) {
+        for (const mode of ["light", "dark"] as const) {
+          const derived = deriveCustomTheme(accent, tint, mode);
+          const colour = derived.tokens["--accent"];
+          for (const bg of ["--accent-wash", "--surface", "--ground"] as const) {
+            const ratio = contrastRatio(colour, derived.tokens[bg]);
+            expect(ratio + 1e-9, `${accent} ${tint} ${mode} ${bg} ${colour} on ${derived.tokens[bg]}`).toBeGreaterThanOrEqual(3.1);
+          }
+        }
+      }
     }
   });
 
