@@ -11,6 +11,7 @@ import {
   loadCardFonts,
 } from "../recapCard";
 import { RECAP_DOCS } from "../recap-explain";
+import { APPEARANCE_EVENT } from "../theme";
 import { RECAP_FILES_DOC } from "../saved-files-explain";
 import { saveFile } from "../download";
 import { categoryName, notSplitsAdded } from "../format";
@@ -108,12 +109,16 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
   useEffect(() => {
     if (!recap) return;
     let live = true;
-    void loadCardFonts().then(() => {
+    const draw = () => {
       const ctx = live ? canvas.current?.getContext("2d") : null;
       if (ctx) drawRecapCard(ctx, recap);
-    });
+    };
+    void loadCardFonts().then(draw);
+    // The card follows the app's theme, so a change of mode or palette draws it again.
+    window.addEventListener(APPEARANCE_EVENT, draw);
     return () => {
       live = false;
+      window.removeEventListener(APPEARANCE_EVENT, draw);
     };
   }, [recap]);
 

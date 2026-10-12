@@ -1002,7 +1002,7 @@ table.profile-table th:first-child { white-space: nowrap; }
 
 /* Year in runs */
 .recap { display: grid; margin-bottom: var(--s7); grid-template-columns: minmax(0, 540px) minmax(0, 1fr); gap: var(--s6); align-items: start; }
-.recap-card { width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: var(--radius); display: block; background: #0e1726; }
+.recap-card { width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: var(--radius); display: block; background: var(--surface); border: 1px solid var(--line); box-sizing: border-box; }
 .recap-actions { display: flex; gap: var(--s2); flex-wrap: wrap; }
 .recap-subhead { font-size: 1rem; margin: var(--s5) 0 var(--s2); }
 .recap-stats .comparison-time { font-size: 1.125rem; }

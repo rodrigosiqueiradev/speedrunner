@@ -6,16 +6,44 @@ import type { RecapDocKey } from "./recap-explain";
 export const CARD_WIDTH = 1080;
 export const CARD_HEIGHT = 1350;
 
-// The card is an image, so it keeps one look whatever theme the app is in.
-const C = {
-  ground: "#0e1726",
-  tile: "#16233a",
-  line: "#25344d",
-  ink: "#e8edf5",
-  ink2: "#a3b0c2",
+export type CardColours = Record<keyof typeof FALLBACK, string>;
+
+// The card takes the app's theme when it is drawn. These are the dark Speedrunner steps, used when a token can't be read.
+const FALLBACK = {
+  ground: "#151a22",
+  tile: "#0d1117",
+  line: "#252d39",
+  ink: "#f2f5f9",
+  ink2: "#b9c2cf",
   accent: "#3987e5",
-  gold: "#f0c25a",
+  accentInk: "#86b6ef",
+  gold: "#c98500",
+  goldInk: "#f0c25a",
 };
+
+const TOKENS: Record<keyof typeof FALLBACK, string> = {
+  ground: "--surface",
+  tile: "--ground",
+  line: "--line",
+  ink: "--ink",
+  ink2: "--ink-2",
+  accent: "--accent",
+  accentInk: "--accent-ink",
+  gold: "--gold",
+  goldInk: "--gold-ink",
+};
+
+/** The card's colours from the app's active mode and palette. */
+export function cardColours(): CardColours {
+  const out = { ...FALLBACK };
+  if (typeof document === "undefined") return out;
+  const style = getComputedStyle(document.documentElement);
+  for (const key of Object.keys(TOKENS) as Array<keyof typeof FALLBACK>) {
+    const value = style.getPropertyValue(TOKENS[key]).trim();
+    if (value) out[key] = value;
+  }
+  return out;
+}
 const SANS = '"IBM Plex Sans", system-ui, sans-serif';
 const MONO = '"IBM Plex Mono", ui-monospace, monospace';
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
@@ -116,7 +144,7 @@ export async function loadCardFonts(): Promise<void> {
 }
 
 /** Draws the recap card at CARD_WIDTH × CARD_HEIGHT. */
-export function drawRecapCard(ctx: CanvasRenderingContext2D, r: YearRecap): void {
+export function drawRecapCard(ctx: CanvasRenderingContext2D, r: YearRecap, C: CardColours = cardColours()): void {
   const W = CARD_WIDTH;
   const pad = 80;
   const inner = W - pad * 2;
@@ -127,7 +155,7 @@ export function drawRecapCard(ctx: CanvasRenderingContext2D, r: YearRecap): void
   ctx.textBaseline = "alphabetic";
 
   // Header: label, year, what was played.
-  text(ctx, "YEAR IN RUNS", pad, 128, `600 26px ${SANS}`, C.accent, inner, 3);
+  text(ctx, "YEAR IN RUNS", pad, 128, `600 26px ${SANS}`, C.accentInk, inner, 3);
   text(ctx, String(r.year), pad - 6, 270, `600 168px ${MONO}`, C.ink, inner);
   text(ctx, categoriesLine(r), pad, 326, `500 34px ${SANS}`, C.ink2, inner);
 
@@ -148,7 +176,7 @@ export function drawRecapCard(ctx: CanvasRenderingContext2D, r: YearRecap): void
   for (const h of cardHighlights(r)) {
     ctx.fillStyle = h.gold ? C.gold : C.accent;
     ctx.fillRect(pad, y - 30, 6, 108);
-    text(ctx, h.label.toUpperCase(), pad + 30, y, `600 22px ${SANS}`, h.gold ? C.gold : C.ink2, inner - 30, 2);
+    text(ctx, h.label.toUpperCase(), pad + 30, y, `600 22px ${SANS}`, h.gold ? C.goldInk : C.ink2, inner - 30, 2);
     text(ctx, h.title, pad + 30, y + 42, `600 34px ${SANS}`, C.ink, inner - 30);
     text(ctx, h.detail, pad + 30, y + 78, `400 25px ${SANS}`, C.ink2, inner - 30);
     y += 118;

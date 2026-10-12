@@ -142,3 +142,19 @@ async function profileEntry() {
   const { categoryKey } = await import("../src/profile");
   return { key: categoryKey(score), fileName: "old.lss", addedAt: "2026-01-01", score, typedReference: null };
 }
+
+describe("recap card colours", () => {
+  afterEach(() => document.documentElement.removeAttribute("style"));
+
+  it("takes the app's tokens, so the card follows the active theme", async () => {
+    const { cardColours } = await import("../src/recapCard");
+    const root = document.documentElement.style;
+    root.setProperty("--surface", "#ffffff");
+    root.setProperty("--ink", "#0d1420");
+    root.setProperty("--accent-ink", "#1c5cab");
+    const c = cardColours();
+    expect(c.ground).toBe("#ffffff");
+    expect(c.ink).toBe("#0d1420");
+    expect(c.accentInk).toBe("#1c5cab");
+  });
+});

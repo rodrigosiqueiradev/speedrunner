@@ -29,6 +29,9 @@ export const PALETTES: ReadonlyArray<{ id: Exclude<Palette, "custom">; label: st
   { id: "contrast", label: "High contrast", lightFill: "#1656a4", accent: "#1656a4" },
 ];
 
+/** Sent on window after the page's appearance is applied, for things drawn from the tokens, such as the recap card. */
+export const APPEARANCE_EVENT = "speedrunner:appearance";
+
 export type CustomColours = { accent: string; tint: string | null };
 
 const isTheme = (value: unknown): value is Theme => value === "system" || value === "light" || value === "dark";
@@ -114,11 +117,12 @@ export function applyAppearance(): void {
   else root.dataset.palette = palette;
 
   clearCustomProperties();
-  if (palette !== "custom" || mediaMatches("(forced-colors: active)")) return;
-  const custom = savedCustom();
-  if (!custom) return;
-  const derived = deriveCustomTheme(custom.accent, custom.tint, activeScheme());
-  for (const [name, value] of Object.entries(derived.tokens)) root.style.setProperty(name, value);
+  const custom = palette === "custom" && !mediaMatches("(forced-colors: active)") ? savedCustom() : null;
+  if (custom) {
+    const derived = deriveCustomTheme(custom.accent, custom.tint, activeScheme());
+    for (const [name, value] of Object.entries(derived.tokens)) root.style.setProperty(name, value);
+  }
+  window.dispatchEvent(new Event(APPEARANCE_EVENT));
 }
 
 export function saveTheme(theme: Theme): void {
