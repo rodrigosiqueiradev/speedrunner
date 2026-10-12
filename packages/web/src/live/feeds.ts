@@ -126,14 +126,15 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
     // The server answers in the order it was asked, so answers match the oldest waiting question.
     const waiting: Array<(answer: string) => void> = [];
     ws.onmessage = (e) => waiting.shift()?.(String(e.data));
-    const ask = (command: string) =>
+    // Waits for the next answer; with a command, asks it first.
+    const ask = (command?: string) =>
       new Promise<string>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error("timeout")), ANSWER_TIMEOUT_MS);
         waiting.push((answer) => {
           clearTimeout(timer);
           resolve(answer.trim());
         });
-        ws.send(command);
+        if (command) ws.send(command);
       });
     // For a command older servers may not know: they send nothing back, so stop waiting for it
     // after a short while and take it off the queue, keeping later answers matched up.
@@ -190,8 +191,15 @@ export function connectLiveSplit(url: string, segmentNames: string[], onUpdate: 
           }
           ranSinceCounts = !idle;
         }
-        const phaseText = await ask("getcurrenttimerphase");
-        const phase = PHASES.find((p) => p === phaseText) ?? "NotRunning";
+        let phaseText = await ask("getcurrenttimerphase");
+        // An optional question the server answered after we stopped waiting leaves its answer in
+        // front of this one. Take it as that late answer and read the next one as the phase, so
+        // later answers stay matched up; if that isn't a phase either, start the connection over.
+        if (!PHASES.some((p) => p === phaseText)) {
+          phaseText = await ask();
+          if (!PHASES.some((p) => p === phaseText)) throw new Error("answers out of step");
+        }
+        const phase = PHASES.find((p) => p === phaseText)!;
         const index = phase === "NotRunning" ? -1 : Number.parseInt(await ask("getsplitindex"), 10);
         const currentTime = parseClock(await ask("getcurrenttime"));
         let splitTimes = phase === "NotRunning" ? [] : snap.splitTimes.slice(0, Math.max(0, index));
