@@ -206,8 +206,9 @@ Speedrunner runs entirely on your computer; there is no server or account.
 
 ## 8. App-wide settings
 
-- **Theme.** The footer's **System / Light / Dark** switch. System follows your operating system. The overlay follows
-  the main window.
+- **Theme.** The footer's **Appearance** control. Mode is System, Light or Dark; System follows your operating system.
+  The theme is Speedrunner, Grove, Violet, Amber, High contrast, or a custom accent with an optional page tint. The
+  choice is saved on this computer. The overlay follows the main window.
 - **Version and update check:** the footer shows the version and the update-check switch.
 
 ## 9. Privacy and storage
