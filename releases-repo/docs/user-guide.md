@@ -49,6 +49,11 @@ Three principles shape every feature:
   choosing the file again.
 - **Timing method.** Real time is used unless the PB only has game time. When a file has both, a **Real time / Game
   time** switch appears in the page header and every number is recalculated for the clock you pick.
+- **How much history it needs.** Every number comes from your own past attempts, so a file with a handful of runs
+  gives thin answers. The category score is shown but marked **provisional**, and left out of your overall score,
+  when the file has fewer than 8 finished runs or fewer than 10 clean times in a typical (median) segment — or fewer
+  than 5 segments, or too few of the score's four parts to compare **[§6.6]**. The Sessions tab needs attempt dates
+  (LiveSplit 1.6 and later) and at least 8 sessions; see [§3.4](#34-sessions-tab).
 
 Before anything is calculated, the history is cleaned: times after a skipped split, mis-splits (under 60% of the
 segment's median) and imported history are left out **[§1.2]**.
@@ -219,3 +224,16 @@ Speedrunner runs entirely on your computer; there is no server or account.
 
 Nothing above is sent anywhere. The only network connections the app makes are to LiveSplit on your own computer (Live
 stats, when you choose it) and the update check, which can be turned off.
+
+### What the build allows
+
+The download enforces the two connections above rather than only promising them. The desktop app runs under a content
+security policy that allows connections to the app itself, to local inter-process communication, to a LiveSplit
+WebSocket on `localhost` or `127.0.0.1`, and to `api.github.com` for the update check. Nothing else is permitted, so a
+request to anywhere else would fail rather than go out.
+
+- **Fonts are bundled in the download.** The policy allows fonts from the app itself only, and the build ships every
+  font file it uses, so no web font service is contacted.
+- **There is no analytics, no crash reporter and no telemetry** in the build, and no service worker.
+- **The update check is the desktop app's only outbound request.** Running the same build in a browser makes no
+  outbound request at all, because the check is gated to the desktop app.
