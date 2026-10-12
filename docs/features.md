@@ -189,6 +189,7 @@ A recap of one calendar year across every split file you include, drawn as a 108
   Clearing it, or **Use realistic target**, goes back to the realistic target.
 - **Card style.** Colours (background, values, labels, ahead/keep going, golds, PB chance falling) and the sizes of
   values (14 to 48 px) and labels (11 to 22 px). The preview and the overlay use the same style.
+  The overlay's focus ring uses the value colour, including on the empty-state link and the desktop close button.
 - **Open as overlay.** In a browser this opens a small pop-up window; in the desktop app, a borderless window you can
   drag anywhere. Keep it next to LiveSplit or capture it in OBS (window capture works, including on Windows). Press
   Esc in it to close it. In the desktop app, **Keep the overlay on top of other windows** keeps it above LiveSplit or

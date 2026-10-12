@@ -1159,7 +1159,7 @@ button:disabled { opacity: 0.5; cursor: default; }
  * reads the same in a window and on stream. Its inks keep the system's meanings on that dark ground:
  * blue for time ahead or a good call, gold for golds, plain ink for everything else.
  */
-/* Defaults here; the runner's own style (live/style.ts) sets these on the card itself. */
+/* Defaults here; the runner's own style (live/style.ts) sets these on the card and on the overlay. */
 :root { --card-bg: #0e1726; --card-ink: #e8edf5; --card-ink-2: #a3b0c2; --card-line: #22304a; --card-ahead: #86b6ef; --card-gold: #f0c25a; --card-down: #ff8a8a; }
 .live-card {
   background: var(--card-bg); color: var(--card-ink); border: 1px solid var(--card-line); border-radius: var(--radius); padding: var(--s4);
@@ -1195,6 +1195,8 @@ html.overlay-mode, html.overlay-mode body { background: var(--shell); }
 .live-overlay .live-row { padding: clamp(10px, 1.6vh, 18px) 0; }
 .live-overlay > .live-card-empty { padding: var(--s4); color: var(--card-ink-2); }
 .live-overlay a { color: var(--card-ahead); }
+/* The page accent is tuned for the page. On the overlay the ring is the card's value colour, which the live page already checks against this background. */
+.live-overlay :focus-visible { outline-color: var(--card-ink); }
 .live-overlay-hint { position: absolute; right: var(--s4); bottom: var(--s3); margin: 0; font-size: 0.75rem; color: var(--card-ink-2); z-index: 1; opacity: 0; transition: opacity 160ms cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; }
 .live-overlay:hover .live-overlay-hint { opacity: 1; }
 /* The desktop overlay window has no frame, so it carries its own close button, shown on hover. */

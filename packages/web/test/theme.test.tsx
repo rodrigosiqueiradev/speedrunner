@@ -242,6 +242,11 @@ describe("theme", () => {
     expect(ruleBody(":focus-visible")).toContain("outline: 2px solid var(--accent)");
     expect(ruleBody(".shell :focus-visible").trim()).toBe("outline-color: var(--shell-ink);");
   });
+
+  it("uses the card ink for the live overlay focus ring, and keeps the page ring on the accent", () => {
+    expect(ruleBody(":focus-visible")).toContain("outline: 2px solid var(--accent)");
+    expect(ruleBody(".live-overlay :focus-visible").trim()).toBe("outline-color: var(--card-ink);");
+  });
 });
 
 const EXAMPLES: Array<[string, string | null, ColourScheme, boolean, string, string, string, string, string, string]> = [

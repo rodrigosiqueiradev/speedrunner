@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { LIVE_CONFIG_EVENT, LIVE_RUN_KEY, isLiveConfigKey, loadLiveConfig, saveLiveRun } from "../live/config";
+import { cardStyleVars } from "../live/style";
 import { useSplitsSync } from "../live/useSplitsSync";
 import { useLive } from "../live/useLive";
 import { loadSplitFiles, type StoredSplit } from "../splitFiles";
@@ -53,7 +54,10 @@ export function LiveOverlay({ onBack }: { onBack: () => void }) {
     <div
       className="live-overlay"
       data-window={borderless ? "borderless" : undefined}
-      style={{ background: config.style.background }}
+      // The card sets these on itself, but the empty-state link and the desktop close button sit
+      // beside the card. They need the same variables so the focus ring (the value colour) is the
+      // one the runner chose for this background.
+      style={{ ...cardStyleVars(config.style), background: config.style.background }}
       // The desktop overlay has no title bar: dragging anywhere but a link or button moves it.
       onMouseDown={
         borderless
