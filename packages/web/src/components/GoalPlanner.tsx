@@ -105,7 +105,7 @@ function PlanSummary({ plan }: { plan: GoalPlan }) {
     case "no-data":
       return (
         <p className="goal-text">
-          Planning needs a PB with every split, and at least {ANALYSIS_DEFAULTS.minSamples} clean times in a segment.
+          Planning needs a PB with a final time, and at least {ANALYSIS_DEFAULTS.minSamples} clean times in a segment.
         </p>
       );
     case "already":
@@ -187,6 +187,7 @@ function PlanTable({ plan }: { plan: GoalPlan }) {
                   {s.name}
                   <span className="flag muted">{s.kind === "consistency" ? "a typical attempt" : "better than usual"}</span>
                   {s.needsLuck && <span className="flag">needs luck</span>}
+                  {s.inSkippedStretch && <span className="flag muted">PB skipped a split here</span>}
                 </th>
                 <td>{formatTime(s.pbTime)}</td>
                 <td>{formatTime(s.target)}</td>

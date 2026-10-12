@@ -976,6 +976,38 @@ $\ge \mathrm{PB}$. $\square$
 pace $q^\ast = 0.47$ (about 1 in 2 recent attempts). **TP**: 1% of 5:42:54.89 is 3:25.7, so $\sigma = 1$ min, the goal
 is 5:42:00, and the pace is 0.76.
 
+### 8.4 A PB with a skipped split
+
+A skipped stretch $K$ (§2) has no $p_i$ for its segments, only the stretch's PB time $P_K$, so the plan treats it as one
+piece, the same way the realistic target does. At pace $q$ the piece's time is
+
+```math
+t_K(q) = \begin{cases} \min\bigl(P_K,\ \sum_{i \in K} \tilde Q_i(q)\bigr) & K \subseteq \mathcal P \\ P_K & \text{otherwise} \end{cases},
+```
+
+and $\mathcal T(q)$ sums the pieces: $t_i(q)$ for every segment outside a stretch and $t_K(q)$ for every stretch. Beyond
+recent bests the piece's recent best is $\beta_K = t_K(0)$, its gold $\gamma_K = \min\bigl(\beta_K, \sum_{i \in K}\gamma_i\bigr)$
+when $K \subseteq \mathcal P$ (otherwise $\gamma_K = \beta_K$), and $t_K(f) = \beta_K - f\,(\beta_K - \gamma_K)$. Each
+piece is still continuous and monotone, so Lemma 8.1 and both bisections carry over, and Theorem 8.2 holds with pieces
+in place of segments.
+
+Within a stretch, the piece's time is shared out among its segments in proportion to their own values at the plan's
+pace ($\tilde Q_i(q)$, or $\beta_i - f\,(\beta_i - \gamma_i)$), and each segment's cut is its share of $P_K - t_K$ in
+the same proportion. When a stretch can't be planned, or the PB already beats the goal, its PB time is shared out by
+typical time (then gold, then evenly) in whole milliseconds, so the plan's splits still add up to the PB.
+
+**Proposition 8.4 (a skipped split never makes a goal look easier).** For the same recent times, the pace $q^\ast$
+with a skipped stretch is at most what it would be had the PB split there.
+
+*Proof.* For any hidden $p_i$ adding up to $P_K$, $\min\bigl(P_K, \sum_{i \in K}\tilde Q_i(q)\bigr) \ge \sum_{i \in K}\min\bigl(p_i, \tilde Q_i(q)\bigr)$, since a minimum of sums is at least the sum of minimums (and $P_K \ge \sum_{i \in K} \min(p_i, \cdot)$ when $K \not\subseteq \mathcal P$). So $\mathcal T(q)$ with the stretch is at least the per-segment total at every $q$, the set of paces that fit $\Lambda$ is no larger, and its supremum is no larger. $\square$
+
+The plan can't give the runner credit for a fast part of the stretch it has no split for, the mirror image of
+Corollary 2.1, where the realistic target is never more ambitious.
+
+**Example (skipped splits).** The Ocarina of Time 100% Glitchless file of §2 has two skipped stretches. Its suggested
+goal is 5:41:00 ($\sigma = 1$ min), reachable at pace $q^\ast = 0.94$; sub 5:34:33 (2% under the PB) needs
+$q^\ast = 0.09$, about 1 in 11 recent attempts.
+
 ---
 
 ## 9. Practice plan

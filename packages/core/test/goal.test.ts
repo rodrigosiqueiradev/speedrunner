@@ -76,10 +76,64 @@ describe("planGoal", () => {
     expect(planGoal(run, golds - 1000, options)).toMatchObject({ status: "out-of-reach", shortfall: 1010 });
   });
 
-  it("can't plan without a full PB", () => {
-    const noPb = { ...run, segments: run.segments.map((s, i) => ({ ...s, pbSplit: i === 1 ? null : s.pbSplit })) };
+  it("can't plan without a PB", () => {
+    const noPb = { ...run, segments: run.segments.map((s, i) => ({ ...s, pbSplit: i === 2 ? null : s.pbSplit })) };
     expect(planGoal(noPb, pb - 1000).status).toBe("no-data");
   });
+
+  // The same rule for a 3 minute and a 3 hour run: a stretch the PB skipped a split in is one piece.
+  for (const [label, scale] of [["short", 1], ["multi-hour", 60]] as const) {
+    describe(`with a skipped PB split (${label})`, () => {
+      const full = withPb(
+        synthRun({
+          base: [60_000, 60_000, 60_000].map((t) => t * scale),
+          noise: (s, id) => Math.round([500, 10_000, 4_000][s] * scale * rand(s, id)),
+          attempts: 40,
+        }),
+        [60_300, 66_000, 63_000].map((t) => t * scale),
+      );
+      const skipped: Run = { ...full, segments: full.segments.map((s, i) => (i === 1 ? { ...s, pbSplit: null } : s)) };
+      const p = analyzeRun(skipped).personalBest!;
+
+      it("plans the stretch as one piece instead of giving up", () => {
+        const plan = planGoal(skipped, p - 2000 * scale);
+        expect(plan.status).toBe("reachable");
+        expect(plan.plannedTime!).toBeLessThan(plan.goal);
+        expect(plan.splits!.at(-1)).toBe(plan.plannedTime);
+        const [first, mid, last] = plan.segments;
+        expect(first.inSkippedStretch).toBe(false);
+        expect(mid).toMatchObject({ pbTime: null, inSkippedStretch: true });
+        expect(last.inSkippedStretch).toBe(true);
+        // The cut shared out across the stretch adds up to what the stretch gives back.
+        const stretchPb = 66_000 * scale + 63_000 * scale;
+        expect(mid.cut + last.cut).toBeCloseTo(stretchPb - mid.target! - last.target!, -1);
+        expect(mid.cut + last.cut).toBeGreaterThan(0);
+        expect(first.cut + mid.cut + last.cut).toBeCloseTo(p - plan.plannedTime!, -1);
+      });
+
+      it("never makes the goal look easier than with the split there", () => {
+        const goal = p - 2000 * scale;
+        expect(planGoal(skipped, goal).pace!).toBeLessThanOrEqual(planGoal(full, goal).pace! + 1e-9);
+      });
+
+      it("keeps the PB's splits when the PB already beats the goal", () => {
+        const plan = planGoal(skipped, p + 1000);
+        expect(plan.status).toBe("already");
+        expect(plan.splits!.at(-1)).toBe(p);
+        expect(plan.splits![0]).toBe(60_300 * scale);
+      });
+
+      it("falls back to golds and says when a goal is out of reach", () => {
+        const options = { recentWindow: 5 };
+        expect(planGoal(skipped, 1000, options).status).toBe("out-of-reach");
+        const a = analyzeRun(skipped);
+        const golds = a.segments.reduce((x, s) => x + s.gold!, 0);
+        const plan = planGoal(skipped, golds + 1000 * scale, options);
+        expect(["needs-golds", "reachable"]).toContain(plan.status);
+        expect(plan.plannedTime!).toBeLessThan(golds + 1000 * scale);
+      });
+    });
+  }
 });
 
 describe("suggestGoal", () => {

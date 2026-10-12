@@ -246,6 +246,9 @@ that finishes under it (a hundredth under, so LiveSplit shows it as sub).
 - When even your best recent time in every segment isn't enough, the plan moves each segment from its recent best
   towards its gold by the same fraction. When the goal is faster than every segment at its gold, the plan says it
   needs new golds first.
+- Where your PB skipped a split, it only has a time for the stretch around it, so the plan treats that stretch as
+  one piece, like the realistic target does, and shares its time and its cut out among the segments by your times
+  there. Those segments have no PB time in the plan's table.
 
 ## LiveSplit comparisons
 
