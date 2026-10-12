@@ -73,14 +73,21 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
   const picker = useRef<FilePickerHandle>(null);
   useImperativeHandle(ref, () => ({ open: () => picker.current?.open() }));
 
-  const profileRuns = useMemo(
-    () =>
-      profileFiles.flatMap((f) => {
-        const run = tryParse(f.xml, f.timingMethod);
-        return run ? [{ fileName: f.fileName, run, source: "profile" as const }] : [];
-      }),
-    [profileFiles],
-  );
+  // Parsed profile files, kept while they're unchanged: a profile score changing (a luck mark, say)
+  // rebuilds the list but shouldn't read every split file again.
+  const parsedProfile = useRef(new Map<string, ReturnType<typeof tryParse>>());
+  const profileRuns = useMemo(() => {
+    const before = parsedProfile.current;
+    const now = new Map<string, ReturnType<typeof tryParse>>();
+    const runs = profileFiles.flatMap((f) => {
+      const key = `${f.timingMethod ?? ""}\n${f.xml}`;
+      if (!now.has(key)) now.set(key, before.has(key) ? (before.get(key) ?? null) : tryParse(f.xml, f.timingMethod));
+      const run = now.get(key) ?? null;
+      return run ? [{ fileName: f.fileName, run, source: "profile" as const }] : [];
+    });
+    parsedProfile.current = now;
+    return runs;
+  }, [profileFiles]);
   const openRun = useMemo(() => (open ? tryParse(open.xml, open.timingMethod) : null), [open]);
 
   // One file per game and category, so attempts aren't counted twice: a file added here wins, then the

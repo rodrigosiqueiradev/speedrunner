@@ -121,25 +121,37 @@ export function App() {
     return () => window.removeEventListener(SHOW_PANEL, onShow);
   });
 
-  const result = useMemo(() => {
+  // Reading the file and the parts that don't depend on luck marks (sessions take seconds on files
+  // with tens of thousands of attempts) run once per file, not again on every luck mark.
+  const base = useMemo(() => {
     if (!loaded) return null;
     try {
       const parsed = parseLss(loaded.xml, timing ? { timingMethod: timing } : {});
-      const run = markLuck(parsed, luckMarks[categoryKey(parsed)] ?? []);
-      const analysis = analyzeRun(run);
       return {
-        run,
-        analysis,
+        parsed,
         luckSuggestions: suggestLuckSegments(parsed),
-        score: scoreRun(run, analysis),
-        odds: pbOdds(run),
-        sessions: analyzeSessions(run),
+        sessions: analyzeSessions(parsed),
         hasGameTime: hasGameTime(loaded.xml),
       };
     } catch {
       return { error: true as const };
     }
-  }, [loaded, timing, luckMarks]);
+  }, [loaded, timing]);
+  const marks = base && !("error" in base) ? (luckMarks[categoryKey(base.parsed)] ?? []) : [];
+  const marksKey = marks.join("\n");
+
+  const result = useMemo(() => {
+    if (!base || "error" in base) return base;
+    try {
+      const { parsed, ...rest } = base;
+      const run = markLuck(parsed, marks);
+      const analysis = analyzeRun(run);
+      return { ...rest, run, analysis, score: scoreRun(run, analysis), odds: pbOdds(run) };
+    } catch {
+      return { error: true as const };
+    }
+    // marksKey stands for marks: a new list with the same names changes nothing.
+  }, [base, marksKey]);
 
   const backFromOverlay = useCallback(() => {
     // A pop-up or desktop overlay window closes; a main window showing the overlay goes back to the live page.
