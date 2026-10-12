@@ -748,7 +748,7 @@ and $\rho^{\mathrm{good}}_i$ the reset rate among those in the faster half at th
 \mu_i = \begin{cases} \min\bigl(\rho_i,\ \rho^{\mathrm{good}}_i\bigr) & \text{if at least 10 of those attempts had a time at the split before,} \\ \rho_i & \text{otherwise (and for } i = 1). \end{cases}
 ```
 
-The **survival** from split $i$ is $\Sigma_i = \prod_{j > i}(1 - \mu_j)$, with $\Sigma_n = 1$.
+The **survival** from split $i$ is $\Sigma_i = \prod_{j > i}(1 - \mu_j)$, with $\Sigma_n = 1$. Before the first split there is no split yet, so write $\Sigma_0 = \prod_{j \ge 1}(1 - \mu_j) = (1 - \mu_1)\Sigma_1$: the same product over every segment, including the first.
 
 *Why the cap at $\rho_i$.* A mistake ends a slow run as easily as a fast one, so the all-runs reset rate already
 includes every mistake; it can only be higher than the true mistake rate (it adds pace resets). A good-run rate above
@@ -1232,7 +1232,7 @@ with split times $x_1, \dots, x_j$ and $\theta$ on the timer.
 
 ### 13.2 PB chance and advice
 
-The PB chance is $\hat p_{\text{fin}}\,\Sigma_1$ before the first split and $c_j(x_j)$ (Definition 7.6) at split $j$.
+The PB chance is $\hat p_{\text{fin}}\,\Sigma_0$ before the first split and $c_j(x_j)$ (Definition 7.6) at split $j$. $\Sigma_0$ counts a run-ending mistake in the first segment as well as every later one. $\Sigma_1$ is the chance only once that split has already been hit, so using it here would leave out the segment being played.
 The arrow compares it with the chance one split earlier.
 While segment $j+1$ is being played with $e = \theta - x_j$ spent in it, the chance comes from the simulated runs
 near $x_j$ at split $j$ (the same kernel weights $w_s$ as Definition 7.6) whose next segment took longer than $e$,
@@ -1245,6 +1245,7 @@ c_j(x_j; e) = \Sigma_j \cdot \frac{\sum_{s:\, d_s > e} w_s\, [x_j + R_s < \mathr
 where $d_s$ is run $s$'s time for segment $j+1$ and $R_s$ its time from split $j$ to the end. At $e = 0$ it is
 $c_j(x_j)$, it falls as the segment runs long, and it is 0 once no simulated run took that long or $\theta$ passes the
 PB. The chance shown is the smaller of this and $c_j(x_j)$, with the arrow from $c_j(x_j)$.
+Before the first split there is no split $j$. The same weighted count uses $\Sigma_0$, a time of 0 and an equal weight on every simulated run, and $d_s$ is segment 1's time. At the instant the timer starts, that is $\hat p_{\text{fin}}\,\Sigma_0$.
 
 When a split was skipped, the usual path is undefined and instead it uses the chance of beating the PB from the current split if the run were split now (Definition 7.7). In the last segment, it keeps the split-time chance $c_j(x_j)$ rather than a live one, since there is no segment $j+1$ to play.
 During a segment **Keep going?** shows reset as soon as Theorem 7.9 says reset at split $j+1$ with time $\theta$.
@@ -1367,7 +1368,7 @@ Every constant, where it lives, and what kind of quantity it is. *Ratio* and *co
 | $F_a$, $\varepsilon_{a,i}$ | attempt form, residual |
 | $\Phi$, $\delta$ | sampled form, trend |
 | $\hat p_{\text{fin}}$, $\phi$, $\hat p$ | chance if finished, finish rate, chance per attempt |
-| $\mu_i$, $\Sigma_i$ | mistake rate, survival from split $i$ |
+| $\mu_i$, $\Sigma_i$ | mistake rate, survival from split $i$ ($\Sigma_0$ from the start, including segment 1) |
 | $c_i(x)$ | PB chance from split $i$ at time $x$ |
 | $\bar L$, $\bar R_i$, $r_0$ | mean attempt length, mean remaining time, fresh PB rate |
 | $q^\ast$ | goal plan pace |

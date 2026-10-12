@@ -208,7 +208,8 @@ export function liveStats(ctx: LiveContext, snap: TimerSnapshot, session?: LiveS
   const chanceAt = (i: number, time: Ms | null): number | null => {
     const odds = ctx.odds;
     if (!odds) return null;
-    if (i < 0) return odds.ifFinished * odds.survival[0];
+    // No split yet: the run is still in the first segment, so its mistake rate is in survivalFromStart.
+    if (i < 0) return odds.ifFinished * odds.survivalFromStart;
     if (time == null) return null;
     return pbChanceFrom(odds, i, time);
   };

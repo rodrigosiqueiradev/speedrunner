@@ -65,7 +65,7 @@ export const LIVE_STATS: LiveStatDef[] = [
       short: "How often a run where yours is now still goes on to beat your PB.",
       how: [
         `Uses the same ${PB_ODDS_SETTINGS.simulations.toLocaleString("en-US")} simulated runs as Your PB odds. At each split it looks at the simulated runs that reached that split at about your time and counts how many went on to beat your PB, allowing for a run-ending mistake later on.`,
-        "Before the first split it's the chance a run you play to the end beats your PB.",
+        "Before the first split it's the chance a run you start now beats your PB and has no run-ending mistake, including in the first segment.",
         "During a segment it keeps moving: it only counts the simulated runs whose segment took at least as long as yours is taking, so it falls as the segment runs long, and is 0% once the timer passes your PB.",
         "The arrow shows how the last segment, or the one you're on, moved it.",
       ],

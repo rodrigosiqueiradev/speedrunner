@@ -12,6 +12,13 @@ const ctx = liveContext(run, pbOdds(run, { simulations: 1000 }));
 afterEach(cleanup);
 
 describe("live stats card", () => {
+  it("says the PB chance before the first split includes a run-ending mistake", () => {
+    const how = LIVE_STATS.find((s) => s.id === "pbChance")!.doc.how;
+    expect(how).toContain(
+      "Before the first split it's the chance a run you start now beats your PB and has no run-ending mistake, including in the first segment.",
+    );
+  });
+
   it("shows the chosen stats in the chosen order", () => {
     const replay = replayAttempt(run, replayableAttempts(run).at(-1)!, ctx);
     const stats = liveStats(ctx, replaySnapshot(replay, replayLength(replay) / 2));

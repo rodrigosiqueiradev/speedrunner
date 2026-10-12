@@ -101,6 +101,11 @@ export interface PbOdds {
   nearWidth: Float64Array;
   /** Per split, the chance of reaching the end with no run-ending mistake (see SplitOdds.survival). */
   survival: Float64Array;
+  /**
+   * Chance of no run-ending mistake from before the first split, including the first segment.
+   * `survival[0]` starts only after that split.
+   */
+  survivalFromStart: number;
 }
 
 export interface PbOddsOptions extends SegmentModelOptions {
@@ -157,6 +162,8 @@ export function pbOdds(run: Run, options: PbOddsOptions = {}): PbOdds | null {
   const survival = new Float64Array(n);
   survival[n - 1] = 1;
   for (let i = n - 2; i >= 0; i--) survival[i] = survival[i + 1] * (1 - segmentModels[i + 1].mistakeRate);
+  // Before the first split the run is still in segment 0, so that segment's mistake rate counts too.
+  const survivalFromStart = survival[0] * (1 - segmentModels[0].mistakeRate);
 
   const nearWidth = new Float64Array(n);
   const odds: PbOdds = {
@@ -177,6 +184,7 @@ export function pbOdds(run: Run, options: PbOddsOptions = {}): PbOdds | null {
     cumulative,
     nearWidth,
     survival,
+    survivalFromStart,
   };
 
   odds.splits = run.segments.slice(0, -1).map((segment, i) => {
@@ -265,7 +273,8 @@ export function pbChanceFrom(odds: PbOdds, split: number, timeAtSplit: Ms): numb
  * split time (all of them at the start), only those whose next segment took longer than `elapsed`
  * still look like this run, so the chance falls as the segment runs long. With `elapsed` 0 it is
  * the chance at the split. Once no simulated run took that long it is 0: in the simulation, a run
- * this slow here never got a PB.
+ * this slow here never got a PB. `split` -1 is the start of the run, before any split, and the
+ * survival factor then includes the first segment.
  */
 export function pbChanceDuring(odds: PbOdds, split: number, timeAtSplit: Ms, elapsed: Ms): number {
   const n = odds.survival.length;
@@ -289,7 +298,8 @@ export function pbChanceDuring(odds: PbOdds, split: number, timeAtSplit: Ms, ela
     weight += w;
     if (timeAtSplit + (c[s * n + n - 1] - at) < odds.target) hit += w;
   }
-  return weight > 0 ? (hit / weight) * (split < 0 ? odds.survival[0] : odds.survival[split]) : 0;
+  const survive = split < 0 ? odds.survivalFromStart : odds.survival[split];
+  return weight > 0 ? (hit / weight) * survive : 0;
 }
 
 /**

@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   EMPTY_SESSION,
   analyzeRun,
+  buildSegmentModel,
+  pbChanceDuring,
   planGoal,
   realisticTargetSplits,
   IDLE_SNAPSHOT,
@@ -86,6 +88,19 @@ describe("liveStats", () => {
     expect(s.lastSplit).toBeNull();
     expect(s.pbChance).toBeNull();
     expect(s.likelyFinish).toBeNull();
+  });
+
+  it("includes a mistake in the first segment before the first split", () => {
+    const odds = ctx.odds!;
+    const mistake = buildSegmentModel(short)[0].mistakeRate;
+    expect(mistake).toBeGreaterThan(0);
+    expect(odds.survivalFromStart).toBeCloseTo(odds.survival[0] * (1 - mistake), 12);
+    // At the instant the timer starts, both the split chance and the in-segment chance use that factor.
+    const start = liveStats(ctx, at([], 0));
+    expect(start.pbChance).toBeCloseTo(odds.ifFinished * odds.survivalFromStart, 10);
+    expect(pbChanceDuring(odds, -1, 0, 0)).toBeCloseTo(odds.ifFinished * odds.survivalFromStart, 10);
+    // survival[0] applies only after the first split, and leaves out the segment being played.
+    expect(start.pbChance!).toBeLessThan(odds.ifFinished * odds.survival[0]);
   });
 
   it("follows a run split by split", () => {
