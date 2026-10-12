@@ -193,7 +193,7 @@ The density is moderate. Comfortable reading measures (56–78ch) sit alongside 
 The colours at the top of this file are the default palette, Speedrunner, in light mode. A cool, near-neutral logbook with two meaningful inks: the accent (Split Blue, in that palette) and Gold Split. Other palettes keep every role and change the accent hue. They are specified under Palettes.
 
 ### Primary
-- **Split Blue** (`split-blue`, the `--accent` role): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, the focus ring, text selection and the save bars on the route strip. **Split Blue Ink** (`split-blue-ink`, `--accent-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Fill** (`split-blue-fill`, hover `split-blue-fill-hover`; `--accent-fill` and `--accent-fill-hover`) is the slightly deeper step used behind white text on filled controls (the primary button and the pressed toggle), because white on Split Blue only reaches 4.4:1. **Split Blue Wash** (`split-blue-wash`, `--accent-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts. In any palette other than Speedrunner, these roles use that palette's accent, not this blue.
+- **Split Blue** (`split-blue`, the `--accent` role): the colour of time a good attempt would save. It's used for primary actions, the pressed toggle, realistic-save bars, text selection, the save bars on the route strip, and the focus ring wherever the ring sits on the page itself. On a dark chrome surface, the ring instead takes that surface's ink — Night Shell Ink on the header — because the page accent doesn't clear 3:1 there. **Split Blue Ink** (`split-blue-ink`, `--accent-ink`) is its text-safe partner for links, save values and deltas. **Split Blue Fill** (`split-blue-fill`, hover `split-blue-fill-hover`; `--accent-fill` and `--accent-fill-hover`) is the slightly deeper step used behind white text on filled controls (the primary button and the pressed toggle), because white on Split Blue only reaches 4.4:1. **Split Blue Wash** (`split-blue-wash`, `--accent-wash`) tints the lead comparison row, selected table rows, info tip hover and worked-example callouts. In any palette other than Speedrunner, these roles use that palette's accent, not this blue.
 
 ### Secondary
 - **Gold Split** (`gold-split`): LiveSplit's gold, used only for gold segments (the gold portion of savings bars and its legend swatch). **Gold Split Ink** and **Gold Split Wash** pair as the small flag that marks gold-related notes in the segment table.
@@ -214,7 +214,7 @@ The colours at the top of this file are the default palette, Speedrunner, in lig
 - **Route Track** (`route-track`): the neutral band the route strip draws the PB on, one step darker than the page ground. Dark mode uses `#1f2733`.
 
 ### Named Rules
-**The Meaning-Only Colour Rule.** The accent means time a good attempt would save, and it is also the colour of primary actions, focus and links. Gold means a gold segment. Red means an error. No other hues appear, and none of these is used decoratively. The accent hue depends on the palette. Gold and error do not take on that hue. Time behind stays neutral ink. There is no separate ahead or behind colour.
+**The Meaning-Only Colour Rule.** The accent means time a good attempt would save, and it is also the colour of primary actions, links, and focus on the page. Gold means a gold segment. Red means an error. No other hues appear, and none of these is used decoratively. The accent hue depends on the palette. Gold and error do not take on that hue. Time behind stays neutral ink. There is no separate ahead or behind colour. The focus ring itself always takes the ink of the surface it sits on — the accent on the page, Night Shell Ink on the header — so on a dark chrome surface it is not the accent, without breaking the rule: ink is already that surface's own text colour, not a new hue.
 
 **The Separate Night Rule.** Dark mode is its own tuned set of steps (see the sidecar), never `filter: invert` or computed opposites. Every new token needs a light value and a dark value.
 
@@ -672,7 +672,7 @@ Light and dark are each tuned. Dark is not an inversion. In dark mode the button
 
 ### Contrast
 
-Ratios use the WCAG 2.1 relative luminance formula. Text must clear **4.5:1**. The accent, used as a focus ring and as a button against the page, must clear **3:1**. The pass line for every pair below is 4.5 except where a pair is a non-text boundary, and those boundaries were checked at 3:1 as well (accent on ground and on surface, accent-fill on surface). All of them pass.
+Ratios use the WCAG 2.1 relative luminance formula. Text must clear **4.5:1**. The accent, used as a focus ring on the page and as a button against the page, must clear **3:1**. On a dark chrome surface the ring is not the accent — it takes that surface's ink instead, already checked below as a text pair. The pass line for every pair below is 4.5 except where a pair is a non-text boundary, and those boundaries were checked at 3:1 as well (accent on ground and on surface, accent-fill on surface). All of them pass.
 
 High contrast also clears **7:1** for ink, ink-2, ink-3, accent-ink, on-accent on the fill, shell ink and shell ink muted, and for gold ink and error on the surface.
 
@@ -689,7 +689,7 @@ High contrast also clears **7:1** for ink, ink-2, ink-3, accent-ink, on-accent o
 | High contrast | light | 21.00 | 21.00 | 17.40 | 10.53 | 8.19 | 7.20 | 7.82 | 7.73 |
 | High contrast | dark | 21.00 | 19.80 | 17.37 | 13.62 | 15.41 | 10.16 | 11.85 | 8.72 |
 
-Also checked, all at or above 4.5: ink on accent-wash, accent-ink on ground and on accent-wash, on-accent on accent-fill-hover, gold-ink on gold-wash, error on error-wash, shell-ink and shell-ink-2 on shell. Hairline `--line` is structure, not text, and is not required to hit 3:1. High contrast uses stronger lines so the edges of panels stay obvious.
+Also checked, all at or above 4.5: ink on accent-wash, accent-ink on ground and on accent-wash, on-accent on accent-fill-hover, gold-ink on gold-wash, error on error-wash, shell-ink and shell-ink-2 on shell. Shell-ink on shell is also the header focus ring's ratio, since the ring takes that colour there. The Live overlay's ring still uses the accent on card-bg and is below 3:1 in some palettes; once that moves to card-ink, its ratio joins this table alongside the header's. Hairline `--line` is structure, not text, and is not required to hit 3:1. High contrast uses stronger lines so the edges of panels stay obvious.
 
 White on the raw Speedrunner accent `#2a78d6` is 4.42:1, which is why the fill is the deeper `#256abf` (5.39:1). Keep that. Do not put white text on `--accent`.
 
