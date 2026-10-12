@@ -64,12 +64,13 @@ does it again with examples from the run you loaded. Real time and game time are
 
 Your splits never leave your computer. Files are read and analysed on your own machine, and
 everything the app remembers — your profile, your saved split files, luck marks, goals and settings —
-is stored on that machine only.
+is stored on that machine only. There is no account, no backend and nothing to sign in to.
 
 The app makes one request to the internet: at startup it asks GitHub for the latest release, so it
 can tell you when a newer version is out. It sends nothing about you or your splits, and you can turn
-it off in the footer. The only other connection it makes is to LiveSplit on your own computer, at
-`ws://localhost:16834` by default, and only when you turn Live stats on.
+it off in the footer. The two local connections load the bundled sample run from the app itself and
+read LiveSplit's own server on your computer, at `ws://localhost:16834/livesplit` by default, and only
+when you turn Live stats on. Neither sends anything out of your computer.
 
 The build enforces that rather than just promising it: its content security policy allows connections
 to the app itself, to a LiveSplit WebSocket on localhost, and to `api.github.com` — nothing else.

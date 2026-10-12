@@ -226,6 +226,22 @@ prints PB, sum of best, realistic target, the category score, a per-segment tabl
 
 ## 10. Privacy and storage
 
+Your splits never leave your computer. Speedrunner reads and analyses your `.lss` file on your own machine, and there
+is no account, no backend and nothing to sign in to. The app can make three network connections in total, and none of
+them carries anything about you or your runs:
+
+- **The update check.** When the desktop app starts, it asks GitHub for the version number of the latest release, so
+  it can tell you when a newer one is out. It sends a bare request with no information about you, your computer or
+  your splits. GitHub sees your IP address, as it would for any page you visit. You can turn the check off in the
+  footer; it is on until you do, so the first launch makes it once. The browser version never makes this request.
+- **The sample run.** Choosing the sample run loads a split file that is already part of the app. Nothing is sent.
+- **LiveSplit.** Live stats reads LiveSplit's own server on your computer, usually at `ws://localhost:16834/livesplit`.
+  It asks nine questions about the timer — the phase, the time, the split, the attempt counts, which file is open and
+  which clock LiveSplit compares against — and nothing more. It never splits or resets for you, and it sends nothing
+  out of your computer.
+
+Everything the app remembers stays on this device:
+
 | What | Where it lives | Key |
 | --- | --- | --- |
 | Profile scores | Browser local storage (or the desktop app's) | `speedrunner.profile.v3` |
@@ -236,5 +252,4 @@ prints PB, sum of best, realistic target, the category score, a per-segment tabl
 | Theme | Local storage | `speedrunner.theme` |
 | Update check choice, dismissed version | Local storage (desktop app) | `speedrunner.updates.*` |
 
-Nothing above is sent anywhere. The only network connections the app makes are to LiveSplit on your own computer (Live
-stats, when you choose it) and the desktop app's update check.
+Nothing above is sent anywhere. Recap and share images are made on your machine; a PNG is only shared if you share it.

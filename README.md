@@ -54,8 +54,11 @@ node packages/web/scripts/mock-livesplit.mjs path/to/splits.lss [attempt id] [sp
 ## Desktop app
 
 `packages/desktop` packages the web app as a desktop app with [Tauri](https://tauri.app). It is the
-same page in a native window, with no backend: split files are still read and analysed locally, and
-the app makes no network requests, apart from the optional connection to LiveSplit on the same computer for live stats.
+same page in a native window, with no backend: split files are still read and analysed locally. The
+app makes two kinds of network connection, both optional and neither carrying any run data: the
+update check against the releases repository on GitHub, which can be turned off in the footer, and
+the connection to LiveSplit on the same computer for live stats. See
+[Privacy and storage](docs/features.md#10-privacy-and-storage).
 
 The **Desktop app** workflow builds portable apps, with nothing to install, when a version tag is
 pushed or when it's run by hand from the Actions tab (pushes and pull requests don't build them).
