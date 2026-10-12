@@ -26,10 +26,12 @@ npm install
 npm run dev --workspace @speedrunner/web
 ```
 
-## Live stats (prototype)
+## Live stats
 
 The **Live stats** page follows LiveSplit's timer while you run and shows the stats you pick, in your
-order, on a small card you can open as its own window or capture in OBS. It reads the timer through
+order, on a small card you can open as its own window or capture in OBS. Every stat it can show is
+described in [the feature guide](docs/features.md#6-live-stats-and-the-overlay), and the maths behind
+each one in [§13 of the mathematics](docs/calculations.md#13-live-stats). It reads the timer through
 LiveSplit's built-in server on your own computer (in LiveSplit, right-click › Control › Start
 WebSocket Server; it listens on `ws://localhost:16834/livesplit` unless you change the port). It never
 splits or resets for you.
