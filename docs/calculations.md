@@ -1228,7 +1228,7 @@ with split times $x_1, \dots, x_j$ and $\theta$ on the timer.
   in a 30 second segment and a 2 minute loss in a 1 hour segment read the same. It is a **gold** when $d_j < g_j$.
 - **Golds this run**: the number of segments with $d_i < g_i$.
 - **Up next**: segment $j+2$ (the one after the segment being played; segment 1 before the run starts) with $u_{j+2}$,
-  $g_{j+2}$ and its good-run reset rate (§3.5). Nothing is shown during the last segment or after the run ends.
+  $g_{j+2}$ and its good-run reset rate (§3.5), or the plain reset rate when the good-run rate is undefined (segment 1). Nothing is shown during the last segment or after the run ends.
 
 ### 13.2 PB chance and advice
 
@@ -1245,6 +1245,8 @@ c_j(x_j; e) = \Sigma_j \cdot \frac{\sum_{s:\, d_s > e} w_s\, [x_j + R_s < \mathr
 where $d_s$ is run $s$'s time for segment $j+1$ and $R_s$ its time from split $j$ to the end. At $e = 0$ it is
 $c_j(x_j)$, it falls as the segment runs long, and it is 0 once no simulated run took that long or $\theta$ passes the
 PB. The chance shown is the smaller of this and $c_j(x_j)$, with the arrow from $c_j(x_j)$.
+
+When a split was skipped, the usual path is undefined and instead it uses the chance of beating the PB from the current split if the run were split now (Definition 7.7). In the last segment, it keeps the split-time chance $c_j(x_j)$ rather than a live one, since there is no segment $j+1$ to play.
 During a segment **Keep going?** shows reset as soon as Theorem 7.9 says reset at split $j+1$ with time $\theta$.
 At the end it is 1 if the final time beat the PB (and every
 PB already set this session) and 0 otherwise. **Keep going?** applies Theorem 7.9 at the last split, from the first
@@ -1272,8 +1274,8 @@ after a new one.
 
 The demo replays recent attempts that reached the first split, in random order. An attempt that was reset is shown
 resetting $\max(1\ \mathrm{s},\ u_{k}/2)$ into the segment $k$ it died in (half the usual time, by the reasoning of
-Proposition 7.8). Replay speed is set as the time a whole run takes on screen (real time, 2 minutes or 30 seconds), so
-a 6 hour category demos as fast as a 10 minute one.
+Proposition 7.8). When the usual time $u_k$ for the dying segment is missing, it falls back to that segment's gold time, or to a flat 2 seconds if the gold is also missing. Replay speed is set as the time a whole run takes on screen (real time, 2 minutes or 30 seconds), so
+a 6 hour category demos as fast as a 10 minute one. The speed is a floor: for a category whose PB is under 2 minutes, the calculated rate would be faster than real time, so it plays at real time instead.
 
 ---
 
