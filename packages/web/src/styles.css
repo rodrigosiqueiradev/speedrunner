@@ -518,6 +518,7 @@ button.primary:hover { background: var(--accent-fill-hover); border-color: var(-
 .landing { max-width: 640px; margin: var(--s6) auto var(--s5); text-align: center; }
 .landing h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.025em; line-height: 1.15; }
 .lede { margin: var(--s3) auto 0; color: var(--ink-2); font-size: 1.0625rem; max-width: 56ch; }
+.reading { max-width: 640px; margin: var(--s4) auto 0; text-align: center; color: var(--ink-2); }
 .dropzone {
   max-width: 640px;
   margin: 0 auto;

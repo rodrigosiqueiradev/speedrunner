@@ -1,5 +1,6 @@
-import { hasGameTime, parseLss, recapYears, undatedAttempts, yearRecap, type Run, type TimingMethod } from "@speedrunner/core";
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { recapYears, undatedAttempts, yearRecap, type Run, type TimingMethod } from "@speedrunner/core";
+import { forwardRef, type Dispatch, type SetStateAction, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { inBackground } from "../analysis/background";
 import { localPlace } from "../platform";
 import {
   CARD_HEIGHT,
@@ -45,18 +46,13 @@ interface Props {
   /** The split file open on the run page, if any, read with the timing method chosen there. */
   open?: { fileName: string; xml: string; timingMethod?: TimingMethod } | null;
   choices: RecapChoices;
-  onChoicesChange: (next: RecapChoices) => void;
+  onChoicesChange: Dispatch<SetStateAction<RecapChoices>>;
 }
 
 const keyOf = (run: Run) => `${run.game.trim().toLowerCase()}|${run.category.trim().toLowerCase()}`;
 
-const tryParse = (xml: string, timingMethod?: TimingMethod): Run | null => {
-  try {
-    return parseLss(xml, timingMethod && hasGameTime(xml) ? { timingMethod } : {});
-  } catch {
-    return null;
-  }
-};
+/** A split file to read, and the key its reading is kept under. */
+const toRead = (f: { xml: string; timingMethod?: TimingMethod }) => ({ key: `${f.timingMethod ?? ""}\n${f.xml}`, ...f });
 
 // Profile files are the usual case, so only the others are flagged.
 const SOURCE_NOTE: Record<Source, string | null> = {
@@ -73,22 +69,37 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
   const picker = useRef<FilePickerHandle>(null);
   useImperativeHandle(ref, () => ({ open: () => picker.current?.open() }));
 
-  // Parsed profile files, kept while they're unchanged: a profile score changing (a luck mark, say)
-  // rebuilds the list but shouldn't read every split file again.
-  const parsedProfile = useRef(new Map<string, ReturnType<typeof tryParse>>());
-  const profileRuns = useMemo(() => {
-    const before = parsedProfile.current;
-    const now = new Map<string, ReturnType<typeof tryParse>>();
-    const runs = profileFiles.flatMap((f) => {
-      const key = `${f.timingMethod ?? ""}\n${f.xml}`;
-      if (!now.has(key)) now.set(key, before.has(key) ? (before.get(key) ?? null) : tryParse(f.xml, f.timingMethod));
-      const run = now.get(key) ?? null;
-      return run ? [{ fileName: f.fileName, run, source: "profile" as const }] : [];
-    });
-    parsedProfile.current = now;
-    return runs;
-  }, [profileFiles]);
-  const openRun = useMemo(() => (open ? tryParse(open.xml, open.timingMethod) : null), [open]);
+  // Split files are read in the background and kept while they're unchanged: a profile score changing
+  // (a luck mark, say) rebuilds the list but shouldn't read every split file again.
+  const [adding, setAdding] = useState(0);
+  const [read, setRead] = useState(new Map<string, Run | null>());
+  const wanted = useMemo(() => [...profileFiles, ...(open ? [open] : [])].map(toRead), [profileFiles, open]);
+  const reading = wanted.some((w) => !read.has(w.key));
+  const inFlight = useRef(new Set<string>());
+  useEffect(() => {
+    if (!reading) {
+      // Forget files that are no longer wanted.
+      if (read.size > wanted.length) setRead(new Map(wanted.map((w) => [w.key, read.get(w.key)!])));
+      return;
+    }
+    for (const w of wanted) {
+      if (read.has(w.key) || inFlight.current.has(w.key)) continue;
+      inFlight.current.add(w.key);
+      void inBackground("files", "readRun", { xml: w.xml, timingMethod: w.timingMethod }).then((run) => {
+        inFlight.current.delete(w.key);
+        setRead((r) => new Map(r).set(w.key, run));
+      });
+    }
+  }, [wanted, read, reading]);
+  const profileRuns = useMemo(
+    () =>
+      profileFiles.flatMap((f) => {
+        const run = read.get(toRead(f).key);
+        return run ? [{ fileName: f.fileName, run, source: "profile" as const }] : [];
+      }),
+    [profileFiles, read],
+  );
+  const openRun = useMemo(() => (open ? (read.get(toRead(open).key) ?? null) : null), [open, read]);
 
   // One file per game and category, so attempts aren't counted twice: a file added here wins, then the
   // profile's, then the one open on the run page.
@@ -132,17 +143,17 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
   const add = (fileName: string, xml: string) => {
     setError(null);
     setStatus(null);
-    try {
-      const run = parseLss(xml);
+    setAdding((n) => n + 1);
+    void inBackground("files", "readRun", { xml }).then((run) => {
+      setAdding((n) => n - 1);
+      if (!run) return setError(notSplitsAdded(fileName));
       const key = keyOf(run);
       // A newer file for the same game and category replaces the older one, so attempts aren't counted twice.
-      onChoicesChange({
+      onChoicesChange((choices) => ({
         added: [...choices.added.filter((f) => keyOf(f.run) !== key), { fileName, run }],
         removed: choices.removed.filter((k) => k !== key),
-      });
-    } catch {
-      setError(notSplitsAdded(fileName));
-    }
+      }));
+    });
   };
 
   const fileName = `year-in-runs-${shown}.png`;
@@ -165,7 +176,7 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
 
   const errorLine = error && <ErrorMessage>{error}</ErrorMessage>;
 
-  if (!recap) {
+  if (!recap || reading) {
     return (
       <>
         <Landing title="Your year in runs">
@@ -173,6 +184,11 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
           most improved segment and longest streak for the year, as an image you can share if you want to.
         </Landing>
         <FilePicker ref={picker} onLoad={add} onError={setError} multiple noSample title="Drop your split files here" />
+        {(reading || adding > 0) && (
+          <p className="reading" role="status">
+            Reading your split files…
+          </p>
+        )}
         {errorLine}
         {leftOut.length > 0 && (
           <p className="section-foot recap-left-out">
@@ -182,7 +198,7 @@ export const YearInRuns = forwardRef<FilePickerHandle, Props>(function YearInRun
             </TextButton>
           </p>
         )}
-        {files.length > 0 && (
+        {!reading && files.length > 0 && (
           <ErrorMessage>
             {files.length === 1 ? "This file has" : "These files have"} no dated attempts, so there's no year to recap.
             LiveSplit saves a start time with each attempt from version 1.6 onwards.

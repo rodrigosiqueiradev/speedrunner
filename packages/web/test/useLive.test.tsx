@@ -55,9 +55,10 @@ describe("live stats timing method", () => {
     expect(result.current.ctx?.personalBest).toBeLessThan(38 * 60_000);
   });
 
-  it("reads files without game times in real time", () => {
+  it("reads files without game times in real time", async () => {
     const realOnly = xml.replace(/<GameTime>[^<]*<\/GameTime>/g, "");
     const { result } = renderHook(() => useLive(realOnly, { ...config, source: "demo", timing: "GameTime" }));
+    await waitFor(() => expect(result.current.ctx).toBeTruthy());
     expect(result.current.timing).toEqual({ method: "RealTime", fromLiveSplit: false, choice: false });
     expect(result.current.ctx?.personalBest).toBeGreaterThan(40 * 60_000);
   });

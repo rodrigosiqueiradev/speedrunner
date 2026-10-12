@@ -75,7 +75,9 @@ describe("year in runs", () => {
     upload([sample, "dishonored.lss"]);
     await screen.findByRole("heading", { name: /Dishonored/ });
     fireEvent.click(screen.getByRole("link", { name: "Year in runs" }));
-    expect(screen.getByText("dishonored.lss")).toBeTruthy();
+    // The open file is read in the background; the page says so meanwhile.
+    expect(screen.getByRole("status").textContent).toBe("Reading your split files…");
+    expect(await screen.findByText("dishonored.lss")).toBeTruthy();
 
     // Kirby's file is from LiveSplit 1.5, which saved no attempt history; it adds nothing but is listed.
     upload([kirby, "kirby.lss"]);

@@ -1,13 +1,9 @@
 import {
   EMPTY_SESSION,
-  analyzeRun,
   IDLE_SNAPSHOT,
   hasGameTime,
   liveContext,
   liveStats,
-  markLuck,
-  parseLss,
-  pbOdds,
   trackSession,
   type LiveContext,
   type LiveSession,
@@ -16,9 +12,9 @@ import {
   type TimingMethod,
 } from "@speedrunner/core";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useBackground } from "../analysis/background";
 import { useGoals } from "../goals";
 import { useLuckMarks } from "../luckMarks";
-import { categoryKey } from "../profile";
 import type { LiveConfig } from "./config";
 import { connectLiveSplit, startDemo, type FeedStatus } from "./feeds";
 
@@ -46,17 +42,14 @@ export function useLive(xml: string | null, config: Pick<LiveConfig, "source" | 
   const method: TimingMethod = choice ? wanted : "RealTime";
 
   const luckMarks = useLuckMarks();
-  const parsed = useMemo(() => {
-    if (!xml) return null;
-    try {
-      const plain = parseLss(xml, choice ? { timingMethod: method } : {});
-      const category = categoryKey(plain);
-      const run = markLuck(plain, luckMarks[category] ?? []);
-      return { run, category, odds: pbOdds(run), analysis: analyzeRun(run) };
-    } catch {
-      return { error: true as const };
-    }
-  }, [xml, method, choice, luckMarks]);
+  // The file is read in the background, so a big one doesn't stall the page while LiveSplit runs.
+  // A new clock or luck mark keeps the last reading until the new one is ready; a new file doesn't.
+  const input = useMemo(
+    () => (xml ? { xml, timing: choice ? method : null, luckMarks } : null),
+    [xml, method, choice, luckMarks],
+  );
+  const done = useBackground("live", "liveRead", input, (i) => i.xml);
+  const parsed = done && done.input.xml === xml ? done.value : null;
   // The goal is worked into the context apart from the file, so typing one doesn't re-read the file.
   const read = parsed && !("error" in parsed) ? parsed : null;
   const goals = useGoals();

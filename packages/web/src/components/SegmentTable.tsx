@@ -20,6 +20,8 @@ export interface LuckControls {
   /** Segments whose times look luck-based, for the runner to confirm. */
   suggestions: LuckSuggestion[];
   onToggle: (segmentName: string, on: boolean) => void;
+  /** Whether a segment is marked now, so a tick shows at once while the analysis catches up. */
+  marked?: (segmentName: string) => boolean;
 }
 
 export function SegmentTable({
@@ -74,7 +76,7 @@ export function SegmentTable({
                 <td className="luck-cell">
                   <input
                     type="checkbox"
-                    checked={s.luckMarked}
+                    checked={luck.marked?.(s.name) ?? s.luckMarked}
                     aria-label={`Luck decides ${s.name}`}
                     onChange={(e) => luck.onToggle(s.name, e.target.checked)}
                   />

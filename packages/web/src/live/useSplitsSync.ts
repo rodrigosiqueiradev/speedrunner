@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { parseLss, type Run } from "@speedrunner/core";
+import { inBackground } from "../analysis/background";
+import type { SplitsFingerprint } from "../analysis/jobs";
 import { loadSplitFiles, type StoredSplit } from "../splitFiles";
 import { LIVE_RUN_KEY } from "./config";
 import { fileNameOf, type FeedStatus } from "./feeds";
@@ -42,20 +43,32 @@ interface OpenSplits {
   matches: (file: StoredSplit) => boolean;
   /** Whether several saved files may match (by name, the first is used); otherwise only a single match switches. */
   firstWins: boolean;
+  /** Whether matching reads the files' split names and counts, which readFingerprints gets first. */
+  readsFiles: boolean;
 }
 
-const parsed = new Map<string, Run | null>();
-function runOf(file: StoredSplit): Run | null {
-  if (!parsed.has(file.xml)) {
-    let run: Run | null = null;
-    try {
-      run = parseLss(file.xml);
-    } catch {
-      // Not a split file the page can read: it never matches.
-    }
-    parsed.set(file.xml, run);
-  }
-  return parsed.get(file.xml) ?? null;
+// Each saved file's split names and counts, read in the background once per file contents.
+const fingerprints = new Map<string, SplitsFingerprint | null>();
+const reading = new Map<string, Promise<void>>();
+
+/** Resolves once the split names and counts of every given file are known. */
+function readFingerprints(files: StoredSplit[]): Promise<void> {
+  const waits = files
+    .filter((f) => !fingerprints.has(f.xml))
+    .map((f) => {
+      let wait = reading.get(f.xml);
+      if (!wait) {
+        wait = inBackground("files", "splitsFingerprint", f.xml).then(
+          (fp) => void fingerprints.set(f.xml, fp),
+          // Not a split file the page can read: it never matches.
+          () => void fingerprints.set(f.xml, null),
+        );
+        void wait.finally(() => reading.delete(f.xml));
+        reading.set(f.xml, wait);
+      }
+      return wait;
+    });
+  return Promise.all(waits).then(() => undefined);
 }
 
 /**
@@ -68,17 +81,24 @@ export function openSplitsOf(status: FeedStatus | null): OpenSplits | null {
   const { splitsPath, runSplitNames, loadedCounts } = status;
   if (splitsPath) {
     const name = fileNameOf(splitsPath);
-    return { key: `path:${splitsPath}`, name, matches: (f) => f.fileName.toLowerCase() === name.toLowerCase(), firstWins: true };
+    return {
+      key: `path:${splitsPath}`,
+      name,
+      matches: (f) => f.fileName.toLowerCase() === name.toLowerCase(),
+      firstWins: true,
+      readsFiles: false,
+    };
   }
   if (runSplitNames.some((n) => n != null)) {
     return {
       key: `run:${JSON.stringify(runSplitNames)}`,
       name: null,
       matches: (f) => {
-        const segments = runOf(f)?.segments;
-        return !!segments && runSplitNames.every((n, i) => n == null || segments[i]?.rawName === n);
+        const names = fingerprints.get(f.xml)?.rawNames;
+        return !!names && runSplitNames.every((n, i) => n == null || names[i] === n);
       },
       firstWins: false,
+      readsFiles: true,
     };
   }
   if (loadedCounts) {
@@ -86,12 +106,11 @@ export function openSplitsOf(status: FeedStatus | null): OpenSplits | null {
       key: `counts:${loadedCounts.attempts}/${loadedCounts.completed}`,
       name: null,
       matches: (f) => {
-        const run = runOf(f);
-        return (
-          !!run && run.attemptCount === loadedCounts.attempts && run.attempts.filter((a) => a.time != null).length === loadedCounts.completed
-        );
+        const fp = fingerprints.get(f.xml);
+        return !!fp && fp.attempts === loadedCounts.attempts && fp.completed === loadedCounts.completed;
       },
       firstWins: false,
+      readsFiles: true,
     };
   }
   return null;
@@ -117,6 +136,8 @@ export function useSplitsSync(
   // Reconnecting (the feed does whenever the file changes) keeps what was said.
   const connected = status?.kind === "connected" || status?.kind === "connecting";
   const [sync, setSync] = useState<SplitsSync>({ state: "unknown" });
+  // Counts the live files whose split names and counts were read, to look again once one is.
+  const [filesRead, setFilesRead] = useState(0);
   // The last splits looked up, and the profile's file for them (null when the profile hasn't got
   // them). Both outlive reconnects: the feed reconnects whenever the file changes.
   const handled = useRef<string | null>(null);
@@ -133,6 +154,14 @@ export function useSplitsSync(
       // Between attempts on released LiveSplit there may be nothing to go by: keep what was said.
       if (!connected) setSync({ state: "unknown" });
       return;
+    }
+    // Matching by split names or counts waits for the live file's to be read.
+    if (current && open.readsFiles && !fingerprints.has(current.xml)) {
+      let live = true;
+      void readFingerprints([current]).then(() => live && setFilesRead((n) => n + 1));
+      return () => {
+        live = false;
+      };
     }
     const label = (file: StoredSplit | null) => open.name ?? file?.fileName ?? null;
     if (current && open.matches(current)) {
@@ -155,7 +184,8 @@ export function useSplitsSync(
       return;
     }
     let live = true;
-    void loadSplitFiles().then((files) => {
+    void loadSplitFiles().then(async (files) => {
+      if (open.readsFiles) await readFingerprints(Object.values(files));
       if (!live) return;
       handled.current = key;
       const matches = Object.entries(files).filter(([k, f]) => k !== LIVE_RUN_KEY && open.matches(f));
@@ -173,7 +203,7 @@ export function useSplitsSync(
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, current, connected]);
+  }, [key, current, connected, filesRead]);
 
   return sync;
 }

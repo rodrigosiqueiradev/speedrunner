@@ -1,15 +1,4 @@
-import {
-  analyzeRun,
-  analyzeSessions,
-  hasGameTime,
-  markLuck,
-  parseLss,
-  pbOdds,
-  scoreRun,
-  suggestLuckSegments,
-  type CategoryScore,
-  type TimingMethod,
-} from "@speedrunner/core";
+import { hasGameTime, luckKey, type CategoryScore, type TimingMethod } from "@speedrunner/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { AdviceList } from "./components/AdviceList";
@@ -43,6 +32,7 @@ import { isDesktop } from "./platform";
 import { categoryKey, loadProfile, saveProfile, upsertEntry, type ProfileEntry } from "./profile";
 import { deleteSplitFile, loadSplitFiles, putSplitFile, type StoredSplit } from "./splitFiles";
 import { loadLuckMarks, saveLuckMarks, toggleLuck, type LuckMarks } from "./luckMarks";
+import { inBackground, useBackground } from "./analysis/background";
 import { NO_RECAP_CHOICES, type RecapChoices } from "./components/YearInRuns";
 
 interface Loaded {
@@ -121,37 +111,12 @@ export function App() {
     return () => window.removeEventListener(SHOW_PANEL, onShow);
   });
 
-  // Reading the file and the parts that don't depend on luck marks (sessions take seconds on files
-  // with tens of thousands of attempts) run once per file, not again on every luck mark.
-  const base = useMemo(() => {
-    if (!loaded) return null;
-    try {
-      const parsed = parseLss(loaded.xml, timing ? { timingMethod: timing } : {});
-      return {
-        parsed,
-        luckSuggestions: suggestLuckSegments(parsed),
-        sessions: analyzeSessions(parsed),
-        hasGameTime: hasGameTime(loaded.xml),
-      };
-    } catch {
-      return { error: true as const };
-    }
-  }, [loaded, timing]);
-  const marks = base && !("error" in base) ? (luckMarks[categoryKey(base.parsed)] ?? []) : [];
-  const marksKey = marks.join("\n");
-
-  const result = useMemo(() => {
-    if (!base || "error" in base) return base;
-    try {
-      const { parsed, ...rest } = base;
-      const run = markLuck(parsed, marks);
-      const analysis = analyzeRun(run);
-      return { ...rest, run, analysis, score: scoreRun(run, analysis), odds: pbOdds(run) };
-    } catch {
-      return { error: true as const };
-    }
-    // marksKey stands for marks: a new list with the same names changes nothing.
-  }, [base, marksKey]);
+  // The file is read and analysed in the background, so a big one doesn't freeze the window. A new
+  // clock or luck mark keeps the page showing the last result until the new one is ready.
+  const runInput = useMemo(() => (loaded ? { xml: loaded.xml, timing, luckMarks } : null), [loaded, timing, luckMarks]);
+  const done = useBackground("run", "runPage", runInput, (i) => i.xml);
+  const result = done && done.input.xml === loaded?.xml ? done.value : null;
+  const reading = !!loaded && done?.input !== runInput;
 
   const backFromOverlay = useCallback(() => {
     // A pop-up or desktop overlay window closes; a main window showing the overlay goes back to the live page.
@@ -198,12 +163,6 @@ export function App() {
     void deleteSplitFile(key);
   };
 
-  /** Scores a split file with the luck marks saved for its category. */
-  const scoreWithLuck = (xml: string, method: TimingMethod | null, marks: LuckMarks = luckMarks) => {
-    const run = parseLss(xml, method ? { timingMethod: method } : {});
-    return scoreRun(markLuck(run, marks[categoryKey(run)] ?? []));
-  };
-
   const markSegmentLuck = (category: string, segmentName: string, on: boolean) => {
     const next = toggleLuck(luckMarks, category, segmentName, on);
     setLuckMarks(next);
@@ -211,25 +170,19 @@ export function App() {
     const entry = profile.find((e) => e.key === category);
     const file = profileFiles[category];
     if (entry && file) {
-      try {
-        const score = scoreWithLuck(file.xml, hasGameTime(file.xml) ? entry.score.timingMethod : null, next);
-        setProfile((p) => p.map((e) => (e.key === category ? { ...e, score } : e)));
-      } catch {
-        // The stored file no longer parses; its old score stays.
-      }
+      void inBackground("files", "profileScore", { xml: file.xml, timing: entry.score.timingMethod, luckMarks: next }).then((score) => {
+        // A stored file that no longer parses keeps its old score.
+        if (score) setProfile((p) => p.map((e) => (e.key === category ? { ...e, score } : e)));
+      });
     }
   };
 
   const addToProfile = (fileName: string, xml: string) => {
-    try {
-      // A file replacing one in the profile keeps the timing method chosen for that category.
-      const run = parseLss(xml);
-      const before = profile.find((e) => e.key === categoryKey(run))?.score.timingMethod;
-      const method = before && before !== run.timingMethod && hasGameTime(xml) ? before : null;
-      keepInProfile(scoreWithLuck(xml, method), fileName, xml);
-    } catch {
-      setError(notSplitsAdded(fileName));
-    }
+    // A file replacing one in the profile keeps the timing method chosen for that category.
+    const kept = Object.fromEntries(profile.map((e) => [e.key, e.score.timingMethod]));
+    void inBackground("files", "profileScore", { xml, timing: { kept }, luckMarks }).then((score) =>
+      score ? keepInProfile(score, fileName, xml) : setError(notSplitsAdded(fileName)),
+    );
   };
 
   const load = (fileName: string, xml: string) => {
@@ -368,6 +321,12 @@ export function App() {
 
         <FilePicker ref={picker} onLoad={load} onError={setError} compact={!!ok} sampleFromUrl />
 
+        {reading && !ok && (
+          <p className="reading" role="status">
+            Reading {loaded!.fileName}…
+          </p>
+        )}
+
         {!ok && savedRuns.length > 0 && <ProfileRuns entries={savedRuns} onOpen={openFromProfile} />}
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
@@ -379,7 +338,7 @@ export function App() {
         )}
 
         {ok && a && (
-          <main className="results">
+          <main className="results" aria-busy={reading}>
             <PageHead
               title={
                 <>
@@ -483,6 +442,7 @@ export function App() {
                   luck={{
                     suggestions: ok.luckSuggestions,
                     onToggle: (name, on) => markSegmentLuck(categoryKey(ok.run), name, on),
+                    marked: (name) => (luckMarks[categoryKey(ok.run)] ?? []).some((m) => luckKey(m) === luckKey(name)),
                   }}
                 />
               </Section>
