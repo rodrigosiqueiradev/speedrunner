@@ -1005,7 +1005,7 @@ The plan can't give the runner credit for a fast part of the stretch it has no s
 Corollary 2.1, where the realistic target is never more ambitious.
 
 **Example (skipped splits).** The Ocarina of Time 100% Glitchless file of §2 has two skipped stretches. Its suggested
-goal is 5:41:00 ($\sigma = 1$ min), reachable at pace $q^\ast = 0.94$; sub 5:34:33 (2% under the PB) needs
+goal is 5:41:00 ($\sigma = 1$ min), reachable at pace $q^\ast = 0.94$; a goal 2% under the PB (5:34:33.45) needs
 $q^\ast = 0.09$, about 1 in 11 recent attempts.
 
 ---
