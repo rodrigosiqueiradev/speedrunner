@@ -6,7 +6,7 @@
   "permissions": [
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "https://github.com/rodrigosiqueiradev/speedrunner-releases/*" }]
+      "allow": [{ "url": "https://github.com/rodrigosiqueiradev/speedrunner/*" }]
     }
   ]
 }

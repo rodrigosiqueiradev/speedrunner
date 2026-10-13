@@ -1,5 +1,5 @@
 /** Where new versions of the desktop app are published, and how the app finds out about them. */
-const RELEASES = "rodrigosiqueiradev/speedrunner-releases";
+const RELEASES = "rodrigosiqueiradev/speedrunner";
 const LATEST_API = `https://api.github.com/repos/${RELEASES}/releases/latest`;
 /** Only pages under this address may be opened from the app (see the desktop app's capabilities). */
 export const RELEASES_PAGE = `https://github.com/${RELEASES}/releases`;

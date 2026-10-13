@@ -71,7 +71,7 @@ describe("the built app's content security policy", () => {
       "ws://localhost:*",
       "ws://127.0.0.1:*",
       // The desktop app's update check, and only that address. The browser build never asks (src/App.tsx).
-      "https://api.github.com/repos/rodrigosiqueiradev/speedrunner-releases/releases/latest",
+      "https://api.github.com/repos/rodrigosiqueiradev/speedrunner/releases/latest",
     ]);
   });
 
