@@ -2,19 +2,18 @@ name: Desktop app
 # Runs only on version tags or on demand (Actions > Desktop app > Run workflow), never on pushes or PRs.
 on:
   push:
-    # Pushing a version tag such as v0.2.0 builds the apps and publishes them as a release on the
-    # public releases repo, so this repo and its code can stay private.
+    # Pushing a version tag such as v0.2.0 builds the apps and publishes them as a release here.
     tags: ["v*"]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to build and publish to the releases repo (leave empty to only build)"
+        description: "Tag to build and publish (leave empty to only build)"
         required: false
 permissions:
   contents: read
 env:
   RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
-  RELEASES_REPO: rodrigosiqueiradev/speedrunner-releases
+  RELEASES_REPO: ${{ github.repository }}
 jobs:
   build:
     name: build (${{ matrix.name }})
@@ -22,17 +21,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Portable builds, no installers. Only Windows is built for now, to save Actions minutes
-          # (macOS runners cost the most). CI still tests on Linux. To build Linux and macOS again,
-          # restore these entries; the steps below still handle them.
-          #   - os: ubuntu-22.04
-          #     name: linux
-          #     args: --bundles appimage
-          #   - os: macos-latest
-          #     name: macos
-          #     # One app that runs on both Apple Silicon and Intel Macs.
-          #     args: --target universal-apple-darwin --bundles app
-          #     targets: aarch64-apple-darwin,x86_64-apple-darwin
+          - os: ubuntu-22.04
+            name: linux
+            args: --bundles appimage
+          - os: macos-latest
+            name: macos
+            args: --target universal-apple-darwin --bundles app
+            targets: aarch64-apple-darwin,x86_64-apple-darwin
           - os: windows-latest
             name: windows
             args: --no-bundle
@@ -86,6 +81,8 @@ jobs:
     needs: build
     if: github.ref_type == 'tag' || inputs.tag != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       # Full history and tags, to list the changes since the previous version tag.
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -100,15 +97,10 @@ jobs:
         with:
           path: out
           merge-multiple: true
-      - name: Publish to the releases repo
+      - name: Publish release
         env:
-          # A fine-grained token with Contents read and write on the releases repo only.
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::error::The RELEASES_TOKEN secret is missing, so the apps can't be published to $RELEASES_REPO."
-            exit 1
-          fi
           if gh release view "$RELEASE_TAG" --repo "$RELEASES_REPO" > /dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" out/* --clobber --repo "$RELEASES_REPO"
             gh release edit "$RELEASE_TAG" --notes-file notes.md --repo "$RELEASES_REPO"
@@ -116,41 +108,3 @@ jobs:
             gh release create "$RELEASE_TAG" out/* --repo "$RELEASES_REPO" \
               --title "Speedrunner $RELEASE_TAG" --notes-file notes.md
           fi
-      # The releases repo's README and user manual live in releases-repo/ here, and each release copies them
-      # over, so the manual always describes the version people download. Edits made directly in the releases
-      # repo are overwritten, so make them in releases-repo/. Rebuilding an older tag leaves the manual alone.
-      - name: Check this is the newest version
-        id: newest
-        run: |
-          set -euo pipefail
-          newest=$(git tag --list 'v*' --sort=-v:refname | sed -n 1p)
-          if [ ! -d releases-repo ]; then
-            echo "::notice::$RELEASE_TAG has no releases-repo folder, so the manual on $RELEASES_REPO stays as it is."
-          elif [ "$RELEASE_TAG" = "$newest" ]; then
-            echo "update=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::$RELEASE_TAG is older than $newest, so the manual on $RELEASES_REPO stays as it is."
-          fi
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        if: steps.newest.outputs.update == 'true'
-        with:
-          repository: ${{ env.RELEASES_REPO }}
-          token: ${{ secrets.RELEASES_TOKEN }}
-          path: releases
-      - name: Update the manual on the releases repo
-        if: steps.newest.outputs.update == 'true'
-        working-directory: releases
-        run: |
-          set -euo pipefail
-          cp ../releases-repo/README.md README.md
-          rm -rf docs && cp -R ../releases-repo/docs docs
-          git add -A README.md docs
-          if git diff --cached --quiet; then
-            echo "The manual on $RELEASES_REPO is already up to date."
-            exit 0
-          fi
-          git config user.name "Rodrigo Siqueira"
-          git config user.email "rodrigo.siqueira.dev@gmail.com"
-          git commit -m "Update the manual for $RELEASE_TAG"
-          # The checkout is on the releases repo's default branch, so this pushes straight to it.
-          git push origin HEAD
