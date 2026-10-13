@@ -47,4 +47,8 @@ cat << 'NOTES'
 
 - **Windows:** `Speedrunner-windows.exe`. Run it from anywhere. If SmartScreen warns you, choose
   **More info**, then **Run anyway**.
+- **Linux:** `Speedrunner-linux.AppImage`. Make it executable with `chmod +x Speedrunner-linux.AppImage`,
+  then run it.
+- **macOS:** `Speedrunner-macos.zip`. Extract it and open `Speedrunner.app`. If macOS blocks it,
+  go to System Settings > Privacy & Security and choose **Open Anyway**.
 NOTES
