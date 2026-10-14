@@ -13,8 +13,7 @@ and how well they run each category on one 0-100 scale across games.
   follows LiveSplit's timer while you run. Luck marks let segments that depend on chance count only what you
   control. It has colour themes (five presets and a custom one) and, in the desktop app, a banner when a new
   version is out. Files are analysed on your computer and never uploaded.
-- `packages/desktop`: the web app packaged as a desktop app. It is built and released for Windows only
-  for now.
+- `packages/desktop`: the web app packaged as a desktop app for Windows, macOS and Linux.
 
 ## Node and npm
 
@@ -60,41 +59,27 @@ node packages/web/scripts/mock-livesplit.mjs path/to/splits.lss [attempt id] [sp
 `packages/desktop` packages the web app as a desktop app with [Tauri](https://tauri.app). It is the
 same page in a native window, with no backend: split files are still read and analysed locally. The
 app makes two kinds of network connection, both optional and neither carrying any run data: the
-update check against the releases repository on GitHub, which can be turned off in the footer, and
+update check against this repository's releases on GitHub, which can be turned off in the footer, and
 the connection to LiveSplit on the same computer for live stats. See
 [Privacy and storage](docs/features.md#10-privacy-and-storage).
 
-The **Desktop app** workflow builds portable apps, with nothing to install, when a version tag is
+The **Desktop app** workflow builds portable apps for Windows, macOS and Linux when a version tag is
 pushed or when it's run by hand from the Actions tab (pushes and pull requests don't build them).
-A version tag also publishes them as a release on the public
-[speedrunner-releases](https://github.com/rodrigosiqueiradev/speedrunner-releases) repo, so this
-repo can stay private. Download them from the
-[latest release](https://github.com/rodrigosiqueiradev/speedrunner-releases/releases/latest), or
-from a run's artifacts on the **Desktop app** workflow in GitHub Actions:
+A version tag also publishes them as a release in this repository. Download them from the
+[latest release](https://github.com/rodrigosiqueiradev/speedrunner/releases/latest), or from a run's
+artifacts on the **Desktop app** workflow in GitHub Actions:
 
 - **Windows:** `Speedrunner-windows.exe`. Put it anywhere and run it. It uses the WebView2 runtime
   that ships with Windows 10 and 11.
 
-For now only the Windows app is built, to save GitHub Actions minutes; CI still runs the tests on
-Linux. The macOS and Linux builds are commented out in the matrix of
-`.github/workflows/desktop.yml`; restore them to build `Speedrunner-macos.zip` (a universal
-`Speedrunner.app`) and `Speedrunner-linux.AppImage` again, and add them back to the downloads in
-`.github/scripts/release-notes.sh` and `releases-repo/`.
-
 To publish a version, push a new tag such as `v0.2.0` (`git tag v0.2.0 && git push origin v0.2.0`);
-a release with the apps appears on the releases repo a few minutes later. Its notes list every pull
-request merged since the previous tag. To put a summary on top, use an annotated tag
-(`git tag -a v0.2.0`) and write it in the tag message. To rebuild the apps for
-an existing tag, run the **Desktop app** workflow by hand from the Actions tab and enter the tag.
-Publishing needs a `RELEASES_TOKEN` secret in this repo: a fine-grained token with **Contents**
-read and write access to `speedrunner-releases` only.
+the workflow builds all three apps and publishes them in this repository. Its notes list every pull
+request merged since the previous version tag. To put a summary on top, use an annotated tag
+(`git tag -a v0.2.0`) and write it in the tag message. To rebuild the apps for an existing tag, run
+the **Desktop app** workflow by hand from the Actions tab and enter the tag; leave it empty to build
+the current revision without publishing a release.
 
-The releases repo's README and user manual are kept in `releases-repo/` here. Publishing the newest
-version copies them over, replacing what's there, so the manual matches the version people download.
-Edit them here rather than on the releases repo, and keep them free of anything private: no build
-steps, source paths or code names. Rebuilding an older tag leaves the manual alone.
-
-The apps aren't signed with a developer certificate yet, so both Windows and macOS warn on first launch:
+The Windows and macOS apps aren't signed with a developer certificate yet, so they warn on first launch:
 
 - **Windows:** on the SmartScreen prompt, choose **More info**, then **Run anyway**.
 - **macOS:** open the app once and dismiss the warning, then go to System Settings › Privacy &
