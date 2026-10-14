@@ -63,7 +63,7 @@ export function SegmentTable({
                     {s.luck.cost != null && ` · bad luck +${formatSave(s.luck.cost)}`}
                   </span>
                 )}
-                {luck && !s.luckMarked && suggested.has(s.index) && (
+                {luck && !(luck.marked?.(s.name) ?? s.luckMarked) && suggested.has(s.index) && (
                   <span className="seg-note suggest" title={suggestionTitle(suggested.get(s.index)!)}>
                     Looks like luck
                   </span>
