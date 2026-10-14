@@ -3,6 +3,8 @@
 Tools that show speedrunners where they lose time, how fast they could realistically be,
 and how well they run each category on one 0-100 scale across games.
 
+[Read the user manual](docs/features.md).
+
 ## Packages
 
 - `packages/core`: parses LiveSplit `.lss` split files and analyses them. Shared by the web app
