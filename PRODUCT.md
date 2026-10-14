@@ -33,7 +33,7 @@ It's an honest analysis rather than a hype dashboard. The realistic target comes
 
 - `packages/core`: parser and analyzer that run in Node and the browser, plus a command-line tool. It's shared by the web app and the desktop app.
 - `packages/web`: React and Vite app. The run page has tabs: an overview (summary, route strip, top advice, PB odds, category score), practice (advice, practice plan, reset coach, goal planner), segments (savings chart and per-segment table), sessions, and "How it's calculated". Other pages: the profile, Year in runs (a recap of one year, drawn as an image) and Live stats (a card or overlay that follows LiveSplit's timer while the runner plays). Luck marks let segments that depend on chance count only what the runner controls, and colour themes change the palette.
-- `packages/desktop`: the web app in a native window with Tauri. Only Windows builds are released for now. It shows a banner when a new version is out.
+- `packages/desktop`: the web app in a native window with Tauri. Windows, macOS and Linux builds are released. It shows a banner when a new version is out.
 - How the data is cleaned (skipped splits, mis-splits under 60% of the median, imported history) and all the thresholds are documented in `docs/how-it-works.md`. The UI has to stay consistent with that document.
 - Terms the UI uses: personal best, realistic target, sum of best, gold, typical, good-day time, save to gold, good-day save, variability, reset rate, clean segment times. The advice labels are Slow in PB, Inconsistent, Gold is rare and Runs die here.
 - Must never upload user data or add tracking that sends split contents anywhere.

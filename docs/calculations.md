@@ -111,9 +111,9 @@ only applies with at least 5 candidates, when the median means something.
 **Definition 1.4 (quantile).** For values sorted as $x_{(1)} \le \dots \le x_{(m)}$ and $q \in [0,1]$, let
 $p = (m-1)q$, $\ell = \lfloor p\rfloor$, $h = \lceil p\rceil$. Then
 
-```math
+$$
 Q(x; q) = x_{(\ell+1)} + \bigl(x_{(h+1)} - x_{(\ell+1)}\bigr)\,(p - \ell).
-```
+$$
 
 This is the linear-interpolation estimator (type 7 in Hyndman and Fan [1]). The per-segment statistics round it to the
 nearest millisecond; the goal planner keeps it unrounded.
@@ -136,10 +136,10 @@ fortnight of a 10 minute category and years of a 6 hour one.
 
 **Definition 1.6 (half-life and weights).** For a history of $m$ samples ordered oldest first,
 
-```math
+$$
 h(m) = \mathrm{clamp}_{[5,\,25]}\!\left(\tfrac{m}{4}\right), \qquad
 w_k = 2^{-(m-1-k)/h(m)}, \quad k = 0,\dots,m-1 .
-```
+$$
 
 The newest sample weighs 1 and a sample's weight halves every $h(m)$ samples back.
 
@@ -148,14 +148,14 @@ segment are the latest $r(\lvert C_i\rvert)$ clean times, written $R_i$.
 
 **Proposition 1.3.** The recent window is the latest half of the history, at least 10 (or all of it) and at most 50:
 
-```math
+$$
 r(m) = \begin{cases}
 m & m \le 10,\\
 10 & 10 \le m \le 20,\\
 \lceil m/2 \rceil & 20 \le m \le 100,\\
 50 & m \ge 100.
 \end{cases}
-```
+$$
 
 *Proof.* For $m \le 20$, $m/4 \le 5$ so $h = 5$ and $r = \min(m, 10)$. For $20 \le m \le 100$, $h = m/4$ and
 $\lceil 2h\rceil = \lceil m/2\rceil \le m$. For $m \ge 100$, $h = 25$ and $r = \min(m, 50) = 50$. $\square$
@@ -327,9 +327,9 @@ arrives at a constant rate $\lambda_i$ per millisecond.
 **Proposition 3.4.** Under Assumption 3.3, a good run survives segment $i$ (of duration $m_i$) with probability
 $e^{-\lambda_i m_i}$, and therefore
 
-```math
+$$
 \lambda_i = \frac{-\ln\bigl(1 - \rho^{\mathrm{good}}_i\bigr)}{m_i}.
-```
+$$
 
 *Proof.* A constant hazard gives an exponential survival function $P(\text{survive } t) = e^{-\lambda t}$. Setting
 $1 - \rho^{\mathrm{good}}_i = e^{-\lambda_i m_i}$ and solving gives the formula. (The code caps $\rho$ at 0.999 to keep
@@ -344,9 +344,9 @@ formula returns $\lambda$. The raw reset rate, $1 - e^{-\lambda t}$, would inste
 **Definition 3.4 (hazard ratio).** The hazard of the rest of the run, seen from segment $i$, pools every other
 segment $j \ge 2$, $j \ne i$, that has a hazard:
 
-```math
+$$
 \Lambda_{-i} = \frac{\sum_{j} \lambda_j m_j}{\sum_j m_j}, \qquad H_i = \frac{\lambda_i}{\Lambda_{-i}} .
-```
+$$
 
 $H_i = \infty$ when good runs reset in $i$ and nowhere else.
 
@@ -422,9 +422,9 @@ Work with log times $x_k = \ln t_k$, sorted, so that the split is about ratios a
 the lower and upper groups. Among cuts with at least $\max(2, \lceil 0.1N\rceil)$ times on each side (and not between
 equal values), choose $k$ maximising
 
-```math
+$$
 B(k) = k\,(N-k)\,(\bar x_2 - \bar x_1)^2 .
-```
+$$
 
 The *cut* is $c = t_{(k)}$, the slowest good time; times $t \le c$ are the **good** outcome. At least 10 clean times
 are required.
@@ -439,9 +439,9 @@ The minimum share of 10% keeps one odd attempt from forming an "outcome".
 
 **Definition 5.2 (separation and cost).** With within-group variances $\sigma_1^2, \sigma_2^2$ of the log times,
 
-```math
+$$
 D = \frac{\bar x_2 - \bar x_1}{\sqrt{(\sigma_1^2 + \sigma_2^2)/2}}, \qquad \text{cost ratio} = e^{\bar x_2 - \bar x_1}.
-```
+$$
 
 $D$ is Ashman's D [3]; a mixture of two normal distributions has clearly separated modes when $D > 2$. The cost ratio
 is the ratio of the two groups' geometric means: how much slower the bad outcome typically is.
@@ -460,9 +460,9 @@ Segments whose name contains the word "RNG" are suggested too.
 **Proposition 5.2 (runs test [4]).** If $N_1$ good and $N_2$ bad outcomes ($N = N_1 + N_2$) arrive in random order,
 the number of runs $U$ (maximal blocks of equal outcomes) has
 
-```math
+$$
 E[U] = \frac{2N_1N_2}{N} + 1, \qquad \mathrm{Var}[U] = \frac{2N_1N_2\,(2N_1N_2 - N)}{N^2(N-1)},
-```
+$$
 
 and $z = (U - E[U])/\sqrt{\mathrm{Var}[U]}$ is approximately standard normal for moderate $N$.
 
@@ -484,9 +484,9 @@ recent times), $\pi$ the recent good share, and $m^g, q^{-,g}$, $m^b, q^{-,b}$ t
 - **Gold is rare** compares the gold with $m^g$, the typical good-luck time.
 - **Practice gap** (used by the practice plan, §9):
 
-```math
+$$
 \mathrm{gap} = \pi\,(m^g - q^{-,g}) + (1-\pi)\,(m^b - q^{-,b}).
-```
+$$
 
 **Proposition 5.3.** The practice gap is the expected gap between a typical and a good-day time *given the outcome*,
 averaged over outcomes; the gap between outcomes ($m^b - m^g$) is excluded.
@@ -516,9 +516,9 @@ sit on the same scale. It does not compare the runner with anyone else.
 Let $B$ be the sum of best at the PB's luck (§5.3; equal to SoB without marks). The **efficiency gap** is
 $\gamma = \max\bigl(0, (\mathrm{PB} - B)/B\bigr)$ and
 
-```math
+$$
 E = \mathrm{clamp}_{[0,100]}\!\left(100\left(1 - \frac{\gamma}{0.10}\right)\right).
-```
+$$
 
 A PB equal to the sum of best scores 100; a PB 10% or more above it scores 0. The gap measures how much of the
 runner's demonstrated ability (their golds) the PB already captures.
@@ -543,9 +543,9 @@ consistency.)
 Let $\mu = \lfloor n/2\rfloor + 1$ be the middle segment. Its good runs $G_\mu$ (Definition 3.3) are the attempts that
 reached it in the faster half of times at the split before. Completion is the share of them that finished:
 
-```math
+$$
 \kappa = \frac{\lvert\lbrace a \in G_\mu : a \text{ finished}\rbrace\rvert}{\lvert G_\mu\rvert}, \qquad P = 100\,\kappa .
-```
+$$
 
 *Why from the middle, and why good runs.* Early resets are mostly bad starts and say little about holding a run
 together. Runs reset for being behind pace are a choice (often the right one, §7.9), and short categories do it far
@@ -558,10 +558,10 @@ Let $f_1, \dots, f_F$ be the final times of finished attempts in id order (from 
 $w = \min(10, \lfloor F/2\rfloor)$, used only if $w \ge 4$ (so at least 8 finishes). With $M_{\text{prev}}$ the median
 of $f_{F-2w+1..F-w}$ and $M_{\text{rec}}$ the median of $f_{F-w+1..F}$,
 
-```math
+$$
 \Delta = \frac{M_{\text{prev}} - M_{\text{rec}}}{M_{\text{prev}}}, \qquad
 I = \mathrm{clamp}_{[0,100]}\!\left(50 + 50\,\frac{\Delta}{0.03}\right).
-```
+$$
 
 No change scores 50, 3% faster scores 100, 3% slower scores 0. The window is counted in finishes rather than days, so a
 category with a dozen finishes gets a score like one with hundreds.
@@ -570,9 +570,9 @@ category with a dozen finishes gets a score like one with hundreds.
 
 Let $K$ be the set of parts that could be computed, $s_k$ their scores and $\omega_k$ their weights. Then
 
-```math
+$$
 \mathrm{Score} = \mathrm{round}\!\left(\frac{\sum_{k \in K} \omega_k s_k}{\sum_{k \in K} \omega_k}\right).
-```
+$$
 
 **Proposition 6.2.** The score lies in $[0, 100]$ and is the weighted mean of the available parts with their weights
 rescaled to sum to 1, keeping their proportions.
@@ -634,9 +634,9 @@ chance needs.
 **Definition 7.1.** For a sample time $t$ of segment $i$ in attempt $a$, its log ratio is $\ell_{a,i} = \ln(t/\tau_i)$.
 An attempt's **form** is the mean log ratio over the non-luck segments in which it has a sample:
 
-```math
+$$
 F_a = \frac{1}{\lvert J_a\rvert}\sum_{i \in J_a} \ell_{a,i}.
-```
+$$
 
 Only attempts with samples in at least $\lceil 0.25\, n'\rceil$ segments count ($n'$ the number of non-luck segments),
 unless fewer than 5 attempts qualify, in which case every attempt with a sample counts. The forms are ordered by
@@ -651,17 +651,17 @@ $\varepsilon_{a,i} = \ell_{a,i} - F_a$ (or $\ell_{a,i}$ for a luck segment, or f
 $\delta$ (§7.3.2). For each segment independently, draw one residual $E_i$ from that segment's residuals by their
 recency weights. The simulated segment times and total are
 
-```math
+$$
 T_i = \tau_i \exp\bigl(\mathbf 1[i \notin L]\,(\Phi + \delta) + E_i\bigr), \qquad T = \sum_{i=1}^n T_i ,
-```
+$$
 
 where $L$ is the set of luck segments.
 
 This is a non-parametric bootstrap [5] of the random-effects model
 
-```math
+$$
 \ln T_{a,i} = \ln \tau_i + F_a + \varepsilon_{a,i}.
-```
+$$
 
 *Assumption 7.1.* Given the attempt's form, segment residuals are independent of each other. (Dependence *through*
 the form, the fact that good days are good across the whole run, is modelled; any other dependence is not.)
@@ -674,9 +674,9 @@ including the long right tail of a segment that sometimes goes badly.
 **Proposition 7.2.** Write $\sigma_F^2 = \mathrm{Var}\,\Phi$ and $\sigma_i^2 = \mathrm{Var}\, E_i$, and
 suppose deviations are small enough that $e^x \approx 1 + x$. Then
 
-```math
+$$
 \frac{\mathrm{Var}\, T}{\bigl(\sum_i \tau_i\bigr)^2} \approx \sigma_F^2 + \frac{\sum_i \tau_i^2 \sigma_i^2}{\bigl(\sum_i\tau_i\bigr)^2}.
-```
+$$
 
 *Proof.* $T \approx \sum_i \tau_i + \Phi\sum_i \tau_i + \sum_i \tau_i E_i$ with $\Phi$ and the $E_i$ independent, so
 $\mathrm{Var}\,T \approx (\sum\tau_i)^2\sigma_F^2 + \sum \tau_i^2\sigma_i^2$. $\square$
@@ -693,9 +693,9 @@ form it stays at least $\sigma_F$. This is why the model before the form model p
 normalised to sum to 1: slope $\beta = \sum w (x - \bar x)(F - \bar F) / \sum w (x - \bar x)^2$ with weighted means
 $\bar x, \bar F$. Let $x^\ast$ be one more than the largest attempt id. The trend is
 
-```math
+$$
 \delta = \tfrac12 \min\bigl(0,\ \beta\,(x^\ast - \bar x)\bigr),
-```
+$$
 
 and is applied only when at least 5 attempts have a form.
 
@@ -713,10 +713,10 @@ would make the coach recommend giving up.
 
 With $N = 10{,}000$ simulated totals $T^{(1)},\dots,T^{(N)}$ and a target $\Theta$ (the PB, or a goal):
 
-```math
+$$
 \hat p_{\text{fin}} = \frac1N \sum_{s=1}^N \mathbf 1\bigl[T^{(s)} < \Theta\bigr], \qquad
 \hat p = \hat p_{\text{fin}} \cdot \phi ,
-```
+$$
 
 where the **finish rate** $\phi$ is the share of the last 50 attempts that finished, reaching further back when
 those hold fewer than 5 finished runs until the window holds 5 (or covers every attempt), so a category where most
@@ -745,9 +745,9 @@ a multiple of 5 from 20 up.
 **Proposition 7.6.** If attempts are independent with constant chance $p$, the number of attempts needed for the
 chance of at least one PB to reach $\alpha$ is
 
-```math
+$$
 k_\alpha = \left\lceil \frac{\ln(1-\alpha)}{\ln(1-p)} \right\rceil .
-```
+$$
 
 *Proof.* $P(\text{no PB in } k) = (1-p)^k$, so $1 - (1-p)^k \ge \alpha \iff k \ln(1-p) \le \ln(1-\alpha) \iff k \ge \ln(1-\alpha)/\ln(1-p)$, since $\ln(1-p) < 0$. $\square$
 
@@ -768,9 +768,9 @@ Simulated runs are finished runs, so they contain no run-ending mistakes. Mistak
 and $\rho^{\mathrm{good}}_i$ the reset rate among those in the faster half at the split before (Definition 3.3). The
 **mistake rate** is
 
-```math
+$$
 \mu_i = \begin{cases} \min\bigl(\rho_i,\ \rho^{\mathrm{good}}_i\bigr) & \text{if at least 10 of those attempts had a time at the split before,} \\ \rho_i & \text{otherwise (and for } i = 1). \end{cases}
-```
+$$
 
 The **survival** from split $i$ is $\Sigma_i = \prod_{j > i}(1 - \mu_j)$, with $\Sigma_n = 1$. Before the first split there is no split yet, so write $\Sigma_0 = \prod_{j \ge 1}(1 - \mu_j) = (1 - \mu_1)\Sigma_1$: the same product over every segment, including the first.
 
@@ -787,9 +787,9 @@ dying there.
 split $i$, $R^{(s)}_i = T^{(s)} - X^{(s)}_i$ its remaining time, and $b_i = \max(0.3\,\mathrm{sd}_i,\ 10^{-4}\, \mathrm{mean}_i,\ 1)$ a bandwidth from the spread of the $X^{(s)}_i$. With Gaussian kernel weights
 $K_s = \exp\bigl(-\tfrac12 ((X^{(s)}_i - x)/b_i)^2\bigr)$,
 
-```math
+$$
 c_i(x) = \Sigma_i \cdot \frac{\sum_s K_s\,\mathbf 1\bigl[x + R^{(s)}_i < \Theta\bigr]}{\sum_s K_s}.
-```
+$$
 
 This is the Nadaraya–Watson kernel regression estimate [6] of $P(x + R < \Theta \mid X_i = x)$, multiplied by the
 chance of no run-ending mistake in the segments left.
@@ -818,9 +818,9 @@ $x$ is far outside the simulated range.
 $\bar L$ is the mean length (end minus start) of the last 50 attempts with both timestamps, where an attempt longer
 than the timer-left-running limit counts only for the time on its splits (§10.1). Without timestamps,
 
-```math
+$$
 \bar L = \sum_{i=1}^n \Bigl(\prod_{j < i}(1 - \rho_j)\Bigr)\,\tau_i\,\bigl(1 - \tfrac{\rho_i}{2}\bigr).
-```
+$$
 
 **Proposition 7.8.** If a run reaching segment $i$ resets there with probability $\rho_i$, at a uniformly distributed
 moment, the expected attempt length is the formula above.
@@ -835,9 +835,9 @@ $\tau_i(1 - \rho_i/2)$. $\square$
 unit of play. A run at split $i$ with chance $c = c_i(x)$ and expected remaining time $\bar R_i$ should be played on
 if and only if
 
-```math
+$$
 \frac{c}{\bar R_i} \ge r_0 .
-```
+$$
 
 *Argument.* Attempts are renewal cycles: each starts fresh, and the PBs found are rewards. By the renewal-reward
 theorem [8], a policy's long-run rate of PBs per unit of play is $E[\text{PBs per attempt}] / E[\text{attempt length}]$, which for the runner's current play is $\hat p/\bar L = r_0$. At split $i$ there are two choices. Playing
@@ -904,10 +904,10 @@ $\lvert R_i\rvert \ge 5$. Write $\tilde Q_i(q)$ for the unrounded quantile of $R
 $\tilde F_i$ for its inverse, the interpolated empirical distribution function. For a **pace** $q \in [0,1]$ define the
 segment targets and their total
 
-```math
+$$
 t_i(q) = \begin{cases} \min\bigl(p_i,\ \tilde Q_i(q)\bigr) & i \in \mathcal P \\ p_i & i \notin \mathcal P \end{cases},
 \qquad \mathcal T(q) = \sum_i t_i(q).
-```
+$$
 
 "Sub $G$" means strictly under $G$ as LiveSplit displays it, so the plan aims at the limit $\Lambda = G - 10$ ms.
 
@@ -951,9 +951,9 @@ If even $\mathcal T(0)$, every plannable segment at its recent best, exceeds $\L
 segment from its recent best $\beta_i = t_i(0)$ towards its gold $\gamma_i = \min(g_i, \beta_i)$ by one shared
 fraction $f$:
 
-```math
+$$
 t_i(f) = \beta_i - f\,(\beta_i - \gamma_i),
-```
+$$
 
 with $f$ the smallest fraction whose total fits, again found by bisection (the total is continuous and decreasing in
 $f$). The status is **needs golds**. If $\sum_i \gamma_i > \Lambda$, the goal is **out of reach** and the shortfall
@@ -984,9 +984,9 @@ is 5:42:00, and the pace is 0.76.
 A skipped stretch $K$ (§2) has no $p_i$ for its segments, only the stretch's PB time $P_K$, so the plan treats it as one
 piece, the same way the realistic target does. At pace $q$ the piece's time is
 
-```math
+$$
 t_K(q) = \begin{cases} \min\bigl(P_K,\ \sum_{i \in K} \tilde Q_i(q)\bigr) & K \subseteq \mathcal P \\ P_K & \text{otherwise} \end{cases},
-```
+$$
 
 and $\mathcal T(q)$ sums the pieces: $t_i(q)$ for every segment outside a stretch and $t_K(q)$ for every stretch. Beyond
 recent bests the piece's recent best is $\beta_K = t_K(0)$, its gold $\gamma_K = \min\bigl(\beta_K, \sum_{i \in K}\gamma_i\bigr)$
@@ -1038,9 +1038,9 @@ single times keep a few disasters from tilting the line; getting slower counts a
 
 **Definition 9.2 (rate used).** Blend the measured rate with a prior of 2% of the typical time per doubling:
 
-```math
+$$
 \beta = \frac{n}{n + 30}\,\hat\beta + \frac{30}{n + 30}\,(0.02\,m_i),
-```
+$$
 
 (with weight 0 on $\hat\beta$ when it can't be measured).
 
@@ -1056,9 +1056,9 @@ The runner's own curve counts as much as the assumption at 30 clean times, and d
 
 **Proposition 9.3.** Under Assumption 9.1, $k$ more reps after $n$ reps so far save
 
-```math
+$$
 \mathrm{save}_i(k) = \min\Bigl(\mathrm{gap}_i,\ \beta\,\log_2\frac{n+k}{n}\Bigr),
-```
+$$
 
 and $\mathrm{save}_i$ is non-decreasing and concave in $k$.
 
@@ -1132,9 +1132,9 @@ A rolling median follows the runner's improvement, so months of getting faster a
 $2u$, so a pause does not swamp the rest), its usual time $u$, and its *minutes in*: the attempt's start minutes into
 the session plus the time on its earlier segments. The **pace** of a set of plays is
 
-```math
+$$
 \mathrm{pace} = \frac{\sum t}{\sum u} - 1 .
-```
+$$
 
 **Proposition 10.1.** $\mathrm{pace} = \sum_k \frac{u_k}{\sum u}\bigl(\frac{t_k}{u_k} - 1\bigr)$: the mean
 relative slowdown, weighted by usual time.
@@ -1169,10 +1169,10 @@ value per session and treats sessions as independent.
 **Intervals.** For values $y_1..y_k$, the interval is $\bar y \pm t_{k-1}\, s/\sqrt k$ (Student). For two groups,
 Welch's interval with the Welch–Satterthwaite degrees of freedom [13]:
 
-```math
+$$
 \mathrm{se}^2 = \frac{s_a^2}{n_a} + \frac{s_b^2}{n_b}, \qquad
 \nu = \frac{\mathrm{se}^4}{\frac{(s_a^2/n_a)^2}{n_a - 1} + \frac{(s_b^2/n_b)^2}{n_b - 1}} .
-```
+$$
 
 For two proportions, the Wald interval $\hat p_a - \hat p_b \pm z\sqrt{\hat p_a(1-\hat p_a)/n_a + \hat p_b(1-\hat p_b)/n_b}$. The $t$ quantiles use closed-form approximations, $t_{0.975,\nu} \approx 1.96 + 2.5/\nu + 3/\nu^2$ and
 $t_{0.995,\nu} \approx 2.576 + 5/\nu + 10/\nu^2$, which are within about 0.015 of the exact values from $\nu = 7$
@@ -1304,9 +1304,9 @@ While segment $j+1$ is being played with $e = \theta - x_j$ spent in it, the cha
 near $x_j$ at split $j$ (the same kernel weights $w_s$ as Definition 7.6) whose next segment took longer than $e$,
 since only they still look like this run:
 
-```math
+$$
 c_j(x_j; e) = \Sigma_j \cdot \frac{\sum_{s:\, d_s > e} w_s\, [x_j + R_s < \mathrm{PB}]}{\sum_{s:\, d_s > e} w_s},
-```
+$$
 
 where $d_s$ is run $s$'s time for segment $j+1$ and $R_s$ its time from split $j$ to the end. At $e = 0$ it is
 $c_j(x_j)$, it falls as the segment runs long, and it is 0 once no simulated run took that long or $\theta$ passes the
@@ -1326,9 +1326,9 @@ split until the second to last.
 
 With $\bar u_{\ge k} = \sum_{i \ge k} u_i$:
 
-```math
+$$
 \text{Likely finish} = \begin{cases} \theta + \bar u_{\ge j+2} & \text{if } \theta > x_j + u_{j+1} \text{ (the current segment is already over its usual time)}, \\ x_j + \bar u_{\ge j+1} & \text{otherwise.}\end{cases}
-```
+$$
 
 **Best possible** is the same with golds in place of usual times. The first case keeps the projection from ever
 falling below the time already on the timer.
