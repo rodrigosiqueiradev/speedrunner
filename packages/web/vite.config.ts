@@ -23,5 +23,5 @@ export default defineConfig({
     // Use the analyzer's source directly so the app doesn't need core to be built first.
     alias: { "@speedrunner/core": fileURLToPath(new URL("../core/src/index.ts", import.meta.url)) },
   },
-  test: { environment: "jsdom" },
+  test: { environment: "jsdom", maxWorkers: 2 },
 });
