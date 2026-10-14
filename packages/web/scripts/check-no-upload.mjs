@@ -27,7 +27,7 @@ const ALLOWED = [
     why: "XML namespace names in inline SVG and in the HTML document. Names, not addresses: never fetched.",
   },
   {
-    prefix: "https://reactjs.org/docs/error-decoder.html",
+    prefix: "https://react.dev/errors/",
     why: "The page React names in a production error message, for a developer to open by hand.",
   },
   {
