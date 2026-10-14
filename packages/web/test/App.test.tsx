@@ -69,7 +69,7 @@ describe("App", () => {
     fireEvent.click(box);
     await waitFor(() => expect(box.checked).toBe(true));
     expect(screen.queryByText("Looks like luck")).toBeNull();
-    expect(screen.getByText(/Good luck \d+%/)).toBeTruthy();
+    expect(await screen.findByText(/Good luck \d+%/)).toBeTruthy();
     expect(JSON.parse(localStorage.getItem("speedrunner.luck.v1")!)).toEqual({ "dishonored|any%": ["RNG Roulette"] });
     fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
     expect(screen.getByText(/needing good luck in 1 segment \(\d+% of runs get it\)/)).toBeTruthy();
