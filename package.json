@@ -5,13 +5,13 @@
     "packages/*"
   ],
   "engines": {
-    "node": "^24.15.0",
+    "node": "^26.0.0",
     "npm": "^11.0.0"
   },
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "^24.15.0",
+      "version": "^26.0.0",
       "onFail": "warn"
     },
     "packageManager": {

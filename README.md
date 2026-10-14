@@ -19,7 +19,7 @@ and how well they run each category on one 0-100 scale across games.
 
 ## Node and npm
 
-The project uses **Node 24** (the current LTS) with the npm it ships with (**npm 11**). `.nvmrc`
+The project uses **Node 26** with the npm it ships with (**npm 11**). `.nvmrc`
 holds the Node version, so `nvm use` or `fnm use` picks it up, and `package.json` declares both in
 `engines` and `devEngines`, so npm warns when a different version runs an install. CI and the desktop
 builds read the same `.nvmrc`, so they run the same versions as your machine.
@@ -104,7 +104,7 @@ npm run app                       # portable app in packages/desktop/src-tauri/t
 1. Install [Build Tools for Visual Studio](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
    with the **Desktop development with C++** workload, which brings MSVC and the Windows SDK.
 2. Install Rust with [rustup](https://rustup.rs), keeping the default `x86_64-pc-windows-msvc` toolchain.
-3. Install Node 24 (the version in `.nvmrc`), which comes with npm 11.
+3. Install Node 26 (the version in `.nvmrc`), which comes with npm 11.
 4. WebView2 already ships with Windows 10 and 11, so there is nothing to install for it.
 
 Then, from the repository root in a new terminal:
