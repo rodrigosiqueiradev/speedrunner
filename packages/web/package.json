@@ -15,10 +15,10 @@
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/ibm-plex-sans": "^5.3.0",
     "@speedrunner/core": "0.1.0",
-    "@tauri-apps/api": "^2.12.3",
-    "@tauri-apps/plugin-opener": "^2.7.1",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-opener": "^2.7.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@testing-library/react": "^16.0.1",
@@ -29,7 +29,7 @@
     "jsdom": "^29.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
-    "vitest": "^5.0.3",
+    "vitest": "^5.0.5",
     "ws": "^8.22.0"
   }
 }
